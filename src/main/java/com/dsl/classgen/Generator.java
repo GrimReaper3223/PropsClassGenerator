@@ -27,6 +27,8 @@ public class Generator {
 	private static String packageOfGeneratedClass;
 	private static String generatedClass;
 	
+	private static boolean isDebugMode = false;
+	
 	private static final String EXCEPTION_TXT = """
 			Erro: Não foi encontrada a identificação do tipo de variável para criação das classes.
 			Insira o tipo variável e tente novamente.
@@ -92,12 +94,16 @@ public class Generator {
 	}
 	
 	public static void generate() {
-//		System.out.println(new ClassParser().parseClass());
 		generatedClass = new ClassParser().parseClass();
-		try {
-			OutputWriter.write();
-		} catch (IOException e) {
-			e.printStackTrace();
+		
+		if(isDebugMode) {
+			System.out.println(generatedClass);
+		} else {
+			try {
+				OutputWriter.write();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
