@@ -10,7 +10,7 @@ import com.dsl.classgen.Generator;
 
 class GeneratorTest {
 
-	static Path inPropsPath = Path.of("/home/Deiv/workspace/git/SellerTree-Commercial/AdminManager/src/main/resources/values/strings/fx");
+	static Path inPropsPath = Path.of("/home/Deiv/workspace/git/SellerTree-Commercial/AdminManager/src/main/resources/values/strings");
 	static Path outPath = Path.of("src/main/java");
 	static String packageClass = "com.dsl.classgen";
 	
