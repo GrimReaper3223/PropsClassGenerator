@@ -10,6 +10,9 @@ public final class InnerStaticClassParser implements Commons {
 
 	public String parseInnerStaticClass() {
 		InnerFieldParser innerParser = new InnerFieldParser();
+		String formattedClassName = formatClassName(Generator.getPropertiesFileName());
+		
+		formatConsoleOutput("Static Inner Class", formattedClassName, null);
 		
 		return String.format("""
 				@%1$s
@@ -21,7 +24,7 @@ public final class InnerStaticClassParser implements Commons {
 					\t%4$s
 				\t}
 				""", formatAnnotationClassName(GeneratedInnerClass.class), 
-				formatClassName(Generator.getPropertiesFileName()),
+				formattedClassName,
 				formatAnnotationClassName(PrivateConstructor.class),
 				Generator.getPropertyObject()
 						 .entrySet()

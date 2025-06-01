@@ -17,7 +17,7 @@ class GeneratorTest {
 	@BeforeAll
 	@Disabled("Teste bem-sucedido")
 	static void initTest() {
-		Generator.init(inPropsPath, outPath, packageClass);
+		Generator.init(inPropsPath, outPath, packageClass, true);
 	}
 	
 	@Test

@@ -10,6 +10,9 @@ public final class ClassParser implements Commons {
 	
 	public String parseClass() {
 		InnerStaticClassParser parser = new InnerStaticClassParser();
+		String outterClassName = Generator.getOutterClassName();
+		
+		formatConsoleOutput("Outter Class", outterClassName, null);
 		
 		return String.format("""
 				package %1$s.generated;
@@ -29,7 +32,7 @@ public final class ClassParser implements Commons {
 				}
 				""", Generator.getPackageOfGeneratedClass(),
 				formatAnnotationClassName(GeneratedClass.class),
-				Generator.getOutterClassName(),
+				outterClassName,
 				formatAnnotationClassName(PrivateConstructor.class),
 				Generator.isSingleFile() ? parser.parseInnerStaticClass() : 
 										 Generator.getPathList()

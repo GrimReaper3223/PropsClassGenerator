@@ -3,10 +3,15 @@ package com.dsl.classgen;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.engine.OutputWriter;
@@ -14,8 +19,9 @@ import com.dsl.classgen.parsers.ClassParser;
 
 public class Generator {
 
-	private static List<Path> pathQueue;
+	private static List<Path> pathQueue = new ArrayList<>();
 	private static boolean isSingleFile;
+	private static boolean isRecursive = false;
 	
 	private static final Properties PROPS = new Properties();
 	private static String mainClassName = "P";
@@ -24,48 +30,92 @@ public class Generator {
 	private static Path outputPath;
 	
 	private static String propertiesfileName;
-	private static String packageOfGeneratedClass;
+	private static String packageClass;
 	private static String generatedClass;
 	
 	private static boolean isDebugMode = false;
 	
+	public static long startTimeOperation = 0L;
+	public static long endTimeOperation = 0L;
+	
 	private static final String EXCEPTION_TXT = """
-			Erro: Não foi encontrada a identificação do tipo de variável para criação das classes.
-			Insira o tipo variável e tente novamente.
-			De preferência, coloque o identificador no topo do arquivo para que ele possa ser analisado mais rapido.
+			Error: The variable type identification was not found for creating the classes.
+			Enter the variable type and try again.
+			Preferably, place the identifier at the top of the file so that it can be analyzed faster.
 			
 			Ex.:
-				# $javatype:@String
-				
-				... restante do arquivo .properties...
-				
-				# - Comentário para o arquivo de propriedade;
-				$javatype - Identificador de tipo java;
-				: - Separador sintático;
-				@ - Avisa ao serviço que após este identificador, o tipo java será lido para a variável;
-				String - O tipo java usado neste exemplo;
+			# $javatype:@String
+			
+			... rest of the .properties file...
+			
+			# - Comment for the property file;
+			$javatype - Java type identifier;
+			: - Syntactic separator;
+			@ - Tells the service that after this identifier, the java type will be read for the variable;
+			String - The java type used in this example;
 			""";
 	
 	private Generator() {}
 	
-	public static void init(Path inPath, Path outPath, String packageClass) {
-		outputPath = outPath;
-		packageOfGeneratedClass = packageClass;
+	public static void init(Path inputPath, Path outputPath, String packageClass, boolean isRecursive) {
+		Generator.outputPath = outputPath;
+		Generator.packageClass = packageClass;
+		Generator.isRecursive = isRecursive;
 		
-		if(Files.isRegularFile(inPath)) {
-			loadPropFile(inPath);
+		if(Files.isRegularFile(inputPath)) {
+			loadPropFile(inputPath);
 			isSingleFile = true;
 			
-		} else if(Files.isDirectory(inPath)) {
-			try(Stream<Path> pathStream = Files.list(inPath)) {
-				pathQueue = pathStream.filter(path -> !path.endsWith(".properties") && Files.isRegularFile(path))
-						  			  .toList();
+		} else if(Files.isDirectory(inputPath)) {
+			Predicate<Path> testPath = path -> {
+				String stringPath = path.getFileName().toString();
+				return stringPath.substring(stringPath.indexOf('.')).endsWith(".properties");
+			};
+			
+			try {
+				if(isRecursive) {
+					Files.walkFileTree(inputPath, new SimpleFileVisitor<Path>() {
+						@Override
+						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+							if(testPath.test(file)) {
+								pathQueue.add(file);
+							}
+							return FileVisitResult.CONTINUE;
+						}
+					});
+				} else {
+					try(Stream<Path> pathStream = Files.list(inputPath)) {
+						pathQueue = pathStream.filter(testPath::test)
+											  .filter(Files::isRegularFile)
+											  .toList();
+					}
+				}
+			
 			} catch (IOException e) {
 				e.printStackTrace();
-				
 			} finally {
 				isSingleFile = false;
 			}
+			
+			System.out.format("""
+					-----------------------------
+					--- Framework Initialized ---
+					-----------------------------
+					
+					Properties File Path: %s;
+					Output Directory Path: %s;
+					Package Class: %s;
+					Is Recursive?: %b;
+					Is Single File?: %b;
+					
+					Developer Options:
+					Is Debug Mode?: %b;
+					
+					-----------------------------
+					-----------------------------
+					
+					call 'Generator.generate()' to generate the java classes.
+					""", inputPath, outputPath, packageClass, isRecursive, isSingleFile, isDebugMode);
 		}
 	}
 	
@@ -87,19 +137,24 @@ public class Generator {
 		
 		propertiesfileName = inPath.getFileName().toString();
 		propertiesfileName = propertiesfileName.substring(0, propertiesfileName.lastIndexOf('.'));
+		
+		System.out.format("%n%n***Properties file loaded from path: %s***%n", inPath);
 	}
 	
-	public static void init(String inPropsPath, String outPath, String packageClass) {
-		init(Path.of(inPropsPath), Path.of(outPath), packageClass);
+	public static void init(String inPropsPath, String outPath, String packageClass, boolean isRecursive) {
+		init(Path.of(inPropsPath), Path.of(outPath), packageClass, isRecursive);
 	}
 	
 	public static void generate() {
+		calculateElapsedTime();
+		System.out.println("\nGenerating classes...");
 		generatedClass = new ClassParser().parseClass();
 		
 		if(isDebugMode) {
 			System.out.println(generatedClass);
 		} else {
 			try {
+				System.out.println("\n\nWriting data...");
 				OutputWriter.write();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -107,6 +162,19 @@ public class Generator {
 		}
 	}
 
+	public static long calculateElapsedTime() {
+		if(startTimeOperation == 0L) {
+			startTimeOperation = System.currentTimeMillis();
+			return 0L;
+		}
+		
+		if(endTimeOperation == 0L) {
+			endTimeOperation = System.currentTimeMillis();
+		}
+		
+		return endTimeOperation - startTimeOperation;
+	}
+	
 	// getters 
 	public static Properties getPropertyObject() {
 		return PROPS;
@@ -117,7 +185,7 @@ public class Generator {
 	}
 	
 	public static String getPackageOfGeneratedClass() {
-		return packageOfGeneratedClass;
+		return packageClass;
 	}
 
 	public static List<Path> getPathList() {
@@ -142,5 +210,9 @@ public class Generator {
 	
 	public static boolean isSingleFile() {
 		return isSingleFile;
+	}
+	
+	public static boolean isRecursiveAction() {
+		return isRecursive;
 	}
 }

@@ -18,13 +18,17 @@ public final class InnerFieldParser implements Commons {
 				\t\tpublic static final {1} {2};
 				""";
 	public String parseInnerField(String fieldKey, String fieldValue) {
+		
+		
 		if(!fieldValue.isEmpty()) {
+			formatConsoleOutput("Inner Field", fieldKey, null);
 			return MessageFormat.format(pattern1, 
 					formatAnnotationClassName(InnerField.class),
 								Generator.getPropertiesDataType(),
 								formatData(fieldKey),
 								formatFieldValuePattern(fieldValue));
 		}
+		formatConsoleOutput("Inner Field", fieldKey, "UNINITIALIZED FIELD");
 		return MessageFormat.format(pattern2, 
 				formatAnnotationClassName(InnerField.class),
 				Generator.getPropertiesDataType(),

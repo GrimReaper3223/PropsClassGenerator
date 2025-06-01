@@ -24,5 +24,6 @@ public class OutputWriter {
 				out.write(Generator.getGeneratedClass().getBytes());
 			}
 		}
+		System.out.format("%nFile created in: %s [Elapsed Time: %dms]", path, Generator.calculateElapsedTime());
 	}
 }
