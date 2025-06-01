@@ -17,8 +17,18 @@ Generate .java class files from a properties file
 
 - After all the settings are done, call the **Generator.generate()** method;
 
-##### **IMPORTANT:**
+#### **IMPORTANT:**
 You must define a comment at the top of your .properties file that defines the format of the data held. <br>
 Enter **# $javatype:@String** to generate final variables of type String.
 
-For now, only String type values ​​are supported.
+~For now, only String type values ​​are supported.~
+
+Support for new Java types was added in version 0.1:
+
+- all primitive types;
+- all wrapper types;
+
+There are types that are not yet supported. Trying to add unsupported types may result in unexpected behavior.
+
+Types must be added in the properties file, as mentioned above.
+
