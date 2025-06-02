@@ -25,6 +25,10 @@ Enter **# $javatype:@String** to generate final variables of type String.
 
 ## **CHANGELOG:**
 
+### v0.2.1:
+
+- Fixed bug when analyzing base directory without recursion;
+
 ### v0.2:
 
 - Add support for recursive checking. If you want .properties files to be searched in subdirectories, set the variable to **true** in the **init()** method;
