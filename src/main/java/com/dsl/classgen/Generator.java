@@ -21,7 +21,7 @@ public class Generator {
 
 	private static List<Path> pathQueue = new ArrayList<>();
 	private static boolean isSingleFile;
-	private static boolean isRecursive = false;
+	private static boolean isRecursive;
 	
 	private static final Properties PROPS = new Properties();
 	private static String mainClassName = "P";
@@ -62,83 +62,27 @@ public class Generator {
 		Generator.packageClass = packageClass;
 		Generator.isRecursive = isRecursive;
 		
-		if(Files.isRegularFile(inputPath)) {
-			loadPropFile(inputPath);
-			isSingleFile = true;
+		processPath(inputPath);
 			
-		} else if(Files.isDirectory(inputPath)) {
-			Predicate<Path> testPath = path -> {
-				String stringPath = path.getFileName().toString();
-				return stringPath.substring(stringPath.indexOf('.')).endsWith(".properties");
-			};
-			
-			try {
-				if(isRecursive) {
-					Files.walkFileTree(inputPath, new SimpleFileVisitor<Path>() {
-						@Override
-						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-							if(testPath.test(file)) {
-								pathQueue.add(file);
-							}
-							return FileVisitResult.CONTINUE;
-						}
-					});
-				} else {
-					try(Stream<Path> pathStream = Files.list(inputPath)) {
-						pathQueue = pathStream.filter(testPath::test)
-											  .filter(Files::isRegularFile)
-											  .toList();
-					}
-				}
-			
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				isSingleFile = false;
-			}
-			
-			System.out.format("""
-					-----------------------------
-					--- Framework Initialized ---
-					-----------------------------
-					
-					Properties File Path: %s;
-					Output Directory Path: %s;
-					Package Class: %s;
-					Is Recursive?: %b;
-					Is Single File?: %b;
-					
-					Developer Options:
-					Is Debug Mode?: %b;
-					
-					-----------------------------
-					-----------------------------
-					
-					call 'Generator.generate()' to generate the java classes.
-					""", inputPath, outputPath, packageClass, isRecursive, isSingleFile, isDebugMode);
-		}
-	}
-	
-	public static void loadPropFile(Path inPath) {
-		try(InputStream in = Files.newInputStream(inPath);
-				Stream<String> lines = Files.lines(inPath, StandardCharsets.ISO_8859_1)) {
-			if(!PROPS.isEmpty()) {
-				PROPS.clear();
-			}
-			PROPS.load(in);
-			
-			propertiesDataType = lines.filter(input -> input.contains("$javatype:"))
-									  .findFirst()
-									  .map(input -> input.substring(input.indexOf('@') + 1))
-									  .orElseThrow(() -> new IOException(EXCEPTION_TXT));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		propertiesfileName = inPath.getFileName().toString();
-		propertiesfileName = propertiesfileName.substring(0, propertiesfileName.lastIndexOf('.'));
-		
-		System.out.format("%n%n***Properties file loaded from path: %s***%n", inPath);
+		System.out.format("""
+				-----------------------------
+				--- Framework Initialized ---
+				-----------------------------
+				
+				Properties File Path: %s;
+				Output Directory Path: %s;
+				Package Class: %s;
+				Is Recursive?: %b;
+				Is Single File?: %b;
+				
+				Developer Options:
+				Is Debug Mode?: %b;
+				
+				-----------------------------
+				-----------------------------
+				
+				call 'Generator.generate()' to generate the java classes.
+				""", inputPath, outputPath, packageClass, isRecursive, isSingleFile, isDebugMode);
 	}
 	
 	public static void init(String inPropsPath, String outPath, String packageClass, boolean isRecursive) {
@@ -174,6 +118,68 @@ public class Generator {
 		
 		return endTimeOperation - startTimeOperation;
 	}
+	
+	
+	public static void loadPropFile(Path inputPath) {
+		try(InputStream in = Files.newInputStream(inputPath);
+				Stream<String> lines = Files.lines(inputPath, StandardCharsets.ISO_8859_1)) {
+			if(!PROPS.isEmpty()) {
+				PROPS.clear();
+			}
+			PROPS.load(in);
+			
+			propertiesDataType = lines.filter(input -> input.contains("$javatype:"))
+									  .findFirst()
+									  .map(input -> input.substring(input.indexOf('@') + 1))
+									  .orElseThrow(() -> new IOException(EXCEPTION_TXT));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		propertiesfileName = inputPath.getFileName().toString();
+		propertiesfileName = propertiesfileName.substring(0, propertiesfileName.lastIndexOf('.'));
+		
+		System.out.format("%n%n***Properties file loaded from path: %s***%n", inputPath);
+	}
+	
+	private static void processPath(Path inputPath) {
+		if(Files.isRegularFile(inputPath)) {
+			loadPropFile(inputPath);
+			isSingleFile = true;
+			
+		} else if(Files.isDirectory(inputPath)) {
+			Predicate<Path> testPath = path -> {
+				String stringPath = path.getFileName().toString();
+				return stringPath.substring(stringPath.indexOf('.')).endsWith(".properties");
+			};
+			
+			try {
+				if(isRecursive) {
+					Files.walkFileTree(inputPath, new SimpleFileVisitor<Path>() {
+						@Override
+						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+							if(testPath.test(file)) {
+								pathQueue.add(file);
+							}
+							return FileVisitResult.CONTINUE;
+						}
+					});
+				} else {
+					try(Stream<Path> pathStream = Files.list(inputPath)) {
+						pathQueue = pathStream.filter(Files::isRegularFile)
+											  .filter(testPath::test)
+											  .toList();
+					}
+				}
+			
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				isSingleFile = false;
+			}
+		}
+	}
+	
 	
 	// getters 
 	public static Properties getPropertyObject() {
