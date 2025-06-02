@@ -7,6 +7,6 @@ package com.dsl.classgen.services;
  * @version
  * @author Deiv
  */
-public class WatchFile {
+public class Watcher {
 
 }
