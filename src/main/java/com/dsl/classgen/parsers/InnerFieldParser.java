@@ -3,10 +3,11 @@ package com.dsl.classgen.parsers;
 import java.text.MessageFormat;
 import java.util.function.Predicate;
 
-import com.dsl.classgen.Generator;
+import static com.dsl.classgen.io.Values.getPropertiesDataType;
+
 import com.dsl.classgen.annotations.InnerField;
 
-public final class InnerFieldParser implements Commons {
+public final class InnerFieldParser implements FormatUtils {
 	
 	private final String pattern1 = """
 				@{0}
@@ -18,25 +19,23 @@ public final class InnerFieldParser implements Commons {
 				\t\tpublic static final {1} {2};
 				""";
 	public String parseInnerField(String fieldKey, String fieldValue) {
-		
-		
 		if(!fieldValue.isEmpty()) {
 			formatConsoleOutput("Inner Field", fieldKey, null);
 			return MessageFormat.format(pattern1, 
 					formatAnnotationClassName(InnerField.class),
-								Generator.getPropertiesDataType(),
+								getPropertiesDataType(),
 								formatData(fieldKey),
 								formatFieldValuePattern(fieldValue));
 		}
 		formatConsoleOutput("Inner Field", fieldKey, "UNINITIALIZED FIELD");
 		return MessageFormat.format(pattern2, 
 				formatAnnotationClassName(InnerField.class),
-				Generator.getPropertiesDataType(),
+				getPropertiesDataType(),
 				formatData(fieldKey));
 	}
 
 	private String formatFieldValuePattern(String fieldValue) {
-		Predicate<String> testValue = Generator.getPropertiesDataType()::equals;
+		Predicate<String> testValue = getPropertiesDataType()::equals;
 
 		String pattern = testValue.test("String") ? "\"%s\"" : 
 						 testValue.test("char") || testValue.test("Character") ? 

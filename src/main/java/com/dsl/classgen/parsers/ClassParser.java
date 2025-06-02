@@ -2,20 +2,22 @@ package com.dsl.classgen.parsers;
 
 import java.util.stream.Collectors;
 
-import com.dsl.classgen.Generator;
 import com.dsl.classgen.annotations.GeneratedClass;
 import com.dsl.classgen.annotations.PrivateConstructor;
+import com.dsl.classgen.io.Reader;
+import com.dsl.classgen.io.Values;
 
-public final class ClassParser implements Commons {
+public final class ClassParser implements FormatUtils {
 	
 	public String parseClass() {
 		InnerStaticClassParser parser = new InnerStaticClassParser();
-		String outterClassName = Generator.getOutterClassName();
+		String outterClassName = Values.getOutterClassName();
 		
+		System.out.println("\nGenerating classes...");
 		formatConsoleOutput("Outter Class", outterClassName, null);
 		
 		return String.format("""
-				package %1$s.generated;
+				package %1$s;
 				
 				import com.dsl.classgen.annotations.GeneratedClass;
 				import com.dsl.classgen.annotations.GeneratedInnerClass;
@@ -30,15 +32,15 @@ public final class ClassParser implements Commons {
 					
 					%5$s
 				}
-				""", Generator.getPackageOfGeneratedClass(),
+				""", Values.getPackageClass(),
 				formatAnnotationClassName(GeneratedClass.class),
 				outterClassName,
 				formatAnnotationClassName(PrivateConstructor.class),
-				Generator.isSingleFile() ? parser.parseInnerStaticClass() : 
-										 Generator.getPathList()
+				Values.getIsSingleFile() ? parser.parseInnerStaticClass() : 
+										 Values.getPathQueue()
 										 		  .stream()
 										 		  .map(path -> {
-										 			 Generator.loadPropFile(path);
+										 			 Reader.loadPropFile(path);
 										 			 return parser.parseInnerStaticClass();
 										 		  })
 										 		  .collect(Collectors.joining("\n\t")));

@@ -2,15 +2,15 @@ package com.dsl.classgen.parsers;
 
 import java.util.stream.Collectors;
 
-import com.dsl.classgen.Generator;
 import com.dsl.classgen.annotations.GeneratedInnerClass;
 import com.dsl.classgen.annotations.PrivateConstructor;
+import com.dsl.classgen.io.Values;
 
-public final class InnerStaticClassParser implements Commons {
+public final class InnerStaticClassParser implements FormatUtils {
 
 	public String parseInnerStaticClass() {
 		InnerFieldParser innerParser = new InnerFieldParser();
-		String formattedClassName = formatClassName(Generator.getPropertiesFileName());
+		String formattedClassName = formatClassName(Values.getPropertiesFileName());
 		
 		formatConsoleOutput("Static Inner Class", formattedClassName, null);
 		
@@ -26,11 +26,11 @@ public final class InnerStaticClassParser implements Commons {
 				""", formatAnnotationClassName(GeneratedInnerClass.class), 
 				formattedClassName,
 				formatAnnotationClassName(PrivateConstructor.class),
-				Generator.getPropertyObject()
-						 .entrySet()
-						 .stream()
-						 .map(entry -> innerParser.parseInnerField(String.valueOf(entry.getKey()), String.valueOf(entry.getValue())))
-						 .collect(Collectors.joining("\n\t\t")));
+				Values.getProps()
+					  .entrySet()
+					  .stream()
+					  .map(entry -> innerParser.parseInnerField(String.valueOf(entry.getKey()), String.valueOf(entry.getValue())))
+					  .collect(Collectors.joining("\n\t\t")));
 	}
 	
 	private String formatClassName(String className) {
