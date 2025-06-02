@@ -25,6 +25,13 @@ Enter **# $javatype:@String** to generate final variables of type String.
 
 ## **CHANGELOG:**
 
+### v0.2.2:
+
+- Refactoring of all packages and classes;
+- Improvements in separation of responsibilities;
+- Improvements in module isolation, exporting only the generator class and abstracting the backend;
+- Checker framework removal [NOT USED];
+
 ### v0.2.1:
 
 - Fixed bug when analyzing base directory without recursion;
