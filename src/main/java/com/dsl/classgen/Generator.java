@@ -5,6 +5,7 @@ import static com.dsl.classgen.io.Values.getIsDebugMode;
 import static com.dsl.classgen.io.Values.getIsSingleFile;
 import static com.dsl.classgen.io.Values.getOutputPath;
 import static com.dsl.classgen.io.Values.getPackageClass;
+import static com.dsl.classgen.io.Values.setInputPath;
 import static com.dsl.classgen.io.Values.setGeneratedClass;
 import static com.dsl.classgen.io.Values.setIsRecursive;
 import static com.dsl.classgen.io.Values.setPackageClass;
@@ -16,6 +17,7 @@ import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
 import com.dsl.classgen.io.Writer;
 import com.dsl.classgen.parsers.ClassParser;
+import com.dsl.classgen.services.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
 public final class Generator {
@@ -25,6 +27,7 @@ public final class Generator {
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
 		setPackageClass(packageClass);
 		setIsRecursive(isRecursive);
+		setInputPath(inputPath);
 		
 		Reader.read(inputPath);
 		Values.resolvePaths();
@@ -34,7 +37,7 @@ public final class Generator {
 				--- Framework Initialized ---
 				-----------------------------
 				
-				Properties File Path: %s;
+				Input Path: %s;
 				Output Directory Path: %s;
 				Package Class: %s;
 				Is Recursive?: %b;
@@ -67,5 +70,9 @@ public final class Generator {
 				e.printStackTrace();
 			}
 		}
+		/**
+		 * @BUG nao segura a inicializacao da thread, mesmo setando o daemon para false
+		 */
+		WatchServiceImpl.initialize();
 	}
 }
