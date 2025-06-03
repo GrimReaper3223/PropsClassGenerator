@@ -7,7 +7,7 @@ import com.dsl.classgen.annotations.PrivateConstructor;
 import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
 
-public final class ClassParser implements FormatUtils {
+public final class ClassParser implements DataFormatter {
 	
 	public String parseClass() {
 		InnerStaticClassParser parser = new InnerStaticClassParser();
@@ -37,7 +37,7 @@ public final class ClassParser implements FormatUtils {
 				outterClassName,
 				formatAnnotationClassName(PrivateConstructor.class),
 				Values.getIsSingleFile() ? parser.parseInnerStaticClass() : 
-										 Values.getPathQueue()
+										 Values.getFileList()
 										 		  .stream()
 										 		  .map(path -> {
 										 			 Reader.loadPropFile(path);

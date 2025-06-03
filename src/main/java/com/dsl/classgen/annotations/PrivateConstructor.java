@@ -12,5 +12,4 @@ import com.dsl.classgen.annotations.containers.PrivateConstructorContainer;
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(PrivateConstructorContainer.class)
 public @interface PrivateConstructor {
-	
 }

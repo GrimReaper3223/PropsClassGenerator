@@ -2,7 +2,7 @@ package com.dsl.classgen.parsers;
 
 import java.util.Objects;
 
-sealed interface FormatUtils permits ClassParser, InnerFieldParser, InnerStaticClassParser {
+sealed interface DataFormatter permits ClassParser, InnerFieldParser, InnerStaticClassParser {
 
 	default String formatAnnotationClassName(Class<?> cls) {
 		String className = cls.getName();
