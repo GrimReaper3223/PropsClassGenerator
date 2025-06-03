@@ -6,7 +6,7 @@ import com.dsl.classgen.annotations.GeneratedInnerClass;
 import com.dsl.classgen.annotations.PrivateConstructor;
 import com.dsl.classgen.io.Values;
 
-public final class InnerStaticClassParser implements FormatUtils {
+public final class InnerStaticClassParser implements DataFormatter {
 
 	public String parseInnerStaticClass() {
 		InnerFieldParser innerParser = new InnerFieldParser();
@@ -15,15 +15,17 @@ public final class InnerStaticClassParser implements FormatUtils {
 		formatConsoleOutput("Static Inner Class", formattedClassName, null);
 		
 		return String.format("""
-				@%1$s
-				\tpublic static final class %2$s {
+				@%1$s(filePath = "%2$s.properties", javaType = %3$s.class)
+				\tpublic static final class %4$s {
 					
-					\t@%3$s
-					\tprivate %2$s() {}
+					\t@%5$s
+					\tprivate %4$s() {}
 					
-					\t%4$s
+					\t%6$s
 				\t}
-				""", formatAnnotationClassName(GeneratedInnerClass.class), 
+				""", formatAnnotationClassName(GeneratedInnerClass.class),
+				Values.getInputPath().resolve(Values.getPropertiesFileName()),
+				Values.getPropertiesDataType(),
 				formattedClassName,
 				formatAnnotationClassName(PrivateConstructor.class),
 				Values.getProps()

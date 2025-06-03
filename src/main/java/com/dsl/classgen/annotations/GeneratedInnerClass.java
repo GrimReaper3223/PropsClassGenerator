@@ -11,4 +11,7 @@ import com.dsl.classgen.annotations.containers.GeneratedInnerClassContainer;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(GeneratedInnerClassContainer.class)
-public @interface GeneratedInnerClass {}
+public @interface GeneratedInnerClass {
+	String filePath();
+	Class<?> javaType();
+}

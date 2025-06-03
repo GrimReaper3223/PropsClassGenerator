@@ -11,4 +11,6 @@ import com.dsl.classgen.annotations.containers.InnerFieldContainer;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(InnerFieldContainer.class)
-public @interface InnerField {}
+public @interface InnerField {
+	String value();
+}

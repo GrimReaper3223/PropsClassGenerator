@@ -1,16 +1,24 @@
 package com.dsl.classgen.io;
 
 import java.nio.file.Path;
+import java.nio.file.WatchEvent.Kind;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public class Values {
 
 	private static final Properties PROPS = new Properties();
 	private static final String OUTTER_CLASS_NAME = "P";
 	
-	private static List<Path> pathQueue = new ArrayList<>();
+	private static List<Path> fileList = new ArrayList<>();
+	private static List<Path> dirList = new ArrayList<>();
+	
+	private static BlockingQueue<Map.Entry<Path, ?>> changedFile = new ArrayBlockingQueue<>(128);  
 	
 	private static boolean isSingleFile;
 	private static boolean isRecursive;				
@@ -20,7 +28,8 @@ public class Values {
 	private static String propertiesfileName;
 	private static String packageClass;				
 	private static String generatedClass;
-	private static Path outputPath = Path.of("src", "main", "java").toAbsolutePath();
+	private static Path outputPath = Path.of("src", "main", "java");
+	private static Path inputPath;
 	
 	private static long startTimeOperation = 0L;
 	private static long endTimeOperation = 0L;
@@ -46,21 +55,46 @@ public class Values {
 
 	public static void resolvePaths() {
 		packageClass = packageClass.concat(".generated");
-		outputPath = outputPath.resolve(Path.of(packageClass.replaceAll("[.]", "/"))); 
+		outputPath = outputPath.resolve(Path.of(packageClass.replaceAll("[.]", "/")));
+	}
+	
+	public static <T extends Kind<?>> void addChangedValueToMap(Entry<Path, T> entry) {
+		changedFile.add(entry);
 	}
 	
 	/**
 	 * @return the pathQueue
 	 */
-	public static List<Path> getPathQueue() {
-		return pathQueue;
+	public static List<Path> getDirList() {
+		return fileList;
+	}
+	
+	/**
+	 * @param dirPath the dirPath to add
+	 */
+	public static void addDirToList(Path dirPath) {
+		dirList.add(dirPath);
+	}
+	
+	/**
+	 * @return the pathQueue
+	 */
+	public static List<Path> getFileList() {
+		return fileList;
+	}
+	
+	/**
+	 * @param filePath the filePath to set
+	 */
+	public static void addFileToList(Path filePath) {
+		fileList.add(filePath);
 	}
 
 	/**
-	 * @param pathQueue the pathQueue to set
+	 * @param fileList the fileList to set
 	 */
-	public static void setPathQueue(List<Path> pathQueue) {
-		Values.pathQueue = pathQueue;
+	public static void setFileList(List<Path> fileList) {
+		Values.fileList = fileList;
 	}
 
 	/**
@@ -80,7 +114,7 @@ public class Values {
 	/**
 	 * @return the isRecursive
 	 */
-	public static boolean getIsRecursive() {
+	public static boolean isRecursive() {
 		return isRecursive;
 	}
 
@@ -145,6 +179,20 @@ public class Values {
 	 */
 	public static void setGeneratedClass(String generatedClass) {
 		Values.generatedClass = generatedClass;
+	}
+
+	/**
+	 * @return the inputPath
+	 */
+	public static Path getInputPath() {
+		return inputPath;
+	}
+
+	/**
+	 * @param inputPath the inputPath to set
+	 */
+	public static void setInputPath(Path inputPath) {
+		Values.inputPath = inputPath;
 	}
 
 	/**
