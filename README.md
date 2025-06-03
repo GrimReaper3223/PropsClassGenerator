@@ -1,6 +1,7 @@
 # PropsClassGenerator
 Generate .java class files from a properties file
 
+[![Java CI with Maven](https://github.com/GrimReaper3223/PropsClassGenerator/actions/workflows/maven.yml/badge.svg?branch=master)](https://github.com/GrimReaper3223/PropsClassGenerator/actions/workflows/maven.yml)
 
 # How to use:
 
