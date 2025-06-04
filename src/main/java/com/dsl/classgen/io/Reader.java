@@ -1,9 +1,9 @@
 package com.dsl.classgen.io;
 
-import static com.dsl.classgen.io.Values.isRecursive;
-import static com.dsl.classgen.io.Values.getProps;
 import static com.dsl.classgen.io.Values.addDirToList;
 import static com.dsl.classgen.io.Values.addFileToList;
+import static com.dsl.classgen.io.Values.isRecursive;
+import static com.dsl.classgen.io.Values.getProps;
 import static com.dsl.classgen.io.Values.setFileList;
 import static com.dsl.classgen.io.Values.setIsSingleFile;
 
@@ -15,8 +15,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import com.dsl.classgen.utils.Utils;
 
 public class Reader {
 
@@ -34,31 +37,43 @@ public class Reader {
 	
 	// carrega o arquivo de propriedades
 	public static void loadPropFile(Path inputPath) {
-		var props = getProps();
-		
-		try(InputStream in = Files.newInputStream(inputPath)) {
-			if(!props.isEmpty()) {
-				props.clear();
-			}
-			props.load(in);
-			
-			processFile(inputPath);
-		} catch (IOException e) {
+		try {
+			Utils.getExecutor().submit(() -> {
+				var props = getProps();
+
+				try(InputStream in = Files.newInputStream(inputPath)) {
+					if(!props.isEmpty()) {
+						props.clear();
+					}
+					props.load(in);
+					
+					processFilePath(inputPath);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				System.out.format("%n%n***Properties file loaded from path: %s***%n", inputPath);
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
 		}
-		System.out.format("%n%n***Properties file loaded from path: %s***%n", inputPath);
 	}
 	
-	private static void processFile(Path inputPath) {
-		try(Stream<String> lines = Files.lines(inputPath, StandardCharsets.ISO_8859_1)) {
-			Values.setPropertiesDataType(lines.filter(input -> input.contains("$javatype:"))
-									.findFirst()
-									.map(input -> input.substring(input.indexOf('@') + 1))
-									.orElseThrow(() -> new IOException(Values.getExceptionTxt())));
-			
-			String fileName = inputPath.getFileName().toString();
-			Values.setPropertiesfileName(fileName.substring(0, fileName.lastIndexOf('.')));
-		} catch (IOException e) {
+	private static void processFilePath(Path inputPath) {
+		try {
+			Utils.getExecutor().submit(() -> {
+				try(Stream<String> lines = Files.lines(inputPath, StandardCharsets.ISO_8859_1)) {
+					Values.setPropertiesDataType(lines.filter(input -> input.contains("$javatype:"))
+											.findFirst()
+											.map(input -> input.substring(input.indexOf('@') + 1))
+											.orElseThrow(() -> new IOException(Values.getExceptionTxt())));
+					
+					String fileName = inputPath.getFileName().toString();
+					Values.setPropertiesfileName(fileName.substring(0, fileName.lastIndexOf('.')));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
 		}
 	}

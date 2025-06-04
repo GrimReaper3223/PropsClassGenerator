@@ -5,13 +5,13 @@ import static com.dsl.classgen.io.Values.getIsDebugMode;
 import static com.dsl.classgen.io.Values.getIsSingleFile;
 import static com.dsl.classgen.io.Values.getOutputPath;
 import static com.dsl.classgen.io.Values.getPackageClass;
-import static com.dsl.classgen.io.Values.setInputPath;
 import static com.dsl.classgen.io.Values.setGeneratedClass;
+import static com.dsl.classgen.io.Values.setInputPath;
 import static com.dsl.classgen.io.Values.setIsRecursive;
 import static com.dsl.classgen.io.Values.setPackageClass;
 
-import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutionException;
 
 import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
@@ -66,13 +66,13 @@ public final class Generator {
 		} else {
 			try {
 				Writer.write();
-			} catch (IOException e) {
+			} catch (ExecutionException e) {
 				e.printStackTrace();
+			} catch (InterruptedException e) {
+				System.err.println("Interrupting Thread...");
+				Thread.currentThread().interrupt();
 			}
 		}
-		/**
-		 * @BUG nao segura a inicializacao da thread, mesmo setando o daemon para false
-		 */
 		WatchServiceImpl.initialize();
 	}
 }
