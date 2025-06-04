@@ -12,6 +12,9 @@ import java.util.concurrent.BlockingQueue;
 
 public class Values {
 
+	// deve ser true durante o desenvolvimento
+	private static boolean isDebugMode = true;
+	
 	private static final Properties PROPS = new Properties();
 	private static final String OUTTER_CLASS_NAME = "P";
 	
@@ -51,8 +54,6 @@ public class Values {
 			String - The java type used in this example;
 			""";
 	
-	private static boolean isDebugMode = false;
-
 	public static void resolvePaths() {
 		packageClass = packageClass.concat(".generated");
 		outputPath = outputPath.resolve(Path.of(packageClass.replaceAll("[.]", "/")));
@@ -66,7 +67,7 @@ public class Values {
 	 * @return the pathQueue
 	 */
 	public static List<Path> getDirList() {
-		return fileList;
+		return dirList;
 	}
 	
 	/**

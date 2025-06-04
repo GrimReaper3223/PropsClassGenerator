@@ -7,6 +7,7 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
@@ -30,6 +31,7 @@ public class WatchServiceImpl {
 	private static WatchService watcher;
 	
 	public static void initialize() {
+		// permite a execucao da thread de observacao de diretorio em segundo plano
 		watchServiceThread.setDaemon(false);
 		try {
 			watcher = FileSystems.getDefault().newWatchService();
@@ -57,7 +59,7 @@ public class WatchServiceImpl {
 			}).forEach(keys::putAll);
 			
 		} else {
-			Path inputPath = Values.getInputPath();
+			Path inputPath = Files.isDirectory(Values.getInputPath()) ? Values.getInputPath() : Values.getInputPath().getParent();
 			WatchKey key = inputPath.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
 			verifyKey(key, inputPath);
 		}
