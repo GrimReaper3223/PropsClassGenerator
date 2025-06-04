@@ -7,7 +7,7 @@ import java.util.function.Predicate;
 
 import com.dsl.classgen.annotations.InnerField;
 
-public final class InnerFieldParser implements DataFormatter {
+public final class InnerFieldParser implements OutputFormatter {
 	
 	private final String pattern1 = """
 				@{0}("{1}")
@@ -20,17 +20,17 @@ public final class InnerFieldParser implements DataFormatter {
 				""";
 	public String parseInnerField(String fieldKey, String fieldValue) {
 		if(!fieldValue.isEmpty()) {
-			formatConsoleOutput("Inner Field", fieldKey, null);
+			formatGenerationOutput("Inner Field", fieldKey, null);
 			return MessageFormat.format(pattern1, 
-					formatAnnotationClassName(InnerField.class),
+					InnerField.class.getSimpleName(),
 								fieldKey,
 								getPropertiesDataType(),
 								formatFieldName(fieldKey),
 								formatFieldValue(fieldValue));
 		}
-		formatConsoleOutput("Inner Field", fieldKey, "UNINITIALIZED FIELD");
+		formatGenerationOutput("Inner Field", fieldKey, "UNINITIALIZED FIELD");
 		return MessageFormat.format(pattern2, 
-				formatAnnotationClassName(InnerField.class),
+				InnerField.class.getSimpleName(),
 				getPropertiesDataType(),
 				formatFieldName(fieldKey));
 	}

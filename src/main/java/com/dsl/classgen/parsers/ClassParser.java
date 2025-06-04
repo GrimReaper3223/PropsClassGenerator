@@ -7,14 +7,14 @@ import com.dsl.classgen.annotations.PrivateConstructor;
 import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
 
-public final class ClassParser implements DataFormatter {
+public final class ClassParser implements OutputFormatter {
 	
 	public String parseClass() {
 		InnerStaticClassParser parser = new InnerStaticClassParser();
 		String outterClassName = Values.getOutterClassName();
 		
 		System.out.println("\nGenerating classes...");
-		formatConsoleOutput("Outter Class", outterClassName, null);
+		formatGenerationOutput("Outter Class", outterClassName, null);
 		
 		return String.format("""
 				package %1$s;
@@ -33,9 +33,9 @@ public final class ClassParser implements DataFormatter {
 					%5$s
 				}
 				""", Values.getPackageClass(),
-				formatAnnotationClassName(GeneratedClass.class),
+				GeneratedClass.class.getSimpleName(),
 				outterClassName,
-				formatAnnotationClassName(PrivateConstructor.class),
+				PrivateConstructor.class.getSimpleName(),
 				Values.getIsSingleFile() ? parser.parseInnerStaticClass() : 
 										 Values.getFileList()
 										 		  .stream()
