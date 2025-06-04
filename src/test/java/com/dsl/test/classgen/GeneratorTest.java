@@ -10,17 +10,17 @@ import com.dsl.classgen.Generator;
 
 class GeneratorTest {
 
-	static Path inPropsPath = Path.of("/home/Deiv/workspace/git/SellerTree-Commercial/AdminManager/src/main/resources/values/strings/exception-message.properties");
+	static Path inPropsPath = Path.of("/home/Deiv/workspace/git/SellerTree-Commercial/AdminManager/src/main/resources/values/strings/");
 	static String packageClass = "com.dsl.classgen";
 	
 	@BeforeAll
-	@Disabled("Teste bem-sucedido")
+//	@Disabled("Teste bem-sucedido")
 	static void initTest() {
-		Generator.init(inPropsPath, packageClass, false);
+		Generator.init(inPropsPath, packageClass, true);
 	}
 	
 	@Test
-	@Disabled("Teste bem-sucedido")
+//	@Disabled("Teste bem-sucedido")
 	void generateTest() {
 		Generator.generate();
 	}
