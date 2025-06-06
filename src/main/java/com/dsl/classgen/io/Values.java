@@ -10,21 +10,25 @@ import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import com.google.gson.Gson;
+
 public class Values {
 
 	// deve ser true durante o desenvolvimento
-	private static boolean isDebugMode = true;
+	private static boolean isDebugMode = false;
 	
 	private static final Properties PROPS = new Properties();
+	private static final Gson GSON = new Gson();
 	private static final String OUTTER_CLASS_NAME = "P";
 	
 	private static List<Path> fileList = new ArrayList<>();
 	private static List<Path> dirList = new ArrayList<>();
 	
-	private static BlockingQueue<Map.Entry<Path, ?>> changedFile = new ArrayBlockingQueue<>(128);  
+	private static BlockingQueue<Map.Entry<Path, ?>> changedFile = new ArrayBlockingQueue<>(128);
 	
 	private static boolean isSingleFile;
 	private static boolean isRecursive;				
+	private static boolean hasStructureAlreadyGenerated;
 	
 	private static String propertiesDataType;
 	
@@ -33,6 +37,10 @@ public class Values {
 	private static String generatedClass;
 	private static Path outputPath = Path.of("src", "main", "java");
 	private static Path inputPath;
+	private static Path existingPath;
+	
+	private static final Path CACHE_DIRS = Path.of(System.getProperty("user.dir"), ".jsonProperties-cache");
+	private static final String JSON_FILENAME_PATTERN = "%s-cache.json";	// <nome_do_arquivo>-cache.json
 	
 	private static long startTimeOperation = 0L;
 	private static long endTimeOperation = 0L;
@@ -98,10 +106,18 @@ public class Values {
 		Values.fileList = fileList;
 	}
 
+	public static boolean hasStructureAlreadyGenerated() {
+		return hasStructureAlreadyGenerated;
+	}
+
+	public static void setHasStructureAlreadyGenerated(boolean hasStructureAlreadyGenerated) {
+		Values.hasStructureAlreadyGenerated = hasStructureAlreadyGenerated;
+	}
+	
 	/**
 	 * @return the isSingleFile
 	 */
-	public static boolean getIsSingleFile() {
+	public static boolean isSingleFile() {
 		return isSingleFile;
 	}
 
@@ -155,6 +171,13 @@ public class Values {
 	}
 
 	/**
+	 * @return the cacheDirs
+	 */
+	public static Path getCacheDirs() {
+		return CACHE_DIRS;
+	}
+
+	/**
 	 * @return the packageClass
 	 */
 	public static String getPackageClass() {
@@ -180,6 +203,20 @@ public class Values {
 	 */
 	public static void setGeneratedClass(String generatedClass) {
 		Values.generatedClass = generatedClass;
+	}
+
+	/**
+	 * @return the existingPath
+	 */
+	public static Path getExistingPath() {
+		return existingPath;
+	}
+
+	/**
+	 * @param existingPath the existingPath to set
+	 */
+	public static void setExistingPath(Path existingPath) {
+		Values.existingPath = existingPath;
 	}
 
 	/**
@@ -234,10 +271,24 @@ public class Values {
 	/**
 	 * @return the isDebugMode
 	 */
-	public static boolean getIsDebugMode() {
+	public static boolean isDebugMode() {
 		return isDebugMode;
 	}
 
+	/**
+	 * @return the jsonFilenamePattern
+	 */
+	public static String getJsonFilenamePattern() {
+		return JSON_FILENAME_PATTERN;
+	}
+
+	/**
+	 * @return the gson
+	 */
+	public static Gson getGson() {
+		return GSON;
+	}
+	
 	/**
 	 * @return the props
 	 */
