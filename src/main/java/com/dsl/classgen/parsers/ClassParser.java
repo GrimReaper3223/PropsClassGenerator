@@ -36,13 +36,13 @@ public final class ClassParser implements OutputFormatter {
 				GeneratedClass.class.getSimpleName(),
 				outterClassName,
 				PrivateConstructor.class.getSimpleName(),
-				Values.getIsSingleFile() ? parser.parseInnerStaticClass() : 
+				Values.isSingleFile() ? parser.parseInnerStaticClass() : 
 										 Values.getFileList()
-										 		  .stream()
-										 		  .map(path -> {
-										 			 Reader.loadPropFile(path);
-										 			 return parser.parseInnerStaticClass();
-										 		  })
-										 		  .collect(Collectors.joining("\n\t")));
+									 		   .stream()
+									 		   .map(path -> {
+									 			  Reader.loadPropFile(path);
+									 			  return parser.parseInnerStaticClass();
+									 		   })
+									 		   .collect(Collectors.joining("\n\t")));
 	}
 }
