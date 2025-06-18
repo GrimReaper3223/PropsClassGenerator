@@ -1,4 +1,4 @@
-package com.dsl.classgen.annotations;
+        package com.dsl.classgen.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -13,5 +13,6 @@ import com.dsl.classgen.annotations.containers.GeneratedInnerClassContainer;
 @Repeatable(GeneratedInnerClassContainer.class)
 public @interface GeneratedInnerClass {
 	String filePath();
-	Class<?> javaType();
+	Class<?> javaType() default Object.class;
+	int hash() default 0;
 }

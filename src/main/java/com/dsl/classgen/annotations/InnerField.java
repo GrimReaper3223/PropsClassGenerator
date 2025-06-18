@@ -12,5 +12,6 @@ import com.dsl.classgen.annotations.containers.InnerFieldContainer;
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(InnerFieldContainer.class)
 public @interface InnerField {
-	String value();
+	String key();			// a chave deve ser somente a chave que contem o valor no arquivo de propriedades
+	int hash() default 0;	// o hash deve ser o par chave-valor correspondente do arquivo de propriedades
 }
