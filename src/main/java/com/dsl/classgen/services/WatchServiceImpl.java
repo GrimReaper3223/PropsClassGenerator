@@ -32,13 +32,15 @@ public class WatchServiceImpl {
 	
 	public static void initialize() {
 		// permite a execucao da thread de observacao de diretorio em segundo plano
-		watchServiceThread.setDaemon(false);
-		try {
-			watcher = FileSystems.getDefault().newWatchService();
-			register();
-			watchServiceThread.start();
-		} catch (IOException e) {
-			e.printStackTrace();
+		if(!watchServiceThread.isAlive()) {
+			watchServiceThread.setDaemon(false);
+			try {
+				watcher = FileSystems.getDefault().newWatchService();
+				register();
+				watchServiceThread.start();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -55,7 +57,7 @@ public class WatchServiceImpl {
 			}).forEach(keys::putAll);
 			
 		} else {
-			Path inputPath = Files.isDirectory(Values.getInputPath()) ? Values.getInputPath() : Values.getInputPath().getParent();
+			Path inputPath = Files.isDirectory(Values.getInputPropertiesPath()) ? Values.getInputPropertiesPath() : Values.getInputPropertiesPath().getParent();
 			WatchKey key = inputPath.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
 			keys.putAll(verifyKey(key, inputPath));
 		}
