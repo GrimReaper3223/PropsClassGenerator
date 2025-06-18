@@ -2,48 +2,55 @@ package com.dsl.classgen.io;
 
 import java.nio.file.Path;
 import java.nio.file.WatchEvent.Kind;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 import com.google.gson.Gson;
 
-public class Values {
+public final class Values {
 
 	// deve ser true durante o desenvolvimento
 	private static boolean isDebugMode = false;
 	
-	private static final Properties PROPS = new Properties();
-	private static final Gson GSON = new Gson();
-	private static final String OUTTER_CLASS_NAME = "P";
+	private static final Properties PROPS = new Properties();			// deve armazenar o arquivo de propriedades carregado
+	private static final Gson GSON = new Gson();						// instancia para produzie jsons
+	private static final String OUTTER_CLASS_NAME = "P";				// nome fixo da classe envolvente das classes aninhadas estaticas
 	
-	private static List<Path> fileList = new ArrayList<>();
-	private static List<Path> dirList = new ArrayList<>();
+	private static List<Path> fileList = new ArrayList<>();				// lista de arquivos se for requisitado geracao multiarquivos
+	private static List<Path> dirList = new ArrayList<>();				// lista de diretorios se for requisitada recursao, ou apenas 1 diretorio (diretorio que contem o arquivo unico da propriedade) se somente um unico arquivo for indicado para geracao
 	
-	private static BlockingQueue<Map.Entry<Path, ?>> changedFile = new ArrayBlockingQueue<>(128);
+	private static Deque<Map.Entry<Path, ?>> changedFile = new ArrayDeque<>(128);				// WatchService deve "postar" as alteracoes dos arquivos aqui para que a unidade de processamento possa recolher
+	private static Map<String, HashTableModel> hashTableFieldModelMap = new HashMap<>();		// contem a tabela hash de chave-valor dos arquivos de propriedades
 	
-	private static boolean isSingleFile;
-	private static boolean isRecursive;				
-	private static boolean hasStructureAlreadyGenerated;
+	private static boolean isSingleFile;								// indica se e um unico arquivo
+	private static boolean isRecursive;									// indica se a geracao eve ser recursiva
+	private static boolean isDirStructureAlreadyGenerated;				// indica se a estrutura de diretorios ja foi gerada  
+	private static boolean isExistsPJavaGeneratedSourcePath;			// indica se o arquivo P.java existe  
+	private static boolean isExistsCompiledPJavaClass;					// indica se o arquivo binario esta compilado  
 	
-	private static String propertiesDataType;
+	private static String propertiesDataType;							// tipo de dado vigente para geracao de todas as propriedades de um unico arquivo de propriedades.
 	
-	private static String propertiesfileName;
-	private static String packageClass;				
-	private static String generatedClass;
-	private static Path outputPath = Path.of("src", "main", "java");
-	private static Path inputPath;
-	private static Path existingPath;
+	private static String propertiesfileName;							// nome do arquivo de propriedades sem a extensao
+	private static String packageClass;									// pacote dentro de /src/main/java (padrao do sistema) onde deve ser escrito o arquivo de propriedades
+	private static String packageClassWithOutterClassName;				// pacote definido acima com o nome da classe principal ao final 
+	private static String generatedClass;								// String contendo toda a classe gerada
+	private static Path inputPropertiesPath;							// caminho do arquivo de propriedades passado para Generator.init();
+	private static Path existingPJavaGeneratedSourcePath;				// caminho do arquivo P.java gerado
+	private static Path outputPackagePath = Path.of("src", "main", "java");	// caminho padrao de saida. Deve ser concatenado com o caminho de pacote recebido
+	private static Path outputFilePath;									// caminho onde os dados devem ser escritos
+	private static Path compilationPath = Path.of("target", "classes");		// caminho para o diretorio de recursos compiladosS
 	
-	private static final Path CACHE_DIRS = Path.of(System.getProperty("user.dir"), ".jsonProperties-cache");
+	private static final Path CACHE_DIRS = Path.of(System.getProperty("user.dir"), ".jsonProperties-cache");	// diretorio onde o cache de arquivos deve ser montado
 	private static final String JSON_FILENAME_PATTERN = "%s-cache.json";	// <nome_do_arquivo>-cache.json
 	
-	private static long startTimeOperation = 0L;
-	private static long endTimeOperation = 0L;
+	private static long startTimeOperation = 0L;	// armazena o tempo de inicio da operacao de geracao
+	private static long endTimeOperation = 0L;		// armazena o tempo de final da operacao de geracao
 	
 	private static final String EXCEPTION_TXT = """
 			Error: The variable type identification was not found for creating the classes.
@@ -63,12 +70,13 @@ public class Values {
 			""";
 	
 	public static void resolvePaths() {
-		packageClass = packageClass.concat(".generated");
-		outputPath = outputPath.resolve(Path.of(packageClass.replaceAll("[.]", "/")));
+		packageClassWithOutterClassName = packageClass + "." + OUTTER_CLASS_NAME;
+		outputPackagePath = outputPackagePath.resolve(Path.of(packageClass.replaceAll("[.]", "/")));
+		outputFilePath = outputPackagePath.resolve(OUTTER_CLASS_NAME + ".java");
 	}
 	
 	public static <T extends Kind<?>> void addChangedValueToMap(Entry<Path, T> entry) {
-		changedFile.add(entry);
+		changedFile.offer(entry);
 	}
 	
 	/**
@@ -106,14 +114,35 @@ public class Values {
 		Values.fileList = fileList;
 	}
 
-	public static boolean hasStructureAlreadyGenerated() {
-		return hasStructureAlreadyGenerated;
+	public static boolean isDirStructureAlreadyGenerated() {
+		return isDirStructureAlreadyGenerated;
 	}
 
-	public static void setHasStructureAlreadyGenerated(boolean hasStructureAlreadyGenerated) {
-		Values.hasStructureAlreadyGenerated = hasStructureAlreadyGenerated;
+	public static void setIfFileStructureAlreadyGenerated(boolean fileStructureAlreadyGenerated) {
+		Values.isDirStructureAlreadyGenerated = fileStructureAlreadyGenerated;
 	}
 	
+	/**
+	 * @return the hashTable
+	 */
+	public static HashTableModel getElementFromHashTableMap(String key) {
+		return hashTableFieldModelMap.get(key);
+	}
+
+	/**
+	 * Inserts new cache elements into the cache map
+	 */
+	public static void putElementIntoHashTableMap(String key, HashTableModel value) {
+		hashTableFieldModelMap.put(key, value);
+	}
+	
+	/*
+	 * Clean hash table elements
+	 */
+	public static void cleanHashTableMap() {
+		hashTableFieldModelMap.clear();
+	}
+
 	/**
 	 * @return the isSingleFile
 	 */
@@ -178,6 +207,13 @@ public class Values {
 	}
 
 	/**
+	 * @return the packageClassWithOutterClassName
+	 */
+	public static String getPackageClassWithOutterClassName() {
+		return packageClassWithOutterClassName;
+	}
+
+	/**
 	 * @return the packageClass
 	 */
 	public static String getPackageClass() {
@@ -206,38 +242,87 @@ public class Values {
 	}
 
 	/**
-	 * @return the existingPath
+	 * @return the existingPJavaGeneratedSourcePath
 	 */
-	public static Path getExistingPath() {
-		return existingPath;
+	public static Path getExistingPJavaGeneratedSourcePath() {
+		return existingPJavaGeneratedSourcePath;
 	}
 
 	/**
-	 * @param existingPath the existingPath to set
+	 * @param existingPJavaGeneratedSourcePath the existingPJavaGeneratedSourcePath to set
 	 */
-	public static void setExistingPath(Path existingPath) {
-		Values.existingPath = existingPath;
+	public static void setExistingPJavaGeneratedSourcePath(Path existingPJavaGeneratedSourcePath) {
+		Values.existingPJavaGeneratedSourcePath = existingPJavaGeneratedSourcePath;
 	}
 
 	/**
-	 * @return the inputPath
+	 * @return the isExistsPJavaGeneratedSourcePath
 	 */
-	public static Path getInputPath() {
-		return inputPath;
+	public static boolean isExistsPJavaGeneratedSourcePath() {
+		return isExistsPJavaGeneratedSourcePath;
 	}
 
 	/**
-	 * @param inputPath the inputPath to set
+	 * @param isExistsPJavaGeneratedSourcePath the isExistsPJavaGeneratedSourcePath to set
 	 */
-	public static void setInputPath(Path inputPath) {
-		Values.inputPath = inputPath;
+	public static void setIfExistsPJavaGeneratedSourcePath(boolean isExistsPJavaGeneratedSourcePath) {
+		Values.isExistsPJavaGeneratedSourcePath = isExistsPJavaGeneratedSourcePath;
+	}
+
+	/**
+	 * @return the isExistsCompiledPJavaClass
+	 */
+	public static boolean isExistsCompiledPJavaClass() {
+		return isExistsCompiledPJavaClass;
+	}
+
+	/**
+	 * @param isExistsCompiledPJavaClass the isExistsCompiledPJavaClass to set
+	 */
+	public static void setIfExistsCompiledPJavaClass(boolean isExistsCompiledPJavaClass) {
+		Values.isExistsCompiledPJavaClass = isExistsCompiledPJavaClass;
+	}
+
+	/**
+	 * @return the inputPropertiesPath
+	 */
+	public static Path getInputPropertiesPath() {
+		return inputPropertiesPath;
+	}
+
+	/**
+	 * @param inputPropertiesPath the inputPropertiesPath to set
+	 */
+	public static void setInputPropertiesPath(Path inputPropertiesPath) {
+		Values.inputPropertiesPath = inputPropertiesPath;
 	}
 
 	/**
 	 * @return the outputPath
 	 */
-	public static Path getOutputPath() {
-		return outputPath;
+	public static Path getOutputPackagePath() {
+		return outputPackagePath;
+	}
+
+	/**
+	 * @return the outputFilePath
+	 */
+	public static Path getOutputFilePath() {
+		return outputFilePath;
+	}
+
+	/**
+	 * @return the compilationPath
+	 */
+	public static Path getCompilationPath() {
+		return compilationPath;
+	}
+
+	/**
+	 * @param compilationPath the compilationPath to set
+	 */
+	public static void setCompilationPath(Path compilationPath) {
+		Values.compilationPath = compilationPath;
 	}
 
 	/**
