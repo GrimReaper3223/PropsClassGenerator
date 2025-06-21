@@ -1,4 +1,2 @@
 /target/
 /.settings/
-/src/main/java/com/dsl/classgen/generated/
-/.jsonProperties-cache

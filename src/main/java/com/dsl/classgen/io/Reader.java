@@ -9,14 +9,10 @@ import static com.dsl.classgen.io.Values.setIsSingleFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.ExecutionException;
@@ -50,13 +46,13 @@ public class Reader {
 						props.clear();
 					}
 					props.load(in);
+					
+					processFilePath(inputPath);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 				System.out.format("%n%n***Properties file loaded from path: %s***%n", inputPath);
 			}).get();
-			
-			processFilePath(inputPath);
 		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
 		}
@@ -121,20 +117,5 @@ public class Reader {
 		} finally {
 			setIsSingleFile(false);
 		}
-	}
-	
-	public static Class<?> loadGeneratedBinClass() {
-		URLClassLoader classLoader;
-		Class<?> generatedClass = null;
-		try {
-			classLoader = new URLClassLoader(
-					new URL[]{Paths.get(System.getProperty("user.dir")).resolve(Values.getCompilationPath()).toUri().toURL()}, 
-					ClassLoader.getPlatformClassLoader());
-			generatedClass = Class.forName(Values.getPackageClassWithOutterClassName(), true, classLoader);
-		} catch (MalformedURLException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		
-		return generatedClass;
 	}
 }

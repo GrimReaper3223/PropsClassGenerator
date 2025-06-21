@@ -5,7 +5,7 @@
 
 	<groupId>com.dsl.classgen</groupId>
 	<artifactId>PropsClassGenerator</artifactId>
-	<version>0.2.3</version>
+	<version>0.2.2</version>
 	<packaging>jar</packaging>
 
 	<name>PropsClassGenerator</name>
@@ -20,13 +20,8 @@
 			<artifactId>junit-jupiter-api</artifactId>
 			<version>5.11.4</version>
 		</dependency>
-		<dependency>
-			<groupId>com.google.code.gson</groupId>
-			<artifactId>gson</artifactId>
-			<version>2.10</version>
-		</dependency>
 	</dependencies>
-
+	
 	<build>
 		<plugins>
 			<plugin>
@@ -36,38 +31,9 @@
 					<release>23</release>
 				</configuration>
 			</plugin>
-			<!-- Maven Dependency Plugin para copiar dependências -->
-			<plugin>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.7.0</version>
-				<executions>
-					<execution>
-						<id>copy-dependencies</id>
-						<phase>clean</phase>
-						<goals>
-							<goal>copy-dependencies</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>libs</outputDirectory>
-							<includeScope>runtime</includeScope>
-							<overWriteReleases>true</overWriteReleases>
-							<overWriteSnapshots>true</overWriteSnapshots>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 			<plugin>
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>3.4.1</version>
-				<configuration>
-					<outputDirectory>${user.dir}/src/main/resources/libs</outputDirectory>
-					<archive>
-						<manifest>
-							<addClasspath>true</addClasspath>
-							<addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
-						</manifest>
-					</archive>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

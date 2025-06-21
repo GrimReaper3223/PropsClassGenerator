@@ -32,16 +32,18 @@ public class WatchServiceImpl {
 	
 	public static void initialize() {
 		// permite a execucao da thread de observacao de diretorio em segundo plano
-		if(!watchServiceThread.isAlive()) {
-			watchServiceThread.setDaemon(false);
-			try {
-				watcher = FileSystems.getDefault().newWatchService();
-				register();
-				watchServiceThread.start();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		watchServiceThread.setDaemon(false);
+		try {
+			watcher = FileSystems.getDefault().newWatchService();
+			register();
+			watchServiceThread.start();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
+	}
+	
+	public static void stopWatchServiceThread() {
+		watchServiceThread.interrupt();
 	}
 	
 	private static void register() throws IOException {
@@ -57,9 +59,9 @@ public class WatchServiceImpl {
 			}).forEach(keys::putAll);
 			
 		} else {
-			Path inputPath = Files.isDirectory(Values.getInputPropertiesPath()) ? Values.getInputPropertiesPath() : Values.getInputPropertiesPath().getParent();
+			Path inputPath = Files.isDirectory(Values.getInputPath()) ? Values.getInputPath() : Values.getInputPath().getParent();
 			WatchKey key = inputPath.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-			keys.putAll(verifyKey(key, inputPath));
+			verifyKey(key, inputPath);
 		}
 		System.out.println("Done.");
 	}
@@ -81,11 +83,10 @@ public class WatchServiceImpl {
 	
 	@SuppressWarnings("unchecked")
 	private static <T> WatchEvent<T> cast(WatchEvent<?> event) {
-		return (WatchEvent<T>) event;
+		return (WatchEvent<T>)event.context();
 	}
 	
 	private static void processEvents() {
-		System.out.println("Watching...");
 		while(true) {
 			WatchKey key;
 			
@@ -103,7 +104,7 @@ public class WatchServiceImpl {
 			
 			key.pollEvents().stream()
 					.map(event -> Map.entry(event, event.kind()))
-					.filter(entry -> entry.getValue() != OVERFLOW)
+					.filter(entry -> entry.getValue() == OVERFLOW)
 					.map(entry -> {
 						WatchEvent<Path> event = cast(entry.getKey());
 						Path occurrence = path.resolve(event.context());

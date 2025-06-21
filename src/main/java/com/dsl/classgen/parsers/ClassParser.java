@@ -1,4 +1,4 @@
-package com.dsl.classgen.generators;
+package com.dsl.classgen.parsers;
 
 import java.util.stream.Collectors;
 
@@ -7,16 +7,16 @@ import com.dsl.classgen.annotations.PrivateConstructor;
 import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
 
-public final class OutterClassGenerator implements GenerationOutputLog {
+public final class ClassParser implements OutputFormatter {
 	
-	public void generateOutterClass() {
-		InnerStaticClassGenerator innerStaticClassGenerator = new InnerStaticClassGenerator();
+	public String parseClass() {
+		InnerStaticClassParser parser = new InnerStaticClassParser();
 		String outterClassName = Values.getOutterClassName();
 		
 		System.out.println("\nGenerating classes...");
 		formatGenerationOutput("Outter Class", outterClassName, null);
 		
-		Values.setGeneratedClass(String.format("""
+		return String.format("""
 				package %1$s;
 				
 				import com.dsl.classgen.annotations.GeneratedClass;
@@ -36,13 +36,13 @@ public final class OutterClassGenerator implements GenerationOutputLog {
 				GeneratedClass.class.getSimpleName(),
 				outterClassName,
 				PrivateConstructor.class.getSimpleName(),
-				Values.isSingleFile() ? innerStaticClassGenerator.generateInnerStaticClass() : 
+				Values.getIsSingleFile() ? parser.parseInnerStaticClass() : 
 										 Values.getFileList()
-									 		   .stream()
-									 		   .map(path -> {
-									 			  Reader.loadPropFile(path);
-									 			  return innerStaticClassGenerator.generateInnerStaticClass();
-									 		   })
-									 		   .collect(Collectors.joining("\n\t"))));
+										 		  .stream()
+										 		  .map(path -> {
+										 			 Reader.loadPropFile(path);
+										 			 return parser.parseInnerStaticClass();
+										 		  })
+										 		  .collect(Collectors.joining("\n\t")));
 	}
 }

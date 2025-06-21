@@ -5,7 +5,6 @@ import static com.dsl.classgen.io.Values.getStartTimeOperation;
 import static com.dsl.classgen.io.Values.setEndTimeOperation;
 import static com.dsl.classgen.io.Values.setStartTimeOperation;
 
-import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -29,11 +28,6 @@ public class Utils {
 		}
 		
 		return getEndTimeOperation() - getStartTimeOperation();
-	}
-	
-	public static String formatFileName(Path filePath) {
-		String fileName = filePath.getFileName().toString();
-		return fileName.substring(0, fileName.lastIndexOf('.'));
 	}
 }
 	
