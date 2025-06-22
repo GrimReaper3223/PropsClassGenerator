@@ -1,3 +1,5 @@
+/src/main/java/**/generated
 /target/
 /.settings/
 /bin/
+/.jsonProperties-cache/

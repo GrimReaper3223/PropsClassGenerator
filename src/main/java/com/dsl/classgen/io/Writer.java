@@ -18,6 +18,9 @@ public class Writer {
         Path outputPackagePath = Values.getOutputPackagePath();
         Path outputFilePath = Values.getOutputFilePath();
         
+        // se nao existir o pacote de saida, entao os diretorios e o arquivo gerado serao criados
+        // se o pacote e saida existir, mas nao existir o arquivo de saida, entao somente ele sera gerado
+        // caso contrario, o arquivo sera marcado como existente e o metodo retorna sua execucao
         try {
             if (Files.notExists(outputPackagePath)) {
                 Files.createDirectories(outputPackagePath);
@@ -37,10 +40,12 @@ public class Writer {
             e.printStackTrace();
         }
         finally {
+        	// apos toda a etapa de processamento acima, podemos garantir que o caminho do arquivo de saida sera atribuido a variavel de caminho do arquivo fonte existente 
             Values.setExistingPJavaGeneratedSourcePath(outputFilePath);
         }
     }
 
+    // escreve o arquivo de classe gerada no sistema de arquivos
     private static final void fileWriter(Path outputFilePath) {
         try {
             Utils.getExecutor().submit(() -> {
@@ -57,6 +62,7 @@ public class Writer {
         }
     }
 
+    // escreve todos os jsons gerados no sistema de arquivos, no caminho definido como o diretorio base para arquivos de cache
     private static final void jsonWriter(HashTableModel htm, Path jsonFilePath) {
         try {
             Utils.getExecutor().submit(() -> {
@@ -73,10 +79,12 @@ public class Writer {
         }
     }
 
+    // metodo helper do metodo jsonWritter que recebe um Map.Entry como parametro e o desembala
     private static final void jsonWriter(Map.Entry<Path, HashTableModel> entry) {
         Writer.jsonWriter(entry.getValue(), entry.getKey());
     }
 
+    // deve preparar todos os dados necessarios para a escrita do json
     public static void writeJson() {
         if (Values.isSingleFile()) {
             Path jsonFilePath = Values.getCacheDirs().resolve(Utils.resolveJsonFileName(Values.getSoftPropertiesFileName()));

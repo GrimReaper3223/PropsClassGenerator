@@ -14,9 +14,9 @@ public class HashTableModel implements Serializable {
 	
     private static final long serialVersionUID = 1L;
     
-    public String filePath;
-    public int fileHash;
-    public Map<String, Integer> hashTableMap;
+    public String filePath;						// caminho do arquivo de propriedades
+    public int fileHash;						// hash do arquivo de propriedades
+    public Map<String, Integer> hashTableMap;	// pares chave-valor do arquivo de propriedades deste objeto
 
     public HashTableModel(Path filePath) {
         this.filePath = filePath.toString();
@@ -24,6 +24,7 @@ public class HashTableModel implements Serializable {
         this.initPropertyMapGraph();
     }
 
+    // inicializa o grafo dos dados do arquivo de propriedades dentro de hashTableMap
     public void initPropertyMapGraph() {
         this.hashTableMap = Values.getProps()
         						  .entrySet()
@@ -32,12 +33,14 @@ public class HashTableModel implements Serializable {
         						  .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
+    // compara dois objetos HashTableModel pelos seus hashTableMaps e hash de arquivo
     public boolean equals(Object obj) {
         HashTableModel htm = (HashTableModel)obj;
         boolean result = htm.hashTableMap.entrySet().containsAll(this.hashTableMap.entrySet());
         return htm.fileHash == this.fileHash && result;
     }
 
+    // faz o hash do arquivo de propriedades
     public int hashCode() {
         BasicFileAttributes attrs = null;
         try {

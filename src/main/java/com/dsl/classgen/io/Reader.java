@@ -18,6 +18,8 @@ public class Reader {
     private Reader() {}
 
     public static void read(Path inputPath) {
+    	// se for um arquivo, deve carregar ele no objeto de propriedades diretamente
+    	// se for um diretorio, deve chamar o metodo que processa a lista de arquivos no diretorio
         if (Files.isRegularFile(inputPath)) {
             Reader.loadPropFile(inputPath);
             Values.setIsSingleFile(true);
@@ -27,6 +29,7 @@ public class Reader {
         }
     }
 
+    // carrega o arquivo de propriedades
     public static void loadPropFile(Path inputPath) {
         try {
             Utils.getExecutor().submit(() -> {
@@ -53,6 +56,7 @@ public class Reader {
         }
     }
 
+    // processa a string de caminho do arquivo de propriedade
     private static void processFilePath(Path inputPath) throws InterruptedException, ExecutionException {
         Utils.getExecutor().submit(() -> {
             Values.setPropertiesDataType(Utils.readJavaType(inputPath));
@@ -61,9 +65,7 @@ public class Reader {
         }).get();
     }
 
-    /*
-     * WARNING - Removed try catching itself - possible behaviour change.
-     */
+    // processa a lista de arquivos contida em um diretorio e/ou subdiretorios
     private static void processFileList(Path inputPath) {
         try {
             FileVisitorImpl.ReaderFileVisitor fileVisitor = new FileVisitorImpl.ReaderFileVisitor();
@@ -86,6 +88,7 @@ public class Reader {
         }
     }
 
+    // carrega o binario da classe P.java gerado
     public static Class<?> loadGeneratedBinClass() {
         Class<?> generatedClass = null;
         try {

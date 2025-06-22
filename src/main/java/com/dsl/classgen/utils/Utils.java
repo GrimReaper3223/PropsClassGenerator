@@ -11,12 +11,14 @@ import java.util.stream.Stream;
 
 public class Utils {
 	
+	// executor que inicia uma thread virtual por task
     private static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     public static ExecutorService getExecutor() {
         return executor;
     }
 
+    // calcula o tempo decorrido de uma operacao de geracao
     public static long calculateElapsedTime() {
         if (Values.getStartTimeOperation() == 0L) {
             Values.setStartTimeOperation(System.currentTimeMillis());
@@ -28,6 +30,7 @@ public class Utils {
         return Values.getEndTimeOperation() - Values.getStartTimeOperation();
     }
 
+    // le o tipo java dentro do arquivo de propriedades correspondente ao padrao # $javatype:@<tipo_de_dado_java>
     public static String readJavaType(Path path) {
         String javaType = null;
         try (Stream<String> lines = Files.lines(path, StandardCharsets.ISO_8859_1);){
@@ -41,6 +44,10 @@ public class Utils {
         return javaType;
     }
 
+    /*
+     * Utilitarios para formatacao de caminhos e strings por outras partes do sistema
+     */
+    
     public static Path resolveJsonFileName(String fileName) {
         return Path.of(String.format(Values.getJsonFilenamePattern(), fileName));
     }

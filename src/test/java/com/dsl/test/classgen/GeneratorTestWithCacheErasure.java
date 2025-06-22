@@ -2,7 +2,6 @@ package com.dsl.test.classgen;
 
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -28,7 +27,7 @@ class GeneratorTestWithCacheErasure implements Tools {
 			"MANY FILES WITH RECURSION AND WITH CACHE ERASURE");
 	static int index = 0;
 	
-	@BeforeEach
+//	@BeforeEach
 	void setup() {
 		System.out.format(beforeStartMessage, messageList.get(index));
 		eraseCache();

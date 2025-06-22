@@ -17,16 +17,20 @@ public final class Generator {
 	private Generator() {}
 
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
+		// verifica se a estrutura ja esta gerada
 		GeneratedStructureChecker.checkGeneratedStructure();
 		
+		// define e resolve alguns dados
 		Values.setIsRecursive(isRecursive);
 		Values.setInputPropertiesPath(inputPath);
 		Values.setPackageClass(packageClass.concat(".generated"));
 		Values.resolvePaths();
 		
+		// le o caminho passado e processa o cache
 		Reader.read(inputPath);
 		FileCacheSystem.processCache();
 		
+		// verifica se ja existe a classe P.java compilada
 		GeneratedStructureChecker.checkIfExistsCompiledClass();
 		
 		System.out.format("""
@@ -62,6 +66,8 @@ public final class Generator {
 	}
 
 	public static void generate() {
+		// inicia a geracao se a estrutura de diretorios ou o arquivo final P.java nao existir
+		// do contrario, deve efetuar o processamento do que ja existe
 		if (!Values.isDirStructureAlreadyGenerated() || !Values.isExistsPJavaSource()) {
 			Utils.calculateElapsedTime();
 			new OutterClassGenerator().generateOutterClass();
@@ -78,6 +84,7 @@ public final class Generator {
 					Generating additional classes and checking the existing ones...\n
 					""");
 		}
+		// compila a classe gerada, inicializa o servico de monitoramento de diretorios e processa as anotacoes da classe gerada/existente
 		Compiler.compile();
 		WatchServiceImpl.initialize();
 		ProcessAnnotation.processAnnotations();

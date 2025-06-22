@@ -16,44 +16,51 @@ import com.google.gson.Gson;
 
 public final class Values {
 	
-    private static boolean isDebugMode = false;
+	// deve ser true ao depurar o projeto. 
+	// se true for definido, a classe gerada sera impressa ao inves de escrita
+    private static boolean isDebugMode = true;
     
-    private static final Properties PROPS = new Properties();
-    private static final Gson GSON = new Gson();
-    private static final String OUTTER_CLASS_NAME = "P";
+    private static final Properties PROPS = new Properties();		// objeto que vai armazenar as propriedades dos arquivos carregados
+    private static final Gson GSON = new Gson();					// objeto gson para escrita do cache
+    private static final String OUTTER_CLASS_NAME;					// nome final da classe externa
     
-    private static List<Path> fileList = new ArrayList<Path>();
-    private static List<Path> dirList = new ArrayList<Path>();
-    private static Deque<Map.Entry<Path, ?>> changedFile = new ArrayDeque<>(128);
-    private static Map<Path, HashTableModel> hashTableModelMap = new HashMap<Path, HashTableModel>();
+    // estruturas de dados
+    private static List<Path> fileList = new ArrayList<Path>();		// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
+    private static List<Path> dirList = new ArrayList<Path>();		// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista 
+    private static Deque<Map.Entry<Path, ?>> changedFile = new ArrayDeque<>(128);	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
+    private static Map<Path, HashTableModel> hashTableModelMap = new HashMap<>();	// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache
     
-    private static boolean isSingleFile;
-    private static boolean isRecursive;
-    private static boolean isDirStructureAlreadyGenerated;
-    private static boolean isExistsPJavaSource;
-    private static boolean isExistsCompiledPJavaClass;
+    // flags
+    private static boolean isSingleFile;						// indica se o caminho passado corresponde a um unico arquivo 
+    private static boolean isRecursive;							// indica se a recursividade nos diretorios deve ser aplicada
+    private static boolean isDirStructureAlreadyGenerated;		// indica se a estrutura que o framework gera ja existe no /src/main/java/*
+    private static boolean isExistsPJavaSource;					// indica se o arquivo P.java existe dentro da estrutura existente (se houver uma)
+    private static boolean isExistsCompiledPJavaClass;			// indica se ja existe uma compilacao do arquivo P.java
     
-    private static String propertiesDataType;
-    private static Path rawPropertiesfileName;
-    private static String softPropertiesfileName;
-    private static String packageClass;
-    private static String packageClassWithOutterClassName;
-    private static String generatedClass;
+    // informacoes para geracao e formatacao
+    private static String propertiesDataType;					// o tipo de dados encontrado no arquivo de propriedades correspondente ao padrao # $javatype:@<tipo_de_dado_java>
+    private static Path rawPropertiesfileName;					// nome do arquivo de propriedades com a extensao .properties
+    private static String softPropertiesfileName;				// nome do arquivo de propriedades sem a extensao .properties
+    private static String packageClass;							// pacote que deve ser inserido no cabecalho do arquivo de classe para indicar sua localizacao
+    private static String packageClassWithOutterClassName;		// o nome do pacote fornecido para a variavel acima + o nome da classe externa (...generated.P)
+    private static String generatedClass;						// contem o conteudo da classe gerada. Esta variavel deve ser usada pelo escritor para armazenar os dados no caminho de saida, ou a saida padrao para imprimir na tela, caso o debug esteja habilitado
     
-    private static Path inputPropertiesPath;
-    private static Path existingPJavaGeneratedSourcePath;
-    private static Path outputPackagePath;
-    private static Path outputFilePath;
-    private static Path compilationPath;
+    // caminhos no sistema de arquivos
+    private static Path inputPropertiesPath;					// caminho referente ao arquivo de propriedades (ou diretorio contendo os arquivos de propriedades a serem examinados)
+    private static Path existingPJavaGeneratedSourcePath;		// caminho referente ao arquivo fonte P.java caso ele exista
+    private static Path outputPackagePath;						// caminho indicando onde o pacote ...generated deve ser criado
+    private static Path outputFilePath;							// caminho indicando onde o arquivo P.java deve ser escrito resolvido com o caminho de onde o pacote deve ser criado
+    private static Path compilationPath;						// caminho indicando onde se encontram os arquivos .class desejados pelo framework
     
-    private static final Path CACHE_DIRS;
-    private static final String JSON_FILENAME_PATTERN;
+    private static final Path CACHE_DIRS;						// caminho referente ao diretorio de cache
+    private static final String JSON_FILENAME_PATTERN;			// padrao de nomenclatura para escrita do arquivo json
     
-    private static long startTimeOperation;
-    private static long endTimeOperation;
-    private static final String EXCEPTION_TXT;
+    private static long startTimeOperation;						// guarda o tempo do sistema no momento em que a geracao se inicia
+    private static long endTimeOperation;						// guarda o tempo do sistema no mometno em que a geracao finaliza, oferencendo informacoes sobre quanto tempo durou a operacao
+    private static final String EXCEPTION_TXT;					// contem o texto de mensagem de excecao caso o padrao de reconhecimento de tipo java nao esteja presente no arquivo de propriedade
 
     static {
+    	OUTTER_CLASS_NAME = "P";
         isExistsPJavaSource = false;
         outputPackagePath = Path.of("src", "main", "java");
         compilationPath = Paths.get(System.getProperty("user.dir"), "target", "classes");
@@ -80,9 +87,9 @@ public final class Values {
     }
     
     public static void resolvePaths() {
-        packageClassWithOutterClassName = packageClass + ".P";
+        packageClassWithOutterClassName = packageClass + "." + OUTTER_CLASS_NAME;
         outputPackagePath = outputPackagePath.resolve(Utils.normalizePath(packageClass));
-        outputFilePath = outputPackagePath.resolve("P.java");
+        outputFilePath = outputPackagePath.resolve(OUTTER_CLASS_NAME + ".java");
     }
 
     public static <T extends WatchEvent.Kind<?>> void addChangedValueToMap(Map.Entry<Path, T> entry) {

@@ -9,7 +9,9 @@ import com.dsl.classgen.annotations.processors.ProcessAnnotation;
 import com.dsl.classgen.utils.Utils;
 
 public class Compiler {
+	
     public static void compile() {
+    	// a compilacao ocorre caso nao exista a classe P.java compilada. Do contrario, o metodo apenas retorna
         if (!Values.isExistsCompiledPJavaClass()) {
             try {
                 Utils.getExecutor().submit(() -> {
