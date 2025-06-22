@@ -26,6 +26,29 @@ Enter **# $javatype:@String** to generate final variables of type String.
 
 ## **CHANGELOG:**
 
+### v0.2.4-R1:
+
+**COMPILED STATE RECOVERY VERSION**
+
+This version had to be decompiled from a backup because one of the commits was not done correctly and the entire original structure was corrupted.
+
+It is recommended to use this version instead of version 0.2.4, as this version was recompiled with possible errors corrected from the previous version that caused the corruption in the framework.
+
+### v0.2.4:
+- Added JSON cache system;
+- Added structure checkers (checks if the directory structure exists, if P.java exists, if there is already a compilation, etc.);
+- Added more utility methods for formatting and parsing;
+- Added libs directory containing libraries usable by the framework as resources. These libraries need to exist as resources for the successful execution of the .jar;
+- Major improvements were made in several areas of the code (Cache system, Generator, Annotations, code in general, etc.);
+- Major code refactoring;
+- Large number of bugs fixed
+
+### v0.2.3:
+- Added support for virtual threads in I/O operations;
+- Added metadata variables to annotations;
+- Added support for monitoring directories containing property files with WatchService;
+- Bug fixes;
+
 ### v0.2.2:
 
 - Refactoring of all packages and classes;
