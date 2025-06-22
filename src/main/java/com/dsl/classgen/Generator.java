@@ -1,39 +1,36 @@
 package com.dsl.classgen;
 
-import static com.dsl.classgen.io.Values.getGeneratedClass;
-import static com.dsl.classgen.io.Values.getIsDebugMode;
-import static com.dsl.classgen.io.Values.getIsSingleFile;
-import static com.dsl.classgen.io.Values.getOutputPath;
-import static com.dsl.classgen.io.Values.getPackageClass;
-import static com.dsl.classgen.io.Values.setGeneratedClass;
-import static com.dsl.classgen.io.Values.setInputPath;
-import static com.dsl.classgen.io.Values.setIsRecursive;
-import static com.dsl.classgen.io.Values.setPackageClass;
-
-import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
-
+import com.dsl.classgen.annotations.processors.ProcessAnnotation;
+import com.dsl.classgen.generators.OutterClassGenerator;
+import com.dsl.classgen.io.Compiler;
+import com.dsl.classgen.io.FileCacheSystem;
+import com.dsl.classgen.io.GeneratedStructureChecker;
 import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
 import com.dsl.classgen.io.Writer;
-import com.dsl.classgen.parsers.ClassParser;
 import com.dsl.classgen.services.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
+import java.nio.file.Path;
 
 public final class Generator {
-
-	private Generator() {}
 	
+	private Generator() {}
+
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
-		setPackageClass(packageClass);
-		setIsRecursive(isRecursive);
-		setInputPath(inputPath);
+		GeneratedStructureChecker.checkGeneratedStructure();
+		
+		Values.setIsRecursive(isRecursive);
+		Values.setInputPropertiesPath(inputPath);
+		Values.setPackageClass(packageClass.concat(".generated"));
+		Values.resolvePaths();
 		
 		Reader.read(inputPath);
-		Values.resolvePaths();
-			
+		FileCacheSystem.processCache();
+		
+		GeneratedStructureChecker.checkIfExistsCompiledClass();
+		
 		System.out.format("""
-				-----------------------------
+				%n-----------------------------
 				--- Framework Initialized ---
 				-----------------------------
 				
@@ -42,6 +39,7 @@ public final class Generator {
 				Package Class: %s;
 				Is Recursive?: %b;
 				Is Single File?: %b;
+				Is There a Generated Structure?: %b;
 				
 				Developer Options
 				Is Debug Mode?: %b;
@@ -49,30 +47,39 @@ public final class Generator {
 				-----------------------------
 				-----------------------------
 				
-				call 'Generator.generate()' to generate the java classes.
-				""", inputPath, getOutputPath(), getPackageClass(), isRecursive, getIsSingleFile(), getIsDebugMode());
+				Call 'Generator.generate()' to generate java classes or parse existing classes.%n
+				""", inputPath, 
+					 Values.getOutputPackagePath(), 
+					 Values.getPackageClass(), 
+					 isRecursive, 
+					 Values.isSingleFile(),
+					 Values.isDirStructureAlreadyGenerated(), 
+					 Values.isDebugMode());
 	}
-	
+
 	public static void init(String inputPath, String packageClass, boolean isRecursive) {
 		init(Path.of(inputPath), packageClass, isRecursive);
 	}
-	
+
 	public static void generate() {
-		Utils.calculateElapsedTime();
-		setGeneratedClass(new ClassParser().parseClass());
-		
-		if(getIsDebugMode()) {
-			System.out.println(getGeneratedClass());
-		} else {
-			try {
+		if (!Values.isDirStructureAlreadyGenerated() || !Values.isExistsPJavaSource()) {
+			Utils.calculateElapsedTime();
+			new OutterClassGenerator().generateOutterClass();
+			
+			if (Values.isDebugMode()) {
+				System.out.println(Values.getGeneratedClass());
+			} else {
 				Writer.write();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				System.err.println("Interrupting Thread...");
-				Thread.currentThread().interrupt();
 			}
+		} else {
+			System.out.println("""
+					\nThere is already a generated structure.
+					
+					Generating additional classes and checking the existing ones...\n
+					""");
 		}
+		Compiler.compile();
 		WatchServiceImpl.initialize();
+		ProcessAnnotation.processAnnotations();
 	}
 }

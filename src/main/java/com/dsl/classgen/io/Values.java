@@ -1,261 +1,281 @@
 package com.dsl.classgen.io;
 
 import java.nio.file.Path;
-import java.nio.file.WatchEvent.Kind;
+import java.nio.file.Paths;
+import java.nio.file.WatchEvent;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
-public class Values {
+import com.dsl.classgen.utils.Utils;
+import com.google.gson.Gson;
 
-	// deve ser true durante o desenvolvimento
-	private static boolean isDebugMode = true;
+public final class Values {
 	
-	private static final Properties PROPS = new Properties();
-	private static final String OUTTER_CLASS_NAME = "P";
-	
-	private static List<Path> fileList = new ArrayList<>();
-	private static List<Path> dirList = new ArrayList<>();
-	
-	private static BlockingQueue<Map.Entry<Path, ?>> changedFile = new ArrayBlockingQueue<>(128);  
-	
-	private static boolean isSingleFile;
-	private static boolean isRecursive;				
-	
-	private static String propertiesDataType;
-	
-	private static String propertiesfileName;
-	private static String packageClass;				
-	private static String generatedClass;
-	private static Path outputPath = Path.of("src", "main", "java");
-	private static Path inputPath;
-	
-	private static long startTimeOperation = 0L;
-	private static long endTimeOperation = 0L;
-	
-	private static final String EXCEPTION_TXT = """
-			Error: The variable type identification was not found for creating the classes.
-			Enter the variable type and try again.
-			Preferably, place the identifier at the top of the file so that it can be analyzed faster.
-			
-			Ex.:
-			# $javatype:@String
-			
-			... rest of the .properties file...
-			
-			# - Comment for the property file;
-			$javatype - Java type identifier;
-			: - Syntactic separator;
-			@ - Tells the service that after this identifier, the java type will be read for the variable;
-			String - The java type used in this example;
-			""";
-	
-	public static void resolvePaths() {
-		packageClass = packageClass.concat(".generated");
-		outputPath = outputPath.resolve(Path.of(packageClass.replaceAll("[.]", "/")));
-	}
-	
-	public static <T extends Kind<?>> void addChangedValueToMap(Entry<Path, T> entry) {
-		changedFile.add(entry);
-	}
-	
-	/**
-	 * @return the pathQueue
-	 */
-	public static List<Path> getDirList() {
-		return dirList;
-	}
-	
-	/**
-	 * @param dirPath the dirPath to add
-	 */
-	public static void addDirToList(Path dirPath) {
-		dirList.add(dirPath);
-	}
-	
-	/**
-	 * @return the pathQueue
-	 */
-	public static List<Path> getFileList() {
-		return fileList;
-	}
-	
-	/**
-	 * @param filePath the filePath to set
-	 */
-	public static void addFileToList(Path filePath) {
-		fileList.add(filePath);
-	}
+    private static boolean isDebugMode = false;
+    
+    private static final Properties PROPS = new Properties();
+    private static final Gson GSON = new Gson();
+    private static final String OUTTER_CLASS_NAME = "P";
+    
+    private static List<Path> fileList = new ArrayList<Path>();
+    private static List<Path> dirList = new ArrayList<Path>();
+    private static Deque<Map.Entry<Path, ?>> changedFile = new ArrayDeque<>(128);
+    private static Map<Path, HashTableModel> hashTableModelMap = new HashMap<Path, HashTableModel>();
+    
+    private static boolean isSingleFile;
+    private static boolean isRecursive;
+    private static boolean isDirStructureAlreadyGenerated;
+    private static boolean isExistsPJavaSource;
+    private static boolean isExistsCompiledPJavaClass;
+    
+    private static String propertiesDataType;
+    private static Path rawPropertiesfileName;
+    private static String softPropertiesfileName;
+    private static String packageClass;
+    private static String packageClassWithOutterClassName;
+    private static String generatedClass;
+    
+    private static Path inputPropertiesPath;
+    private static Path existingPJavaGeneratedSourcePath;
+    private static Path outputPackagePath;
+    private static Path outputFilePath;
+    private static Path compilationPath;
+    
+    private static final Path CACHE_DIRS;
+    private static final String JSON_FILENAME_PATTERN;
+    
+    private static long startTimeOperation;
+    private static long endTimeOperation;
+    private static final String EXCEPTION_TXT;
 
-	/**
-	 * @param fileList the fileList to set
-	 */
-	public static void setFileList(List<Path> fileList) {
-		Values.fileList = fileList;
-	}
+    static {
+        isExistsPJavaSource = false;
+        outputPackagePath = Path.of("src", "main", "java");
+        compilationPath = Paths.get(System.getProperty("user.dir"), "target", "classes");
+        CACHE_DIRS = Path.of(System.getProperty("user.dir"), ".jsonProperties-cache");
+        JSON_FILENAME_PATTERN = "%s-cache.json";
+        startTimeOperation = 0L;
+        endTimeOperation = 0L;
+        EXCEPTION_TXT = """
+	        Error: The variable type identification was not found for creating the classes.
+	        Enter the variable type and try again.
+	        Preferably, place the identifier at the top of the file so that it can be analyzed faster.
+	        
+	        Ex.:
+        		 # $javatype:@String
+        		 
+        		 ... rest of the .properties file...
+        		 
+        	# - Comment for the property file;
+        	$javatype - Java type identifier;
+        	: - Syntactic separator;
+        	@ - Tells the service that after this identifier, the java type will be read for the variable;
+        	String - The java type used in this example;
+        """;
+    }
+    
+    public static void resolvePaths() {
+        packageClassWithOutterClassName = packageClass + ".P";
+        outputPackagePath = outputPackagePath.resolve(Utils.normalizePath(packageClass));
+        outputFilePath = outputPackagePath.resolve("P.java");
+    }
 
-	/**
-	 * @return the isSingleFile
-	 */
-	public static boolean getIsSingleFile() {
-		return isSingleFile;
-	}
+    public static <T extends WatchEvent.Kind<?>> void addChangedValueToMap(Map.Entry<Path, T> entry) {
+        changedFile.offer(entry);
+    }
 
-	/**
-	 * @param isSingleFile the isSingleFile to set
-	 */
-	public static void setIsSingleFile(boolean isSingleFile) {
-		Values.isSingleFile = isSingleFile;
-	}
+    public static List<Path> getDirList() {
+        return dirList;
+    }
 
-	/**
-	 * @return the isRecursive
-	 */
-	public static boolean isRecursive() {
-		return isRecursive;
-	}
+    public static void addDirToList(Path dirPath) {
+        dirList.add(dirPath);
+    }
 
-	/**
-	 * @param isRecursive the isRecursive to set
-	 */
-	public static void setIsRecursive(boolean isRecursive) {
-		Values.isRecursive = isRecursive;
-	}
+    public static List<Path> getFileList() {
+        return fileList;
+    }
 
-	/**
-	 * @return the propertiesDataType
-	 */
-	public static String getPropertiesDataType() {
-		return propertiesDataType;
-	}
+    public static void addFileToList(Path filePath) {
+        fileList.add(filePath);
+    }
 
-	/**
-	 * @param propertiesDataType the propertiesDataType to set
-	 */
-	public static void setPropertiesDataType(String propertiesDataType) {
-		Values.propertiesDataType = propertiesDataType;
-	}
+    public static void setFileList(List<Path> fileList) {
+        Values.fileList = fileList;
+    }
 
-	/**
-	 * @return the propertiesfileName
-	 */
-	public static String getPropertiesFileName() {
-		return propertiesfileName;
-	}
+    public static boolean isDirStructureAlreadyGenerated() {
+        return isDirStructureAlreadyGenerated;
+    }
 
-	/**
-	 * @param propertiesfileName the propertiesfileName to set
-	 */
-	public static void setPropertiesfileName(String propertiesfileName) {
-		Values.propertiesfileName = propertiesfileName;
-	}
+    public static void setIfDirStructureAlreadyGenerated(boolean dirStructureAlreadyGenerated) {
+        isDirStructureAlreadyGenerated = dirStructureAlreadyGenerated;
+    }
 
-	/**
-	 * @return the packageClass
-	 */
-	public static String getPackageClass() {
-		return packageClass;
-	}
+    public static HashTableModel getElementFromHashTableMap(Path key) {
+        return hashTableModelMap.get(key);
+    }
 
-	/**
-	 * @param packageClass the packageClass to set
-	 */
-	public static void setPackageClass(String packageClass) {
-		Values.packageClass = packageClass;
-	}
+    public static void putElementIntoHashTableMap(Path key, HashTableModel value) {
+        hashTableModelMap.put(key, value);
+    }
 
-	/**
-	 * @return the generatedClass
-	 */
-	public static String getGeneratedClass() {
-		return generatedClass;
-	}
+    public static void cleanHashTableMap() {
+        hashTableModelMap.clear();
+    }
 
-	/**
-	 * @param generatedClass the generatedClass to set
-	 */
-	public static void setGeneratedClass(String generatedClass) {
-		Values.generatedClass = generatedClass;
-	}
+    public static boolean isSingleFile() {
+        return isSingleFile;
+    }
 
-	/**
-	 * @return the inputPath
-	 */
-	public static Path getInputPath() {
-		return inputPath;
-	}
+    public static void setIsSingleFile(boolean isSingleFile) {
+        Values.isSingleFile = isSingleFile;
+    }
 
-	/**
-	 * @param inputPath the inputPath to set
-	 */
-	public static void setInputPath(Path inputPath) {
-		Values.inputPath = inputPath;
-	}
+    public static boolean isRecursive() {
+        return isRecursive;
+    }
 
-	/**
-	 * @return the outputPath
-	 */
-	public static Path getOutputPath() {
-		return outputPath;
-	}
+    public static void setIsRecursive(boolean isRecursive) {
+        Values.isRecursive = isRecursive;
+    }
 
-	/**
-	 * @return the startTimeOperation
-	 */
-	public static long getStartTimeOperation() {
-		return startTimeOperation;
-	}
+    public static String getPropertiesDataType() {
+        return propertiesDataType;
+    }
 
-	/**
-	 * @param startTimeOperation the startTimeOperation to set
-	 */
-	public static void setStartTimeOperation(long startTimeOperation) {
-		Values.startTimeOperation = startTimeOperation;
-	}
+    public static void setPropertiesDataType(String propertiesDataType) {
+        Values.propertiesDataType = propertiesDataType;
+    }
 
-	/**
-	 * @return the endTimeOperation
-	 */
-	public static long getEndTimeOperation() {
-		return endTimeOperation;
-	}
+    public static Path getRawPropertiesfileName() {
+        return rawPropertiesfileName;
+    }
 
-	/**
-	 * @param endTimeOperation the endTimeOperation to set
-	 */
-	public static void setEndTimeOperation(long endTimeOperation) {
-		Values.endTimeOperation = endTimeOperation;
-	}
+    public static void setRawPropertiesfileName(Path rawPropertiesfileName) {
+        Values.rawPropertiesfileName = rawPropertiesfileName;
+    }
 
-	/**
-	 * @return the isDebugMode
-	 */
-	public static boolean getIsDebugMode() {
-		return isDebugMode;
-	}
+    public static String getSoftPropertiesFileName() {
+        return softPropertiesfileName;
+    }
 
-	/**
-	 * @return the props
-	 */
-	public static Properties getProps() {
-		return PROPS;
-	}
+    public static void setSoftPropertiesfileName(String softPropertiesfileName) {
+        Values.softPropertiesfileName = softPropertiesfileName;
+    }
 
-	/**
-	 * @return the mainClassName
-	 */
-	public static String getOutterClassName() {
-		return OUTTER_CLASS_NAME;
-	}
+    public static Path getCacheDirs() {
+        return CACHE_DIRS;
+    }
 
-	/**
-	 * @return the exceptionTxt
-	 */
-	public static String getExceptionTxt() {
-		return EXCEPTION_TXT;
-	}
+    public static String getPackageClassWithOutterClassName() {
+        return packageClassWithOutterClassName;
+    }
+
+    public static String getPackageClass() {
+        return packageClass;
+    }
+
+    public static void setPackageClass(String packageClass) {
+        Values.packageClass = packageClass;
+    }
+
+    public static String getGeneratedClass() {
+        return generatedClass;
+    }
+
+    public static void setGeneratedClass(String generatedClass) {
+        Values.generatedClass = generatedClass;
+    }
+
+    public static Path getExistingPJavaGeneratedSourcePath() {
+        return existingPJavaGeneratedSourcePath;
+    }
+
+    public static void setExistingPJavaGeneratedSourcePath(Path existingPJavaGeneratedSourcePath) {
+        Values.existingPJavaGeneratedSourcePath = existingPJavaGeneratedSourcePath;
+        isExistsPJavaSource = true;
+    }
+
+    public static boolean isExistsPJavaSource() {
+        return isExistsPJavaSource;
+    }
+
+    public static boolean isExistsCompiledPJavaClass() {
+        return isExistsCompiledPJavaClass;
+    }
+
+    public static void setIfExistsCompiledPJavaClass(boolean isExistsCompiledPJavaClass) {
+        Values.isExistsCompiledPJavaClass = isExistsCompiledPJavaClass;
+    }
+
+    public static Path getInputPropertiesPath() {
+        return inputPropertiesPath;
+    }
+
+    public static void setInputPropertiesPath(Path inputPropertiesPath) {
+        Values.inputPropertiesPath = inputPropertiesPath;
+    }
+
+    public static Path getOutputPackagePath() {
+        return outputPackagePath;
+    }
+
+    public static Path getOutputFilePath() {
+        return outputFilePath;
+    }
+
+    public static Path getCompilationPath() {
+        return compilationPath;
+    }
+
+    public static void setCompilationPath(Path compilationPath) {
+        Values.compilationPath = compilationPath;
+    }
+
+    public static long getStartTimeOperation() {
+        return startTimeOperation;
+    }
+
+    public static void setStartTimeOperation(long startTimeOperation) {
+        Values.startTimeOperation = startTimeOperation;
+    }
+
+    public static long getEndTimeOperation() {
+        return endTimeOperation;
+    }
+
+    public static void setEndTimeOperation(long endTimeOperation) {
+        Values.endTimeOperation = endTimeOperation;
+    }
+
+    public static boolean isDebugMode() {
+        return isDebugMode;
+    }
+
+    public static String getJsonFilenamePattern() {
+        return JSON_FILENAME_PATTERN;
+    }
+
+    public static Gson getGson() {
+        return GSON;
+    }
+
+    public static Properties getProps() {
+        return PROPS;
+    }
+
+    public static String getOutterClassName() {
+        return OUTTER_CLASS_NAME;
+    }
+
+    public static String getExceptionTxt() {
+        return EXCEPTION_TXT;
+    }
 }
+

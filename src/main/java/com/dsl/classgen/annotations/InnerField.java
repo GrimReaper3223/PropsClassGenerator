@@ -1,16 +1,18 @@
 package com.dsl.classgen.annotations;
 
+import com.dsl.classgen.annotations.containers.InnerFieldContainer;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.dsl.classgen.annotations.containers.InnerFieldContainer;
-
-@Target(ElementType.FIELD)
-@Retention(RetentionPolicy.RUNTIME)
-@Repeatable(InnerFieldContainer.class)
+@Target(value={ElementType.FIELD})
+@Retention(value=RetentionPolicy.RUNTIME)
+@Repeatable(value=InnerFieldContainer.class)
 public @interface InnerField {
-	String value();
+    public String key();
+
+    public int hash() default 0;
 }
+

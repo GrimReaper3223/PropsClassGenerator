@@ -1,33 +1,66 @@
 package com.dsl.classgen.utils;
 
-import static com.dsl.classgen.io.Values.getEndTimeOperation;
-import static com.dsl.classgen.io.Values.getStartTimeOperation;
-import static com.dsl.classgen.io.Values.setEndTimeOperation;
-import static com.dsl.classgen.io.Values.setStartTimeOperation;
-
+import com.dsl.classgen.io.Values;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 public class Utils {
+	
+    private static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
-	// executa threads virtuais para operacoes de leitura / escrita de arquivos
-	private static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-	
-	public static ExecutorService getExecutor() {
-		return executor;
-	}
-	
-	public static long calculateElapsedTime() {
-		if(getStartTimeOperation() == 0L) {
-			setStartTimeOperation(System.currentTimeMillis());
-			return 0L;
-		}
-		
-		if(getEndTimeOperation() == 0L) {
-			setEndTimeOperation(System.currentTimeMillis());
-		}
-		
-		return getEndTimeOperation() - getStartTimeOperation();
-	}
+    public static ExecutorService getExecutor() {
+        return executor;
+    }
+
+    public static long calculateElapsedTime() {
+        if (Values.getStartTimeOperation() == 0L) {
+            Values.setStartTimeOperation(System.currentTimeMillis());
+            return 0L;
+        }
+        if (Values.getEndTimeOperation() == 0L) {
+            Values.setEndTimeOperation(System.currentTimeMillis());
+        }
+        return Values.getEndTimeOperation() - Values.getStartTimeOperation();
+    }
+
+    public static String readJavaType(Path path) {
+        String javaType = null;
+        try (Stream<String> lines = Files.lines(path, StandardCharsets.ISO_8859_1);){
+            javaType = lines.filter(input -> input.contains("$javatype:"))
+            				.findFirst().map(input -> input.substring(input.indexOf("@") + 1))
+            				.orElseThrow(() -> new IOException(Values.getExceptionTxt()));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return javaType;
+    }
+
+    public static Path resolveJsonFileName(String fileName) {
+        return Path.of(String.format(Values.getJsonFilenamePattern(), fileName));
+    }
+
+    public static Path resolveJsonFullPath(String fileName) {
+        return Values.getCacheDirs().resolve(Utils.resolveJsonFileName(fileName));
+    }
+
+    public static String formatFileName(Path filePath) {
+        String fileName = filePath.getFileName().toString();
+        return fileName.substring(0, fileName.lastIndexOf("."));
+    }
+
+    public static String extractPackageName(String stringPath) {
+        return stringPath.toString().replaceFirst("[\\w\\d/]*/src/main/java/", "");
+    }
+
+    public static <T> Path normalizePath(T path) {
+        return path instanceof String s ? Path.of(s.replaceAll("[.]", "/")) : 
+        	Path.of(String.valueOf(path).replaceAll("[.]", "/"));
+    }
 }
-	
+
