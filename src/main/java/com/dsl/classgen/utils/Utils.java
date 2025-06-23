@@ -48,6 +48,10 @@ public class Utils {
      * Utilitarios para formatacao de caminhos e strings por outras partes do sistema
      */
     
+    public static boolean isPropertiesFile(Path filePath) {
+    	return filePath.getFileName().toString().endsWith(".properties");
+    }
+    
     public static Path resolveJsonFileName(String fileName) {
         return Path.of(String.format(Values.getJsonFilenamePattern(), fileName));
     }

@@ -18,7 +18,7 @@ public final class Values {
 	
 	// deve ser true ao depurar o projeto. 
 	// se true for definido, a classe gerada sera impressa ao inves de escrita
-    private static boolean isDebugMode = true;
+    private static boolean isDebugMode = false;
     
     private static final Properties PROPS = new Properties();		// objeto que vai armazenar as propriedades dos arquivos carregados
     private static final Gson GSON = new Gson();					// objeto gson para escrita do cache

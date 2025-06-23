@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Predicate;
 
 import com.dsl.classgen.utils.Utils;
 
@@ -59,11 +58,6 @@ public class FileVisitorImpl {
     }
 
     public static class ReaderFileVisitor extends SimpleFileVisitor<Path> {
-        public Predicate<Path> testPath = path -> {
-            String stringPath = path.getFileName().toString();
-            return stringPath.contains(".") && stringPath.substring(stringPath.indexOf(".")).endsWith(".properties");
-        };
-
         @Override
         public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
             Values.addDirToList(dir);
@@ -72,7 +66,7 @@ public class FileVisitorImpl {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            if (testPath.test(file)) {
+            if (Utils.isPropertiesFile(file)) {
                 Values.addFileToList(file);
             }
             return FileVisitResult.CONTINUE;

@@ -73,8 +73,8 @@ public class Reader {
                 Files.walkFileTree(inputPath, fileVisitor);
             } else {
                 try (Stream<Path> pathStream = Files.list(inputPath);){
-                    Values.setFileList(pathStream.filter(path -> Files.isRegularFile(path))
-						                    	 .filter(fileVisitor.testPath::test)
+                    Values.setFileList(pathStream.filter(Files::isRegularFile)
+						                    	 .filter(Utils::isPropertiesFile)
 						                    	 .toList());
                 }
             }
