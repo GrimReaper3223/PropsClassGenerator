@@ -20,8 +20,8 @@ public class HashTableModel implements Serializable {
 
     public HashTableModel(Path filePath) {
         this.filePath = filePath.toString();
-        this.fileHash = this.hashCode();
-        this.initPropertyMapGraph();
+        this.fileHash = hashCode();
+        initPropertyMapGraph();
     }
 
     // inicializa o grafo dos dados do arquivo de propriedades dentro de hashTableMap
@@ -36,15 +36,15 @@ public class HashTableModel implements Serializable {
     // compara dois objetos HashTableModel pelos seus hashTableMaps e hash de arquivo
     public boolean equals(Object obj) {
         HashTableModel htm = (HashTableModel)obj;
-        boolean result = htm.hashTableMap.entrySet().containsAll(this.hashTableMap.entrySet());
-        return htm.fileHash == this.fileHash && result;
+        boolean result = htm.hashTableMap.entrySet().containsAll(hashTableMap.entrySet());
+        return htm.fileHash == fileHash && result;
     }
 
     // faz o hash do arquivo de propriedades
     public int hashCode() {
         BasicFileAttributes attrs = null;
         try {
-            attrs = Files.readAttributes(Path.of(this.filePath), BasicFileAttributes.class);
+            attrs = Files.readAttributes(Path.of(filePath), BasicFileAttributes.class);
         }
         catch (IOException e) {
             e.printStackTrace();

@@ -22,7 +22,7 @@ public class GeneratedStructureChecker {
         try {
             Values.setIfDirStructureAlreadyGenerated(Utils.getExecutor().submit(() -> {
                 try (Stream<Path> dirs = GeneratedStructureChecker.constructDirStreamFind()){
-                    return dirs.filter(path -> path.toString().contains("generated"))
+                    return dirs.filter(path -> path.getFileName().toString().contains("generated"))
                     		   .findFirst()
                     		   .flatMap(path -> {
 			                       Values.setPackageClass(Utils.extractPackageName(path.toString()));
@@ -59,14 +59,15 @@ public class GeneratedStructureChecker {
     // verifica se o arquivo P.java existe
     private static Optional<Boolean> isExistsJavaFile(Path path) {
         boolean isExistsJavaFile = false;
-        try (Stream<Path> files = Files.list(path);){
+        try (Stream<Path> files = Files.list(path)){
             isExistsJavaFile = files.map(p -> {
                 boolean val = p.getFileName().toString().equals(Values.getOutterClassName() + ".java");
                 if (val) {
                     Values.setExistingPJavaGeneratedSourcePath(p);
                 }
                 return val;
-            }).findFirst()
+            })
+            .findFirst()
             .isPresent();
         }
         catch (IOException e) {
