@@ -1,7 +1,6 @@
 package com.dsl.classgen.generators;
 
 import com.dsl.classgen.annotations.InnerField;
-import com.dsl.classgen.io.HashTableModel;
 import com.dsl.classgen.io.Values;
 import java.text.MessageFormat;
 import java.util.function.Predicate;
@@ -18,9 +17,7 @@ public final class InnerFieldGenerator implements GenerationOutputLog {
     		\t\tpublic static final {3} {4};
     		""";
 
-    public String generateInnerField(String fieldKey, String fieldValue, HashTableModel htm) {
-        Integer hash = htm.hashTableMap.get(fieldKey);
-        
+    public String generateInnerField(String fieldKey, String fieldValue, Integer hash) {
         if (!fieldValue.isEmpty()) {
             formatGenerationOutput("Inner Field", fieldKey, null);
             return MessageFormat.format(pattern1, 
