@@ -65,13 +65,18 @@ public class Utils {
         return fileName.substring(0, fileName.lastIndexOf("."));
     }
 
-    public static String extractPackageName(String stringPath) {
-        return stringPath.toString().replaceFirst("[\\w\\d/]*/src/main/java/", "");
+    public static String extractPackageName(Path path) {
+        return path.toString().replaceAll("[\\W\\D]*/java/", "");
     }
 
-    public static <T> Path normalizePath(T path) {
+    public static <T> Path replaceDotsWithBars(T path) {
         return path instanceof String s ? Path.of(s.replaceAll("[.]", "/")) : 
         	Path.of(String.valueOf(path).replaceAll("[.]", "/"));
+    }
+    
+    public static <T> String replaceBarsWithDots(T path) {
+    	return path instanceof String s ? s.replaceAll("[/]", ".") : 
+    		String.valueOf(path).replaceAll("[/]", ".");
     }
 }
 

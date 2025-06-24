@@ -8,7 +8,7 @@ import com.dsl.classgen.utils.Utils;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public final class InnerStaticClassGenerator implements GenerationOutputLog {
+public final class InnerStaticClassGenerator implements OutputLogGeneration {
 	
     public String generateInnerStaticClass() {
         InnerFieldGenerator innerFieldGenerator = new InnerFieldGenerator();

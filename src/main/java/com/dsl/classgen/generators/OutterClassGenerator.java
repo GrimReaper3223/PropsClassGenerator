@@ -7,7 +7,7 @@ import com.dsl.classgen.io.Values;
 
 import java.util.stream.Collectors;
 
-public final class OutterClassGenerator implements GenerationOutputLog {
+public final class OutterClassGenerator implements OutputLogGeneration {
 	
     public void generateOutterClass() {
         InnerStaticClassGenerator innerStaticClassGenerator = new InnerStaticClassGenerator();

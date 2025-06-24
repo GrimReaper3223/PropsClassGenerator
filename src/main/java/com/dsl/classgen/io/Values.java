@@ -49,7 +49,8 @@ public final class Values {
     private static Path inputPropertiesPath;					// caminho referente ao arquivo de propriedades (ou diretorio contendo os arquivos de propriedades a serem examinados)
     private static Path existingPJavaGeneratedSourcePath;		// caminho referente ao arquivo fonte P.java caso ele exista
     private static Path outputPackagePath;						// caminho indicando onde o pacote ...generated deve ser criado
-    private static Path outputFilePath;							// caminho indicando onde o arquivo P.java deve ser escrito resolvido com o caminho de onde o pacote deve ser criado
+    private static Path outputSourceFilePath;					// caminho indicando onde o arquivo P.java deve ser escrito, resolvido com o caminho de onde o pacote deve ser criado
+    private static Path outputClassFilePath;					// caminho indicando onde o arquivo P.class deve ser encontrado, resolvido com o caminho do pacote existente
     private static Path compilationPath;						// caminho indicando onde se encontram os arquivos .class desejados pelo framework
     
     private static final Path CACHE_DIRS;						// caminho referente ao diretorio de cache
@@ -60,11 +61,13 @@ public final class Values {
     private static final String EXCEPTION_TXT;					// contem o texto de mensagem de excecao caso o padrao de reconhecimento de tipo java nao esteja presente no arquivo de propriedade
 
     static {
+    	String userDir = System.getProperty("user.dir");
+    	
     	OUTTER_CLASS_NAME = "P";
         isExistsPJavaSource = false;
-        outputPackagePath = Path.of("src", "main", "java");
-        compilationPath = Paths.get(System.getProperty("user.dir"), "target", "classes");
-        CACHE_DIRS = Path.of(System.getProperty("user.dir"), ".jsonProperties-cache");
+        outputPackagePath = Paths.get(userDir, "src", "main", "java");
+        compilationPath = Paths.get(userDir, "target", "classes");
+        CACHE_DIRS = Paths.get(userDir, ".jsonProperties-cache");
         JSON_FILENAME_PATTERN = "%s-cache.json";
         startTimeOperation = 0L;
         endTimeOperation = 0L;
@@ -88,8 +91,8 @@ public final class Values {
     
     public static void resolvePaths() {
         packageClassWithOutterClassName = packageClass + "." + OUTTER_CLASS_NAME;
-        outputPackagePath = outputPackagePath.resolve(Utils.normalizePath(packageClass));
-        outputFilePath = outputPackagePath.resolve(OUTTER_CLASS_NAME + ".java");
+        outputPackagePath = outputPackagePath.resolve(Utils.replaceDotsWithBars(packageClass));
+        outputSourceFilePath = outputPackagePath.resolve(OUTTER_CLASS_NAME + ".java");
     }
 
     public static <T extends WatchEvent.Kind<?>> void addChangedValueToMap(Map.Entry<Path, T> entry) {
@@ -233,16 +236,20 @@ public final class Values {
         return outputPackagePath;
     }
 
-    public static Path getOutputFilePath() {
-        return outputFilePath;
+    public static Path getOutputSourceFilePath() {
+        return outputSourceFilePath;
+    }
+    
+    public static Path getOutputClassFilePath() {
+    	return outputClassFilePath;
+    }
+    
+    public static void setOutputClassFilePath(Path outputClassFilePath) {
+    	Values.outputClassFilePath = outputClassFilePath;
     }
 
     public static Path getCompilationPath() {
         return compilationPath;
-    }
-
-    public static void setCompilationPath(Path compilationPath) {
-        Values.compilationPath = compilationPath;
     }
 
     public static long getStartTimeOperation() {

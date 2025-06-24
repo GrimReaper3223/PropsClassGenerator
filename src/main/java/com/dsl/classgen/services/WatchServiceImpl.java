@@ -30,6 +30,7 @@ public class WatchServiceImpl {
     
     private static final Kind<?>[] EVENT_KIND_ARR = {ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY}; 
 
+    // inicializa o servico de monitoramento de diretorio
     public static void initialize() {
         if (!watchServiceThread.isAlive()) {
             watchServiceThread.setDaemon(false);
@@ -44,6 +45,7 @@ public class WatchServiceImpl {
         }
     }
 
+    // faz o registro inicial dos caminhos ja processados
     private static void initialRegistration() throws IOException {
         if (Values.isRecursive()) {
             Values.getDirList().stream().map(path -> {
@@ -54,16 +56,17 @@ public class WatchServiceImpl {
                 catch (IOException e) {
                     e.printStackTrace();
                 }
-                return WatchServiceImpl.verifyKey(key, path);
+                return Map.ofEntries(WatchServiceImpl.verifyKey(key, path));
             }).forEach(keys::putAll);
         } else {
             Path inputPath = Files.isDirectory(Values.getInputPropertiesPath()) ? Values.getInputPropertiesPath() : Values.getInputPropertiesPath().getParent();
             WatchKey key = inputPath.register(watcher, EVENT_KIND_ARR);
-            keys.putAll(WatchServiceImpl.verifyKey(key, inputPath));
+            keys.putAll(Map.ofEntries(WatchServiceImpl.verifyKey(key, inputPath)));
         }
         System.out.println("Done.");
     }
     
+    // registra um novo caminho sob demanda
     public static void registerNewPath(Path path) {
     	switch(path) {
     		case Path dir when Files.isDirectory(path) -> {
@@ -98,7 +101,9 @@ public class WatchServiceImpl {
     	}
     }
 
-    private static Map<WatchKey, Path> verifyKey(WatchKey key, Path path) {
+    // faz a verificacao da chave do diretorio e imprime na tela o estado 
+    // em que aquela chave vai ser registrada: se e registro ou atualizacao de chave de diretorio
+    private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path) {
         System.out.format("Checking %s...%n", path);
         Path mappedPath = keys.get(key);
         
@@ -109,20 +114,13 @@ public class WatchServiceImpl {
             System.out.format("Updating: %s -> %s%n", mappedPath, path);
         }
         
-        return Map.of(key, path);
+        return Map.entry(key, path);
     }
     
-    private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path, Object... voidArg) {
-    	Map.Entry<WatchKey, Path> entry = null;
-    	for(var entrySet : verifyKey(key, path).entrySet()) {
-    		entry = Map.entry(entrySet.getKey(), entrySet.getValue());
-    	}
-    	return entry;
-    }
-    
+    // processa o caminho recebido, verificando a chave e computando ela no mapa
     private static void processPropertyKeyFile(Path file) {
     	try {
-    		var pair = verifyKey(file.register(watcher, EVENT_KIND_ARR), file, "");
+    		var pair = verifyKey(file.register(watcher, EVENT_KIND_ARR), file);
     		keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue());
     		Values.addFileToList(file);
     	}
@@ -131,9 +129,10 @@ public class WatchServiceImpl {
     	}
     }
 
+    // casting utilitario
     @SuppressWarnings("unchecked")
 	private static <T> WatchEvent<T> cast(WatchEvent<?> event) {
-        return (WatchEvent<T>)event.context();
+        return (WatchEvent<T>) event;
     }
 
     /*
@@ -150,6 +149,7 @@ public class WatchServiceImpl {
             }
             catch (InterruptedException e) {
             	if(Thread.currentThread().isInterrupted()) {
+            		System.err.println("\nWatcher thread is interrupted.");
             		Thread.currentThread().interrupt();
             	}
                 break;
@@ -162,18 +162,23 @@ public class WatchServiceImpl {
             }
             
             key.pollEvents().stream()
-            				.map(event -> Map.entry(event, event.kind()))
-            				.filter(entry -> entry.getValue() != StandardWatchEventKinds.OVERFLOW)
-            				.map(entry -> {
-					                WatchEvent<Path> event = WatchServiceImpl.cast(entry.getKey());
-					                Path occurrence = path.resolve(event.context());
-					                System.out.format("%s: %s\n", event.kind().name(), occurrence);
-					                return Map.entry(occurrence, entry.getValue());
-            				}).forEach(Values::addChangedValueToMap);
+            				.filter(event -> event.kind() != StandardWatchEventKinds.OVERFLOW)
+            				.map(event -> {
+					                WatchEvent<Path> eventPath = cast(event);
+					                Path occurrence = path.resolve(eventPath.context());
+					                return Map.entry(occurrence, eventPath.kind());
+            				})
+            				.filter(entry -> Utils.isPropertiesFile(entry.getKey()) || Files.isDirectory(entry.getKey()))
+            				.forEach(entry -> {
+            					System.out.format("%s: %s\n", entry.getValue().name(), entry.getKey());
+            					Values.addChangedValueToMap(entry);
+            				});
             				
-            if (key.reset()) {
+            if (!key.reset()) {
             	keys.remove(key);
+            	System.out.format("Key removed from KeyMap: %s%n", key);
             	if (keys.isEmpty()) {
+            		System.out.println("\nThere are no keys remaining for processing. Ending Watcher...");
             		break;
             	}
             }

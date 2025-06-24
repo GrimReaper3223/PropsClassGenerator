@@ -32,7 +32,7 @@ public class FileVisitorImpl {
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
             try {
                 Utils.getExecutor().submit(() -> {
-                    try (BufferedReader br = Files.newBufferedReader(file);){
+                    try (BufferedReader br = Files.newBufferedReader(file)){
                         System.out.format("%n[CACHE] Loading JSON file: %s", file);
                         Values.putElementIntoHashTableMap(file, Values.getGson().fromJson(br, HashTableModel.class));
                     }

@@ -18,6 +18,8 @@ public class HashTableModel implements Serializable {
     public int fileHash;						// hash do arquivo de propriedades
     public Map<String, Integer> hashTableMap;	// pares chave-valor do arquivo de propriedades deste objeto
 
+    public HashTableModel() {}
+    
     public HashTableModel(Path filePath) {
         this.filePath = filePath.toString();
         this.fileHash = hashCode();

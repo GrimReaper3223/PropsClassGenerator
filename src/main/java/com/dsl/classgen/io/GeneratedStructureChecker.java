@@ -3,6 +3,7 @@ package com.dsl.classgen.io;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -20,16 +21,12 @@ public class GeneratedStructureChecker {
 	 */
     public static void checkGeneratedStructure() {
         try {
-            Values.setIfDirStructureAlreadyGenerated(Utils.getExecutor().submit(() -> {
-                try (Stream<Path> dirs = GeneratedStructureChecker.constructDirStreamFind()){
-                    return dirs.filter(path -> path.getFileName().toString().contains("generated"))
-                    		   .findFirst()
-                    		   .flatMap(path -> {
-			                       Values.setPackageClass(Utils.extractPackageName(path.toString()));
-			                       return GeneratedStructureChecker.isExistsJavaFile(path);
-                    		   }).orElse(false);
-                }
-            }).get());
+            Values.setIfDirStructureAlreadyGenerated(Utils.getExecutor().submit(() -> 
+                GeneratedStructureChecker.findGeneratedDir()
+                								.findFirst()
+				                    		    .flatMap(GeneratedStructureChecker::isExistsJavaFile)
+				                    		    .orElse(false)).get());
+            checkIfExistsCompiledClass();
         }
         catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -37,23 +34,35 @@ public class GeneratedStructureChecker {
     }
 
     // verifica se a classe compilada existe
-    public static void checkIfExistsCompiledClass() {
-        Path fullCompilationPath = Values.getCompilationPath().resolve(Values.getOutputFilePath());
-        Values.setIfExistsCompiledPJavaClass(Files.exists(fullCompilationPath));
+    private static void checkIfExistsCompiledClass() {
+    	try {
+    		Path classFileBinPath = Files.find(Values.getCompilationPath(),
+							        		Short.MAX_VALUE, 
+							        		(path, _) -> path.getFileName().toString().equals(Values.getOutterClassName() + ".class"))
+												.findFirst()
+												.orElse(null);
+			Values.setOutputClassFilePath(classFileBinPath);
+    		Values.setIfExistsCompiledPJavaClass(Objects.nonNull(classFileBinPath));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
     }
 
     // constroi um fluxo em /src/main/java
-    private static Stream<Path> constructDirStreamFind() {
-        Stream<Path> dirs = null;
+    private static Stream<Path> findGeneratedDir() {
+        Stream<Path> dirStream = null;
         try {
-            dirs = Files.find(Values.getOutputPackagePath(),
+            dirStream = Files.find(Values.getOutputPackagePath(),
             		Short.MAX_VALUE, 
-            		(path, _) -> Files.isDirectory(path));
+            		(path, _) -> Files.isDirectory(path))
+            			.filter(path -> path.getFileName().toString().equals("generated"))
+            			.findFirst()
+            			.stream();
         }
         catch (IOException e) {
             e.printStackTrace();
         }
-        return dirs;
+        return dirStream;
     }
 
     // verifica se o arquivo P.java existe

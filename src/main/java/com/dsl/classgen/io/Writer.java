@@ -16,7 +16,7 @@ public class Writer {
     public static void write() {
         System.out.println("\n\nWriting data...");
         Path outputPackagePath = Values.getOutputPackagePath();
-        Path outputFilePath = Values.getOutputFilePath();
+        Path outputFilePath = Values.getOutputSourceFilePath();
         
         // se nao existir o pacote de saida, entao os diretorios e o arquivo gerado serao criados
         // se o pacote e saida existir, mas nao existir o arquivo de saida, entao somente ele sera gerado

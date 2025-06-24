@@ -23,15 +23,12 @@ public final class Generator {
 		// define e resolve alguns dados
 		Values.setIsRecursive(isRecursive);
 		Values.setInputPropertiesPath(inputPath);
-		Values.setPackageClass(packageClass.concat(".generated"));
+		Values.setPackageClass(Utils.replaceBarsWithDots(packageClass.concat(".generated")));
 		Values.resolvePaths();
 		
 		// le o caminho passado e processa o cache
 		Reader.read(inputPath);
 		FileCacheSystem.processCache();
-		
-		// verifica se ja existe a classe P.java compilada
-		GeneratedStructureChecker.checkIfExistsCompiledClass();
 		
 		System.out.format("""
 				%n-----------------------------

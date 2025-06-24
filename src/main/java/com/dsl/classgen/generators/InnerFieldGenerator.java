@@ -5,7 +5,7 @@ import com.dsl.classgen.io.Values;
 import java.text.MessageFormat;
 import java.util.function.Predicate;
 
-public final class InnerFieldGenerator implements GenerationOutputLog {
+public final class InnerFieldGenerator implements OutputLogGeneration {
 	
     private final String pattern1 = """
     		@{0}(key = \"{1}\", hash = {2,number,#})
