@@ -1,5 +1,7 @@
 package com.dsl.classgen.io;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
@@ -9,26 +11,35 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.function.Supplier;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
 public final class Values {
 	
+	private static final Logger LOGGER = LogManager.getLogger(Values.class);
+	
 	// deve ser true ao depurar o projeto. 
 	// se true for definido, a classe gerada sera impressa ao inves de escrita
     private static boolean isDebugMode = false;
     
-    private static final Properties PROPS = new Properties();		// objeto que vai armazenar as propriedades dos arquivos carregados
-    private static final Gson GSON = new Gson();					// objeto gson para escrita do cache
-    private static final String OUTTER_CLASS_NAME;					// nome final da classe externa
+    private static final Properties PROPS = new Properties();			// objeto que vai armazenar as propriedades dos arquivos carregados
+    private static final Supplier<Gson> GSON = Gson::new;				// fornece um objeto Gson sob demanda
+    private static final String OUTTER_CLASS_NAME;						// nome final da classe externa
     
     // estruturas de dados
-    private static List<Path> fileList = new ArrayList<Path>();		// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
-    private static List<Path> dirList = new ArrayList<Path>();		// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista 
-    private static Deque<Map.Entry<Path, ?>> changedFile = new ArrayDeque<>(128);	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
-    private static Map<Path, HashTableModel> hashTableModelMap = new HashMap<>();	// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache
+    private static Deque<Path> cacheToWriteDeque = new ArrayDeque<Path>();	// deve armazenar arquivos para processamento de cache. Quando novos arquivos forem fornecidos para a lista de arquivos ou individualmente, uma entrada correspondente deve ser criada aqui
+    private static List<Path> fileList = new ArrayList<Path>();				// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
+    private static List<Path> dirList = new ArrayList<Path>();				// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista 
+    private static Deque<Map.Entry<Path, ?>> changedFileDeque = new ArrayDeque<>();		// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
+    private static Map<Path, HashTableModel> hashTableModelMap = new HashMap<>();		// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache
     
     // flags
     private static boolean isSingleFile;						// indica se o caminho passado corresponde a um unico arquivo 
@@ -36,11 +47,12 @@ public final class Values {
     private static boolean isDirStructureAlreadyGenerated;		// indica se a estrutura que o framework gera ja existe no /src/main/java/*
     private static boolean isExistsPJavaSource;					// indica se o arquivo P.java existe dentro da estrutura existente (se houver uma)
     private static boolean isExistsCompiledPJavaClass;			// indica se ja existe uma compilacao do arquivo P.java
+    private static boolean hasChangesRemaining;					// indica se ainda existem eventos gerados pela implementacao do WatchService na fila. Esta variavel deve ser usada como interruptor pelo processador alteracoes em arquivos.							
     
     // informacoes para geracao e formatacao
     private static String propertiesDataType;					// o tipo de dados encontrado no arquivo de propriedades correspondente ao padrao # $javatype:@<tipo_de_dado_java>
     private static Path rawPropertiesfileName;					// nome do arquivo de propriedades com a extensao .properties
-    private static String softPropertiesfileName;				// nome do arquivo de propriedades sem a extensao .properties
+    private static Path softPropertiesfileName;					// nome do arquivo de propriedades sem a extensao .properties
     private static String packageClass;							// pacote que deve ser inserido no cabecalho do arquivo de classe para indicar sua localizacao
     private static String packageClassWithOutterClassName;		// o nome do pacote fornecido para a variavel acima + o nome da classe externa (...generated.P)
     private static String generatedClass;						// contem o conteudo da classe gerada. Esta variavel deve ser usada pelo escritor para armazenar os dados no caminho de saida, ou a saida padrao para imprimir na tela, caso o debug esteja habilitado
@@ -65,7 +77,7 @@ public final class Values {
     	
     	OUTTER_CLASS_NAME = "P";
         isExistsPJavaSource = false;
-        outputPackagePath = Paths.get(userDir, "src", "main", "java");
+        outputPackagePath = Paths.get(userDir, isDebugMode ? "src/test/java" : "src/main/java");
         compilationPath = Paths.get(userDir, "target", "classes");
         CACHE_DIRS = Paths.get(userDir, ".jsonProperties-cache");
         JSON_FILENAME_PATTERN = "%s-cache.json";
@@ -91,12 +103,38 @@ public final class Values {
     
     public static void resolvePaths() {
         packageClassWithOutterClassName = packageClass + "." + OUTTER_CLASS_NAME;
-        outputPackagePath = outputPackagePath.resolve(Utils.replaceDotsWithBars(packageClass));
+        outputPackagePath = outputPackagePath.resolve(Utils.normalizePath(packageClass, ".", "/"));
         outputSourceFilePath = outputPackagePath.resolve(OUTTER_CLASS_NAME + ".java");
     }
 
-    public static <T extends WatchEvent.Kind<?>> void addChangedValueToMap(Map.Entry<Path, T> entry) {
-        changedFile.offer(entry);
+    public static <T extends WatchEvent.Kind<?>> void addChangedValueToDeque(Map.Entry<Path, T> entry) {
+        changedFileDeque.offer(entry);
+        hasChangesRemaining = true;
+    }
+    
+    public static List<Map.Entry<Path, ?>> getAllChangedValuesFromDeque() {
+    	List<Map.Entry<Path, ?>> entryList = new ArrayList<>();
+    	
+    	while(hasChangesRemaining) {
+    		entryList.add(changedFileDeque.poll());
+    		if(changedFileDeque.isEmpty()) {
+    			hasChangesRemaining = false;
+    		}
+    	}
+    	return entryList;
+    }
+    
+    public static List<Path> getAllCacheFilesToWriteFromDeque() {
+    	List<Path> cacheList = new ArrayList<>();
+    	
+    	while(cacheToWriteDeque.size() > 0) {
+    		cacheList.add(cacheToWriteDeque.poll());
+    	}
+    	return cacheList;
+    }
+    
+    public static boolean containsCacheForProcess() {
+    	return !cacheToWriteDeque.isEmpty();
     }
 
     public static List<Path> getDirList() {
@@ -105,6 +143,7 @@ public final class Values {
 
     public static void addDirToList(Path dirPath) {
         dirList.add(dirPath);
+        LOGGER.log(Level.INFO, "Directory added to dir list: {}\n", dirPath);
     }
 
     public static List<Path> getFileList() {
@@ -112,13 +151,20 @@ public final class Values {
     }
 
     public static void addFileToList(Path filePath) {
+    	cacheToWriteDeque.add(filePath);
         fileList.add(filePath);
+        LOGGER.log(Level.INFO, "Properties file added to file list: {}\n", filePath);
     }
 
     public static void setFileList(List<Path> fileList) {
+    	cacheToWriteDeque.addAll(fileList);
         Values.fileList = fileList;
     }
 
+    public static boolean checkRemainingChanges() {
+    	return hasChangesRemaining;
+    }
+    
     public static boolean isDirStructureAlreadyGenerated() {
         return isDirStructureAlreadyGenerated;
     }
@@ -135,10 +181,16 @@ public final class Values {
         hashTableModelMap.put(key, value);
     }
 
-    public static void cleanHashTableMap() {
-        hashTableModelMap.clear();
+    public static void deleteElementFromHashTableMap(Path key, HashTableModel value) {
+    	try {
+			Files.delete(key);
+			hashTableModelMap.remove(key, value);
+    	} 
+    	catch (IOException e) {
+    		e.printStackTrace();
+    	}
     }
-
+    
     public static boolean isSingleFile() {
         return isSingleFile;
     }
@@ -171,11 +223,11 @@ public final class Values {
         Values.rawPropertiesfileName = rawPropertiesfileName;
     }
 
-    public static String getSoftPropertiesFileName() {
+    public static Path getSoftPropertiesFileName() {
         return softPropertiesfileName;
     }
 
-    public static void setSoftPropertiesfileName(String softPropertiesfileName) {
+    public static void setSoftPropertiesfileName(Path softPropertiesfileName) {
         Values.softPropertiesfileName = softPropertiesfileName;
     }
 
@@ -220,10 +272,6 @@ public final class Values {
         return isExistsCompiledPJavaClass;
     }
 
-    public static void setIfExistsCompiledPJavaClass(boolean isExistsCompiledPJavaClass) {
-        Values.isExistsCompiledPJavaClass = isExistsCompiledPJavaClass;
-    }
-
     public static Path getInputPropertiesPath() {
         return inputPropertiesPath;
     }
@@ -246,6 +294,7 @@ public final class Values {
     
     public static void setOutputClassFilePath(Path outputClassFilePath) {
     	Values.outputClassFilePath = outputClassFilePath;
+    	isExistsCompiledPJavaClass = Objects.nonNull(outputClassFilePath);
     }
 
     public static Path getCompilationPath() {
@@ -277,7 +326,7 @@ public final class Values {
     }
 
     public static Gson getGson() {
-        return GSON;
+        return GSON.get();
     }
 
     public static Properties getProps() {

@@ -1,15 +1,12 @@
 package com.dsl.classgen.utils;
 
-import com.dsl.classgen.io.Values;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Stream;
 
-public class Utils {
+import com.dsl.classgen.io.Values;
+
+public final class Utils {
 	
 	// executor que inicia uma thread virtual por task
     private static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
@@ -30,20 +27,6 @@ public class Utils {
         return Values.getEndTimeOperation() - Values.getStartTimeOperation();
     }
 
-    // le o tipo java dentro do arquivo de propriedades correspondente ao padrao # $javatype:@<tipo_de_dado_java>
-    public static String readJavaType(Path path) {
-        String javaType = null;
-        try (Stream<String> lines = Files.lines(path, StandardCharsets.ISO_8859_1);){
-            javaType = lines.filter(input -> input.contains("$javatype:"))
-            				.findFirst().map(input -> input.substring(input.indexOf("@") + 1))
-            				.orElseThrow(() -> new IOException(Values.getExceptionTxt()));
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        return javaType;
-    }
-
     /*
      * Utilitarios para formatacao de caminhos e strings por outras partes do sistema
      */
@@ -52,31 +35,27 @@ public class Utils {
     	return filePath.getFileName().toString().endsWith(".properties");
     }
     
-    public static Path resolveJsonFileName(String fileName) {
-        return Path.of(String.format(Values.getJsonFilenamePattern(), fileName));
+    public static Path resolveJsonFilePath(Path fileName) {
+    	if(fileName.toString().contains(".")) {
+    		fileName = formatFileName(fileName);
+    	}
+    	Path jsonFileName = Path.of(String.format(Values.getJsonFilenamePattern(), fileName));
+        return Values.getCacheDirs().resolve(jsonFileName);
     }
 
-    public static Path resolveJsonFullPath(String fileName) {
-        return Values.getCacheDirs().resolve(Utils.resolveJsonFileName(fileName));
-    }
-
-    public static String formatFileName(Path filePath) {
+    public static Path formatFileName(Path filePath) {
         String fileName = filePath.getFileName().toString();
-        return fileName.substring(0, fileName.lastIndexOf("."));
+        return Path.of(fileName.substring(0, fileName.lastIndexOf(".")));
     }
 
-    public static String extractPackageName(Path path) {
-        return path.toString().replaceAll("[\\W\\D]*/java/", "");
-    }
+//    public static String extractPackageName(Path path) {
+//        return path.toString().replaceAll("[\\W\\D]*/java/", "");
+//    }
 
-    public static <T> Path replaceDotsWithBars(T path) {
-        return path instanceof String s ? Path.of(s.replaceAll("[.]", "/")) : 
-        	Path.of(String.valueOf(path).replaceAll("[.]", "/"));
-    }
-    
-    public static <T> String replaceBarsWithDots(T path) {
-    	return path instanceof String s ? s.replaceAll("[/]", ".") : 
-    		String.valueOf(path).replaceAll("[/]", ".");
+    public static <T> Path normalizePath(T path, String toReplace, String replaceWith) {
+    	toReplace = "[" + toReplace + "]";
+        return path instanceof String s ? Path.of(s.replaceAll(toReplace, replaceWith)) : 
+        	Path.of(String.valueOf(path).replaceAll(toReplace, replaceWith));
     }
 }
 

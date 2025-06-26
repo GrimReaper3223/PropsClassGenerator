@@ -10,10 +10,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 interface Tools {
 
-	final Path inPropsPath = Path.of("/home/Deiv/workspace/git/SellerTree-Commercial/AdminManager/src/main/resources/values/strings/");
-	final String packageClass = "com.dsl.classgen.test";
+	final Path inPropsPath = Path.of("src/test/resources/values/strings/");
+	final String packageClass = "com.dsl.test.classgen";
 	final Path cachePath = Paths.get(System.getProperty("user.dir")).resolve(".jsonProperties-cache");
-	final Path sourcePath = Paths.get(System.getProperty("user.dir")).resolve("src/main/java/com/dsl/classgen");
+	final Path sourcePath = Path.of("src/test/java/com/dsl/test/classgen/generated");
 	
 	default void eraseCache() {
 		if(Files.exists(cachePath)) {

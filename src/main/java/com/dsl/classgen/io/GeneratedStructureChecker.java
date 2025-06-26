@@ -3,7 +3,6 @@ package com.dsl.classgen.io;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -25,44 +24,33 @@ public class GeneratedStructureChecker {
                 GeneratedStructureChecker.findGeneratedDir()
                 								.findFirst()
 				                    		    .flatMap(GeneratedStructureChecker::isExistsJavaFile)
-				                    		    .orElse(false)).get());
+				                    		    .orElse(false))
+            									.get());
             checkIfExistsCompiledClass();
         }
-        catch (InterruptedException | ExecutionException e) {
+        catch (InterruptedException | ExecutionException | IOException e) {
             e.printStackTrace();
         }
     }
 
     // verifica se a classe compilada existe
-    private static void checkIfExistsCompiledClass() {
-    	try {
-    		Path classFileBinPath = Files.find(Values.getCompilationPath(),
-							        		Short.MAX_VALUE, 
-							        		(path, _) -> path.getFileName().toString().equals(Values.getOutterClassName() + ".class"))
-												.findFirst()
-												.orElse(null);
-			Values.setOutputClassFilePath(classFileBinPath);
-    		Values.setIfExistsCompiledPJavaClass(Objects.nonNull(classFileBinPath));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+    private static void checkIfExistsCompiledClass() throws IOException {
+		Path classFileBinPath = Files.find(Values.getCompilationPath(),
+						        		Short.MAX_VALUE, 
+						        		(path, _) -> path.getFileName().toString().equals(Values.getOutterClassName() + ".class"))
+											.findFirst()
+											.orElse(null);
+		Values.setOutputClassFilePath(classFileBinPath);
     }
 
     // constroi um fluxo em /src/main/java
-    private static Stream<Path> findGeneratedDir() {
-        Stream<Path> dirStream = null;
-        try {
-            dirStream = Files.find(Values.getOutputPackagePath(),
-            		Short.MAX_VALUE, 
-            		(path, _) -> Files.isDirectory(path))
-            			.filter(path -> path.getFileName().toString().equals("generated"))
-            			.findFirst()
-            			.stream();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        return dirStream;
+    private static Stream<Path> findGeneratedDir() throws IOException {
+        return Files.find(Values.getOutputPackagePath(),
+        		Short.MAX_VALUE, 
+        		(path, _) -> Files.isDirectory(path))
+        			.filter(path -> path.getFileName().toString().equals("generated"))
+        			.findFirst()
+        			.stream();
     }
 
     // verifica se o arquivo P.java existe
