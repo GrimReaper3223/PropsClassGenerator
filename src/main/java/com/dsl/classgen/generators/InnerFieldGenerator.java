@@ -8,13 +8,17 @@ import java.util.function.Predicate;
 public final class InnerFieldGenerator implements OutputLogGeneration {
 	
     private final String pattern1 = """
-    		@{0}(key = \"{1}\", hash = {2,number,#})
+    		// FIELD HINT ~>> {1}
+    		\t\t@{0}(key = \"{1}\", hash = {2,number,#})
     		\t\tpublic static final {3} {4} = {5};
+        	\t// FIELD HINT <<~ {1}
     		""";
     
     private final String pattern2 = """
-    		@{0}(key = \"{1}\", hash = {2,number,#})
+        	// FIELD HINT ~>> {1}
+    		\t\t@{0}(key = \"{1}\", hash = {2,number,#})
     		\t\tpublic static final {3} {4};
+    		// FIELD HINT <<~ {1}
     		""";
 
     public String generateInnerField(String fieldKey, String fieldValue, Integer hash) {

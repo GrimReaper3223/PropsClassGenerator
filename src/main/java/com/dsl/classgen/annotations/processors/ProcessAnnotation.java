@@ -2,6 +2,7 @@ package com.dsl.classgen.annotations.processors;
 
 import com.dsl.classgen.annotations.GeneratedInnerClass;
 import com.dsl.classgen.io.Reader;
+
 import java.util.Arrays;
 
 public class ProcessAnnotation {
@@ -15,4 +16,3 @@ public class ProcessAnnotation {
         	  }).forEach(a -> System.out.println(a));
     }
 }
-
