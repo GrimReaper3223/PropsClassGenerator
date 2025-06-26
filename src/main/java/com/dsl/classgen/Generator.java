@@ -1,18 +1,25 @@
 package com.dsl.classgen;
 
-import com.dsl.classgen.annotations.processors.ProcessAnnotation;
+import java.nio.file.Path;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.dsl.classgen.generators.OutterClassGenerator;
 import com.dsl.classgen.io.Compiler;
 import com.dsl.classgen.io.FileCacheSystem;
 import com.dsl.classgen.io.GeneratedStructureChecker;
+import com.dsl.classgen.io.ProcessQueuedFileEvents;
 import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
 import com.dsl.classgen.io.Writer;
 import com.dsl.classgen.services.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
-import java.nio.file.Path;
 
 public final class Generator {
+	
+	private static final Logger LOGGER = LogManager.getLogger(Generator.class);
 	
 	private Generator() {}
 
@@ -23,15 +30,15 @@ public final class Generator {
 		// define e resolve alguns dados
 		Values.setIsRecursive(isRecursive);
 		Values.setInputPropertiesPath(inputPath);
-		Values.setPackageClass(Utils.replaceBarsWithDots(packageClass.concat(".generated")));
+		Values.setPackageClass(Utils.normalizePath(packageClass.concat(".generated"), "/", ".").toString());
 		Values.resolvePaths();
 		
 		// le o caminho passado e processa o cache
 		Reader.read(inputPath);
 		FileCacheSystem.processCache();
 		
-		System.out.format("""
-				%n-----------------------------
+		LOGGER.log(Level.INFO, """
+				\n-----------------------------
 				--- Framework Initialized ---
 				-----------------------------
 				
@@ -48,7 +55,7 @@ public final class Generator {
 				-----------------------------
 				-----------------------------
 				
-				Call 'Generator.generate()' to generate java classes or parse existing classes.%n
+				Call 'Generator.generate()' to generate java classes or parse existing classes.\n
 				""", inputPath, 
 					 Values.getOutputPackagePath(), 
 					 Values.getPackageClass(), 
@@ -69,21 +76,23 @@ public final class Generator {
 			Utils.calculateElapsedTime();
 			new OutterClassGenerator().generateOutterClass();
 			
-			if (Values.isDebugMode()) {
+			if(Values.isDebugMode()) {
 				System.out.println(Values.getGeneratedClass());
 			} else {
 				Writer.write();
 			}
+				
 		} else {
-			System.out.println("""
-					\nThere is already a generated structure.
+			LOGGER.log(Level.WARN, """
+					There is already a generated structure.
 					
-					Generating additional classes and checking the existing ones...\n
+					Generating additional classes and checking the existing ones...
 					""");
 		}
 		// compila a classe gerada, inicializa o servico de monitoramento de diretorios e processa as anotacoes da classe gerada/existente
 		Compiler.compile();
 		WatchServiceImpl.initialize();
-		ProcessAnnotation.processAnnotations();
+		ProcessQueuedFileEvents.initialize();
+//		ProcessAnnotation.processAnnotations();
 	}
 }

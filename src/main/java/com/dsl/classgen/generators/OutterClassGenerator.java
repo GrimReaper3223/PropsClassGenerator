@@ -7,14 +7,15 @@ import com.dsl.classgen.io.Values;
 
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.Level;
+
 public final class OutterClassGenerator implements OutputLogGeneration {
 	
     public void generateOutterClass() {
         InnerStaticClassGenerator innerStaticClassGenerator = new InnerStaticClassGenerator();
         String outterClassName = Values.getOutterClassName();
-        
-        System.out.println("\nGenerating classes...");
-        formatGenerationOutput("Outter Class", outterClassName, null);
+        logger.log(Level.INFO, "Generating classes...\n");
+        formatGenerationOutput("Outter Class", outterClassName, "\n");
         
         Values.setGeneratedClass(String.format("""
         package %1$s;
@@ -24,6 +25,9 @@ public final class OutterClassGenerator implements OutputLogGeneration {
         import com.dsl.classgen.annotations.InnerField;
         import com.dsl.classgen.annotations.PrivateConstructor;
         
+        /*
+         *	*** DO NOT DELETE THE COMMENT BELOW! ***
+         */ 
         @%2$s
         public final class %3$s {
         
@@ -45,4 +49,3 @@ public final class OutterClassGenerator implements OutputLogGeneration {
         			  }).collect(Collectors.joining("\n\t"))));
     }
 }
-

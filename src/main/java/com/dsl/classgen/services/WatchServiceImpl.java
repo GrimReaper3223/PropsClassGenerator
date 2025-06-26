@@ -20,10 +20,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.dsl.classgen.io.Values;
 import com.dsl.classgen.utils.Utils;
 
 public class WatchServiceImpl {
+	private static final Logger LOGGER = LogManager.getLogger(WatchServiceImpl.class);
+	
     private static final Thread watchServiceThread = new Thread(WatchServiceImpl::processEvents);
     private static final Map<WatchKey, Path> keys = new HashMap<>();
     private static WatchService watcher;
@@ -34,6 +40,7 @@ public class WatchServiceImpl {
     public static void initialize() {
         if (!watchServiceThread.isAlive()) {
             watchServiceThread.setDaemon(false);
+            watchServiceThread.setName("Watch Service - Thread");
             try {
                 watcher = FileSystems.getDefault().newWatchService();
                 initialRegistration();
@@ -63,70 +70,66 @@ public class WatchServiceImpl {
             WatchKey key = inputPath.register(watcher, EVENT_KIND_ARR);
             keys.putAll(Map.ofEntries(WatchServiceImpl.verifyKey(key, inputPath)));
         }
-        System.out.println("Done.");
+        LOGGER.log(Level.INFO, "Done\n");
     }
     
-    // registra um novo caminho sob demanda
-    public static void registerNewPath(Path path) {
-    	switch(path) {
-    		case Path dir when Files.isDirectory(path) -> {
-    			try {
-	    			if (Values.isRecursive()) {
-    					Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
-    						@Override
-    						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-    							if(Utils.isPropertiesFile(file)) {
-    								processPropertyKeyFile(file);
-    							}
-    							return FileVisitResult.CONTINUE;
-    						}
-    					});
-	    			} else {
-	    				try(Stream<Path> files = Files.list(dir)) {
-	    					files.filter(Files::isRegularFile)
-	    						 .forEach(WatchServiceImpl::processPropertyKeyFile);
-	    				}
-	    			}
-    			}
-	    		catch (IOException e) {
-    				e.printStackTrace();
-    			}
-    		}
-    		
-    		case Path file when Files.isRegularFile(path) -> {
-    			processPropertyKeyFile(file);
-    		}
-    		
-    		default -> throw new IllegalArgumentException("Unexpected value: " + path);
-    	}
+    // registra um novo diretorio sob demanda
+    public static void registerNewDir(Path path) {
+		try {
+			if (Values.isRecursive()) {
+				Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+					@Override
+					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+						processPropertyDir(dir);
+						return FileVisitResult.CONTINUE;
+					}
+					
+					@Override
+					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+						if(Utils.isPropertiesFile(file)) {
+							Values.addFileToList(file);
+						}
+						return FileVisitResult.CONTINUE;
+					}
+				});
+			} else {
+				processPropertyDir(path);
+				try(Stream<Path> files = Files.list(path)) {
+					files.forEach(file -> {
+						if(Utils.isPropertiesFile(file)) {
+							Values.addFileToList(file);
+						}
+					});
+				}
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
     }
 
     // faz a verificacao da chave do diretorio e imprime na tela o estado 
     // em que aquela chave vai ser registrada: se e registro ou atualizacao de chave de diretorio
     private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path) {
-        System.out.format("Checking %s...%n", path);
+    	LOGGER.log(Level.INFO, "Checking {}...", path);
         Path mappedPath = keys.get(key);
         
         if (mappedPath == null) {
-            System.out.format("Registering: %s%n", path);
+        	LOGGER.log(Level.INFO, "Registering: {}...", path);
+            System.out.format("%n", path);
             
         } else if (!path.equals(mappedPath)) {
-            System.out.format("Updating: %s -> %s%n", mappedPath, path);
+        	LOGGER.log(Level.INFO, "Updating: {} -> {}...", mappedPath, path);
         }
         
         return Map.entry(key, path);
     }
     
     // processa o caminho recebido, verificando a chave e computando ela no mapa
-    private static void processPropertyKeyFile(Path file) {
-    	try {
-    		var pair = verifyKey(file.register(watcher, EVENT_KIND_ARR), file);
-    		keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue());
-    		Values.addFileToList(file);
-    	}
-    	catch (IOException e) {
-    		e.printStackTrace();
-    	}
+    private static void processPropertyDir(Path dir) throws IOException {
+		var pair = verifyKey(dir.register(watcher, EVENT_KIND_ARR), dir);
+		keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue());
+		Values.addDirToList(dir);
     }
 
     // casting utilitario
@@ -140,7 +143,7 @@ public class WatchServiceImpl {
      * Lifted jumps to return sites
      */
     private static void processEvents() {
-        System.out.println("Watching...");
+    	LOGGER.log(Level.WARN, "\nWatching...");
         while (true) {
             WatchKey key;
             
@@ -149,7 +152,7 @@ public class WatchServiceImpl {
             }
             catch (InterruptedException e) {
             	if(Thread.currentThread().isInterrupted()) {
-            		System.err.println("\nWatcher thread is interrupted.");
+            		LOGGER.log(Level.ERROR, "Watcher thread is interrupted");
             		Thread.currentThread().interrupt();
             	}
                 break;
@@ -157,7 +160,7 @@ public class WatchServiceImpl {
             
             Path path = keys.get(key);
             if (path == null) {
-                System.err.println("WatchKey not recognized.");
+            	LOGGER.log(Level.WARN, "WatchKey not recognized.");
                 continue;
             }
             
@@ -170,19 +173,24 @@ public class WatchServiceImpl {
             				})
             				.filter(entry -> Utils.isPropertiesFile(entry.getKey()) || Files.isDirectory(entry.getKey()))
             				.forEach(entry -> {
-            					System.out.format("%s: %s\n", entry.getValue().name(), entry.getKey());
-            					Values.addChangedValueToMap(entry);
+            					LOGGER.log(Level.INFO, "{}: {}", entry.getValue().name(), entry.getKey());
+            					Values.addChangedValueToDeque(entry);
             				});
             				
             if (!key.reset()) {
             	keys.remove(key);
-            	System.out.format("Key removed from KeyMap: %s%n", key);
+            	
+            	LOGGER.log(Level.INFO, "Key removed from KeyMap: {}", key);
             	if (keys.isEmpty()) {
-            		System.out.println("\nThere are no keys remaining for processing. Ending Watcher...");
+            		LOGGER.log(Level.WARN, "There are no keys remaining for processing. Ending Watcher...");
             		break;
             	}
             }
         }
+    }
+    
+    public static boolean isWatchServiceThreadAlive() {
+    	return watchServiceThread.isAlive();
     }
 }
 

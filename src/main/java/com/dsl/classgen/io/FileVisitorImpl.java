@@ -33,7 +33,7 @@ public class FileVisitorImpl {
             try {
                 Utils.getExecutor().submit(() -> {
                     try (BufferedReader br = Files.newBufferedReader(file)){
-                        System.out.format("%n[CACHE] Loading JSON file: %s", file);
+                        System.out.format("[CACHE] Loading JSON file: %s%n", file);
                         Values.putElementIntoHashTableMap(file, Values.getGson().fromJson(br, HashTableModel.class));
                     }
                     catch (IOException e) {

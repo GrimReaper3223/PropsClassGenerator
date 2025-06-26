@@ -7,14 +7,19 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.dsl.classgen.utils.Utils;
 
 public class Writer {
 	
+	private static final Logger LOGGER = LogManager.getLogger(Writer.class);
     private Writer() {}
 
     public static void write() {
-        System.out.println("\n\nWriting data...");
+    	LOGGER.log(Level.INFO, "Writing data...\n");
         Path outputPackagePath = Values.getOutputPackagePath();
         Path outputFilePath = Values.getOutputSourceFilePath();
         
@@ -30,11 +35,11 @@ public class Writer {
                 Files.createFile(outputFilePath);
                 
             } else {
-                System.out.format("%n***File already exists in: %s [Elapsed Time: %dms]***", outputPackagePath, Utils.calculateElapsedTime());
+            	LOGGER.log(Level.WARN, "***File already exists in: {} [Elapsed Time: {}ms]\n***", outputPackagePath, Utils.calculateElapsedTime());
                 return;
             }
             Writer.fileWriter(outputFilePath);
-            System.out.format("%nFile created in: %s [Elapsed Time: %dms]", outputPackagePath, Utils.calculateElapsedTime());
+            LOGGER.log(Level.WARN, "File created in: {} [Elapsed Time: {}ms]\n", outputPackagePath, Utils.calculateElapsedTime());
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -87,17 +92,17 @@ public class Writer {
     // deve preparar todos os dados necessarios para a escrita do json
     public static void writeJson() {
         if (Values.isSingleFile()) {
-            Path jsonFilePath = Values.getCacheDirs().resolve(Utils.resolveJsonFileName(Values.getSoftPropertiesFileName()));
+            Path jsonFilePath = Utils.resolveJsonFilePath(Values.getSoftPropertiesFileName());
             HashTableModel htm = new HashTableModel(Values.getInputPropertiesPath());
             Values.putElementIntoHashTableMap(jsonFilePath, htm);
             Writer.jsonWriter(htm, jsonFilePath);
             
         } else {
-            Values.getFileList()
+            Values.getAllCacheFilesToWriteFromDeque()
             	  .stream()
             	  .map(path -> {
 		              Reader.loadPropFile(path);
-		              Path jsonFilePath = Values.getCacheDirs().resolve(Utils.resolveJsonFileName(Values.getSoftPropertiesFileName()));
+		              Path jsonFilePath = Utils.resolveJsonFilePath(Values.getSoftPropertiesFileName());
 		              HashTableModel htm = new HashTableModel(path);
 		              Map.Entry<Path, HashTableModel> entryModel = Map.entry(jsonFilePath, htm);
 		              Values.putElementIntoHashTableMap(jsonFilePath, htm);
