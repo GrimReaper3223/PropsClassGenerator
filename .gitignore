@@ -1,4 +1,5 @@
 /src/main/java/**/generated
+/src/test/java/**/generated
 /target/
 /.settings/
 /bin/
