@@ -1,7 +1,5 @@
 package com.dsl.classgen.io;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
@@ -13,14 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.function.Supplier;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.dsl.classgen.io.cache_system.FileAnalyzer;
+import com.dsl.classgen.io.cache_system.HashTableModel;
 import com.dsl.classgen.utils.Utils;
-import com.google.gson.Gson;
 
 public final class Values {
 	
@@ -30,12 +28,12 @@ public final class Values {
 	// se true for definido, a classe gerada sera impressa ao inves de escrita
     private static boolean isDebugMode = false;
     
-    private static final Properties PROPS = new Properties();			// objeto que vai armazenar as propriedades dos arquivos carregados
-    private static final Supplier<Gson> GSON = Gson::new;				// fornece um objeto Gson sob demanda
-    private static final String OUTTER_CLASS_NAME;						// nome final da classe externa
+    private static final Properties PROPS;							// objeto que vai armazenar as propriedades dos arquivos carregados
+    private static final String OUTTER_CLASS_NAME;					// nome final da classe externa
+    private static final String USER_DIR;
     
     // estruturas de dados
-    private static Deque<Path> cacheToWriteDeque = new ArrayDeque<Path>();	// deve armazenar arquivos para processamento de cache. Quando novos arquivos forem fornecidos para a lista de arquivos ou individualmente, uma entrada correspondente deve ser criada aqui
+    private static Deque<Path> newCacheToWriteDeque = new ArrayDeque<Path>();	// deve armazenar arquivos para processamento de cache. Quando novos arquivos forem fornecidos para a lista de arquivos ou individualmente, uma entrada correspondente deve ser criada aqui
     private static List<Path> fileList = new ArrayList<Path>();				// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
     private static List<Path> dirList = new ArrayList<Path>();				// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista 
     private static Deque<Map.Entry<Path, ?>> changedFileDeque = new ArrayDeque<>();		// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
@@ -60,51 +58,26 @@ public final class Values {
     // caminhos no sistema de arquivos
     private static Path inputPropertiesPath;					// caminho referente ao arquivo de propriedades (ou diretorio contendo os arquivos de propriedades a serem examinados)
     private static Path existingPJavaGeneratedSourcePath;		// caminho referente ao arquivo fonte P.java caso ele exista
-    private static Path outputPackagePath;						// caminho indicando onde o pacote ...generated deve ser criado
+    private static Path outputSourceDirPath;						// caminho indicando onde o pacote ...generated deve ser criado
     private static Path outputSourceFilePath;					// caminho indicando onde o arquivo P.java deve ser escrito, resolvido com o caminho de onde o pacote deve ser criado
     private static Path outputClassFilePath;					// caminho indicando onde o arquivo P.class deve ser encontrado, resolvido com o caminho do pacote existente
-    private static Path compilationPath;						// caminho indicando onde se encontram os arquivos .class desejados pelo framework
-    
-    private static final Path CACHE_DIRS;						// caminho referente ao diretorio de cache
-    private static final String JSON_FILENAME_PATTERN;			// padrao de nomenclatura para escrita do arquivo json
     
     private static long startTimeOperation;						// guarda o tempo do sistema no momento em que a geracao se inicia
-    private static long endTimeOperation;						// guarda o tempo do sistema no mometno em que a geracao finaliza, oferencendo informacoes sobre quanto tempo durou a operacao
-    private static final String EXCEPTION_TXT;					// contem o texto de mensagem de excecao caso o padrao de reconhecimento de tipo java nao esteja presente no arquivo de propriedade
 
     static {
-    	String userDir = System.getProperty("user.dir");
+    	PROPS = new Properties();
     	
+    	USER_DIR = System.getProperty("user.dir");
     	OUTTER_CLASS_NAME = "P";
         isExistsPJavaSource = false;
-        outputPackagePath = Paths.get(userDir, isDebugMode ? "src/test/java" : "src/main/java");
-        compilationPath = Paths.get(userDir, "target", "classes");
-        CACHE_DIRS = Paths.get(userDir, ".jsonProperties-cache");
-        JSON_FILENAME_PATTERN = "%s-cache.json";
+        outputSourceDirPath = Paths.get(USER_DIR, isDebugMode ? "src/test/java" : "src/main/java");
         startTimeOperation = 0L;
-        endTimeOperation = 0L;
-        EXCEPTION_TXT = """
-	        Error: The variable type identification was not found for creating the classes.
-	        Enter the variable type and try again.
-	        Preferably, place the identifier at the top of the file so that it can be analyzed faster.
-	        
-	        Ex.:
-        		 # $javatype:@String
-        		 
-        		 ... rest of the .properties file...
-        		 
-        	# - Comment for the property file;
-        	$javatype - Java type identifier;
-        	: - Syntactic separator;
-        	@ - Tells the service that after this identifier, the java type will be read for the variable;
-        	String - The java type used in this example;
-        """;
     }
     
     public static void resolvePaths() {
         packageClassWithOutterClassName = packageClass + "." + OUTTER_CLASS_NAME;
-        outputPackagePath = outputPackagePath.resolve(Utils.normalizePath(packageClass, ".", "/"));
-        outputSourceFilePath = outputPackagePath.resolve(OUTTER_CLASS_NAME + ".java");
+        outputSourceDirPath = outputSourceDirPath.resolve(Utils.normalizePath(packageClass, ".", "/"));
+        outputSourceFilePath = outputSourceDirPath.resolve(OUTTER_CLASS_NAME + ".java");
     }
 
     public static <T extends WatchEvent.Kind<?>> void addChangedValueToDeque(Map.Entry<Path, T> entry) {
@@ -127,14 +100,14 @@ public final class Values {
     public static List<Path> getAllCacheFilesToWriteFromDeque() {
     	List<Path> cacheList = new ArrayList<>();
     	
-    	while(cacheToWriteDeque.size() > 0) {
-    		cacheList.add(cacheToWriteDeque.poll());
+    	while(newCacheToWriteDeque.size() > 0) {
+    		cacheList.add(newCacheToWriteDeque.poll());
     	}
     	return cacheList;
     }
     
-    public static boolean containsCacheForProcess() {
-    	return !cacheToWriteDeque.isEmpty();
+    public static boolean containsCacheToProcess() {
+    	return !newCacheToWriteDeque.isEmpty();
     }
 
     public static List<Path> getDirList() {
@@ -151,13 +124,15 @@ public final class Values {
     }
 
     public static void addFileToList(Path filePath) {
-    	cacheToWriteDeque.add(filePath);
+    	if(!FileAnalyzer.hasValidCacheFile(filePath)) {
+    		newCacheToWriteDeque.add(filePath);
+    	}
         fileList.add(filePath);
         LOGGER.log(Level.INFO, "Properties file added to file list: {}\n", filePath);
     }
 
     public static void setFileList(List<Path> fileList) {
-    	cacheToWriteDeque.addAll(fileList);
+    	newCacheToWriteDeque.addAll(fileList);
         Values.fileList = fileList;
     }
 
@@ -177,18 +152,16 @@ public final class Values {
         return hashTableModelMap.get(key);
     }
 
-    public static void putElementIntoHashTableMap(Path key, HashTableModel value) {
-        hashTableModelMap.put(key, value);
+    public static void computeElementIntoHashTableMap(Path key, HashTableModel value) {
+        hashTableModelMap.computeIfPresent(key, (_, _) -> value);
     }
 
-    public static void deleteElementFromHashTableMap(Path key, HashTableModel value) {
-    	try {
-			Files.delete(key);
-			hashTableModelMap.remove(key, value);
-    	} 
-    	catch (IOException e) {
-    		e.printStackTrace();
-    	}
+    public static void deleteElementFromHashTableMap(Path key) {
+		hashTableModelMap.remove(key);
+    }
+    
+    public static int getHashTableMapSize() {
+    	return hashTableModelMap.size();
     }
     
     public static boolean isSingleFile() {
@@ -231,8 +204,8 @@ public final class Values {
         Values.softPropertiesfileName = softPropertiesfileName;
     }
 
-    public static Path getCacheDirs() {
-        return CACHE_DIRS;
+    public static Path getCacheDir() {
+        return Paths.get(USER_DIR, ".jsonProperties-cache");
     }
 
     public static String getPackageClassWithOutterClassName() {
@@ -280,8 +253,8 @@ public final class Values {
         Values.inputPropertiesPath = inputPropertiesPath;
     }
 
-    public static Path getOutputPackagePath() {
-        return outputPackagePath;
+    public static Path getOutputSourceDirPath() {
+        return outputSourceDirPath;
     }
 
     public static Path getOutputSourceFilePath() {
@@ -298,7 +271,7 @@ public final class Values {
     }
 
     public static Path getCompilationPath() {
-        return compilationPath;
+        return Paths.get(USER_DIR, "target", "classes");
     }
 
     public static long getStartTimeOperation() {
@@ -309,24 +282,8 @@ public final class Values {
         Values.startTimeOperation = startTimeOperation;
     }
 
-    public static long getEndTimeOperation() {
-        return endTimeOperation;
-    }
-
-    public static void setEndTimeOperation(long endTimeOperation) {
-        Values.endTimeOperation = endTimeOperation;
-    }
-
     public static boolean isDebugMode() {
         return isDebugMode;
-    }
-
-    public static String getJsonFilenamePattern() {
-        return JSON_FILENAME_PATTERN;
-    }
-
-    public static Gson getGson() {
-        return GSON.get();
     }
 
     public static Properties getProps() {
@@ -338,7 +295,22 @@ public final class Values {
     }
 
     public static String getExceptionTxt() {
-        return EXCEPTION_TXT;
+        return """
+    	        Error: The variable type identification was not found for creating the classes.
+    	        Enter the variable type and try again.
+    	        Preferably, place the identifier at the top of the file so that it can be analyzed faster.
+    	        
+    	        Ex.:
+            		 # $javatype:@String
+            		 
+            		 ... rest of the .properties file...
+            		 
+            	# - Comment for the property file;
+            	$javatype - Java type identifier;
+            	: - Syntactic separator;
+            	@ - Tells the service that after this identifier, the java type will be read for the variable;
+            	String - The java type used in this example;
+            """;
     }
 }
 

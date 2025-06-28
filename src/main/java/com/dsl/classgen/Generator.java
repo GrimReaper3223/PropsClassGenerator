@@ -6,14 +6,15 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.dsl.classgen.annotations.processors.ProcessAnnotation;
 import com.dsl.classgen.generators.OutterClassGenerator;
-import com.dsl.classgen.io.Compiler;
-import com.dsl.classgen.io.FileCacheSystem;
 import com.dsl.classgen.io.GeneratedStructureChecker;
 import com.dsl.classgen.io.ProcessQueuedFileEvents;
-import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
-import com.dsl.classgen.io.Writer;
+import com.dsl.classgen.io.cache_system.FileCacheSystem;
+import com.dsl.classgen.io.file_handler.Compiler;
+import com.dsl.classgen.io.file_handler.Reader;
+import com.dsl.classgen.io.file_handler.Writer;
 import com.dsl.classgen.services.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
@@ -42,22 +43,22 @@ public final class Generator {
 				--- Framework Initialized ---
 				-----------------------------
 				
-				Input Path: %s;
-				Output Directory Path: %s;
-				Package Class: %s;
-				Is Recursive?: %b;
-				Is Single File?: %b;
-				Is There a Generated Structure?: %b;
+				Input Path: {};
+				Output Directory Path: {};
+				Package Class: {};
+				Is Recursive?: {};
+				Is Single File?: {};
+				Is There a Generated Structure?: {};
 				
 				Developer Options
-				Is Debug Mode?: %b;
+				Is Debug Mode?: {};
 				
 				-----------------------------
 				-----------------------------
 				
 				Call 'Generator.generate()' to generate java classes or parse existing classes.\n
 				""", inputPath, 
-					 Values.getOutputPackagePath(), 
+					 Values.getOutputSourceDirPath(), 
 					 Values.getPackageClass(), 
 					 isRecursive, 
 					 Values.isSingleFile(),
@@ -93,6 +94,6 @@ public final class Generator {
 		Compiler.compile();
 		WatchServiceImpl.initialize();
 		ProcessQueuedFileEvents.initialize();
-//		ProcessAnnotation.processAnnotations();
+		ProcessAnnotation.processAnnotations();
 	}
 }

@@ -21,10 +21,7 @@ public final class Utils {
             Values.setStartTimeOperation(System.currentTimeMillis());
             return 0L;
         }
-        if (Values.getEndTimeOperation() == 0L) {
-            Values.setEndTimeOperation(System.currentTimeMillis());
-        }
-        return Values.getEndTimeOperation() - Values.getStartTimeOperation();
+        return System.currentTimeMillis() - Values.getStartTimeOperation();
     }
 
     /*
@@ -35,19 +32,20 @@ public final class Utils {
     	return filePath.getFileName().toString().endsWith(".properties");
     }
     
-    public static Path resolveJsonFilePath(Path fileName) {
-    	if(fileName.toString().contains(".")) {
-    		fileName = formatFileName(fileName);
+    public static Path resolveJsonFilePath(Path path) {
+    	String jsonFileNamePattern = "%s-cache.json";
+    	if(path.toString().contains(".")) {
+    		path = formatFileName(path);
     	}
-    	Path jsonFileName = Path.of(String.format(Values.getJsonFilenamePattern(), fileName));
-        return Values.getCacheDirs().resolve(jsonFileName);
+    	Path jsonFileName = Path.of(String.format(jsonFileNamePattern, path));
+        return Values.getCacheDir().resolve(jsonFileName);
     }
 
     public static Path formatFileName(Path filePath) {
         String fileName = filePath.getFileName().toString();
         return Path.of(fileName.substring(0, fileName.lastIndexOf(".")));
     }
-
+    
 //    public static String extractPackageName(Path path) {
 //        return path.toString().replaceAll("[\\W\\D]*/java/", "");
 //    }

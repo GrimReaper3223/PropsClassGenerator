@@ -180,7 +180,7 @@ public class WatchServiceImpl {
             if (!key.reset()) {
             	keys.remove(key);
             	
-            	LOGGER.log(Level.INFO, "Key removed from KeyMap: {}", key);
+            	LOGGER.log(Level.INFO, "Key removed from KeyMap: {}", path);
             	if (keys.isEmpty()) {
             		LOGGER.log(Level.WARN, "There are no keys remaining for processing. Ending Watcher...");
             		break;

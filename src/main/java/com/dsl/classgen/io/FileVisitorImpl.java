@@ -9,7 +9,9 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.ExecutionException;
 
+import com.dsl.classgen.io.cache_system.HashTableModel;
 import com.dsl.classgen.utils.Utils;
+import com.google.gson.Gson;
 
 public class FileVisitorImpl {
 
@@ -34,7 +36,7 @@ public class FileVisitorImpl {
                 Utils.getExecutor().submit(() -> {
                     try (BufferedReader br = Files.newBufferedReader(file)){
                         System.out.format("[CACHE] Loading JSON file: %s%n", file);
-                        Values.putElementIntoHashTableMap(file, Values.getGson().fromJson(br, HashTableModel.class));
+                        Values.computeElementIntoHashTableMap(file, new Gson().fromJson(br, HashTableModel.class));
                     }
                     catch (IOException e) {
                         e.printStackTrace();

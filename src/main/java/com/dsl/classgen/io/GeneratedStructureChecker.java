@@ -45,7 +45,7 @@ public class GeneratedStructureChecker {
 
     // constroi um fluxo em /src/main/java
     private static Stream<Path> findGeneratedDir() throws IOException {
-        return Files.find(Values.getOutputPackagePath(),
+        return Files.find(Values.getOutputSourceDirPath(),
         		Short.MAX_VALUE, 
         		(path, _) -> Files.isDirectory(path))
         			.filter(path -> path.getFileName().toString().equals("generated"))
