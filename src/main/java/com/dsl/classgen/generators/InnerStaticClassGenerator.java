@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 
 import com.dsl.classgen.annotations.GeneratedInnerClass;
 import com.dsl.classgen.annotations.PrivateConstructor;
-import com.dsl.classgen.io.HashTableModel;
 import com.dsl.classgen.io.Values;
+import com.dsl.classgen.io.cache_system.HashTableModel;
 import com.dsl.classgen.utils.Utils;
 
 public final class InnerStaticClassGenerator implements OutputLogGeneration {
@@ -28,7 +28,9 @@ public final class InnerStaticClassGenerator implements OutputLogGeneration {
 	        		\t@%6$s
 	        		\tprivate %5$s() {}
 	        		
+	        		\t// PROPS-CONTENT-START
 	        		\t%7$s
+	        		\t// PROPS-CONTENT-END
         		\t}
         		\t// CLASS HINT <<~ %2$s
         		""", GeneratedInnerClass.class.getSimpleName(), 

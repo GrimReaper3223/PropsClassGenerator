@@ -2,8 +2,8 @@ package com.dsl.classgen.generators;
 
 import com.dsl.classgen.annotations.GeneratedClass;
 import com.dsl.classgen.annotations.PrivateConstructor;
-import com.dsl.classgen.io.Reader;
 import com.dsl.classgen.io.Values;
+import com.dsl.classgen.io.file_handler.Reader;
 
 import java.util.stream.Collectors;
 
@@ -34,7 +34,9 @@ public final class OutterClassGenerator implements OutputLogGeneration {
         	@%4$s
         	private %3$s() {}
         	
+        	// PROPS-FILE-START
         	%5$s
+        	// PROPS-FILE-END
         }
         """, Values.getPackageClass(), 
         	GeneratedClass.class.getSimpleName(), 
