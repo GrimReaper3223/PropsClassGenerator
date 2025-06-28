@@ -22,7 +22,7 @@ class RuntimeCompilerTest {
 		jc.run(null, null, null, 
 				"-d","target/classes",
 				"--module-path", libs,
-				"-sourcepath", "/src/main/java/:" + Values.getOutputPackagePath(),
+				"-sourcepath", "/src/main/java/:" + Values.getOutputSourceDirPath(),
 				Values.getExistingPJavaGeneratedSourcePath().toString());
 	}
 }
