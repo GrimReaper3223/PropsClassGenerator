@@ -10,5 +10,5 @@ module props_class_generator {
 	exports com.dsl.classgen.annotations;
 	exports com.dsl.classgen.annotations.containers;
 	
-	opens com.dsl.classgen.io to com.google.gson;
+	opens com.dsl.classgen.io.cache_system to com.google.gson;
 }
