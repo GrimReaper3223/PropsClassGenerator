@@ -10,7 +10,7 @@ sealed interface OutputLogGeneration permits InnerFieldGenerator, InnerStaticCla
 	
 	final Logger logger = LogManager.getLogger(OutputLogGeneration.class);
 	
-    default public void formatGenerationOutput(String input1, String input2, String input3) {
+    public default void formatGenerationOutput(String input1, String input2, String input3) {
     	logger.log(Level.INFO, "Generating {} '{}' {}", input1, input2, Objects.isNull(input3) ? "" : input3.equals(System.lineSeparator()) ? "\n" : "[" + input3 + "]");
     }
 }

@@ -1,4 +1,4 @@
-package com.dsl.classgen.io.cache_system;
+package com.dsl.classgen.io.cache_manager;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-public class HashTableModel implements Serializable {
+public class CacheModel implements Serializable {
 	
     private static final long serialVersionUID = 1L;
     
@@ -21,43 +21,48 @@ public class HashTableModel implements Serializable {
     public int fileHash;						// hash do arquivo de propriedades
     public Map<String, Integer> hashTableMap;	// pares chave-valor do arquivo de propriedades deste objeto
 
-    public HashTableModel() {}
+    public CacheModel() {}
     
-    public HashTableModel(Path filePath, Properties props) {
+    public CacheModel(Path filePath, Properties props) {
     	this.props = props;
         this.filePath = filePath.toString();
         this.fileHash = hashCode();
-       	initPropertyMapGraph();
+        this.hashTableMap = initPropertyMapGraph();
     }
 
     // inicializa o grafo dos dados do arquivo de propriedades dentro de hashTableMap
-    public void initPropertyMapGraph() {
-        this.hashTableMap = props.entrySet()
-        						  .stream()
-        						  .map(entry -> Map.entry(entry.getKey().toString(), Objects.hash(entry.getKey().toString(), entry.getValue())))
-        						  .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    public Map<String, Integer> initPropertyMapGraph() {
+        return props.entrySet()
+        			.stream()
+        			.map(entry -> Map.entry(entry.getKey().toString(), Objects.hash(entry.getKey().toString(), entry.getValue())))
+        			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     // compara dois objetos HashTableModel pelos seus hashTableMaps e hash de arquivo
+    @Override
     public boolean equals(Object obj) {
-        HashTableModel htm = (HashTableModel)obj;
-        boolean result = htm.hashTableMap.entrySet().containsAll(hashTableMap.entrySet());
-        return htm.fileHash == fileHash && result;
+        CacheModel cm = (CacheModel) Objects.requireNonNull(obj);
+        boolean result = cm.hashTableMap.entrySet().containsAll(hashTableMap.entrySet());
+        return cm.fileHash == fileHash && result;
     }
 
     // faz o hash do arquivo de propriedades
+    @Override
     public int hashCode() {
-        BasicFileAttributes attrs = null;
+        FileTime creationTime = FileTime.fromMillis(0L);
+        FileTime lastModifiedTime = FileTime.fromMillis(0L);
+        long fileSize = 0L;
+        
         try {
-            attrs = Files.readAttributes(Path.of(filePath), BasicFileAttributes.class);
+        	BasicFileAttributes attrs = Files.readAttributes(Path.of(filePath), BasicFileAttributes.class);
+            creationTime = attrs.creationTime();
+            lastModifiedTime = attrs.lastModifiedTime();
+            fileSize = attrs.size();
         }
         catch (IOException e) {
             e.printStackTrace();
         }
         
-        FileTime creationTime = attrs.creationTime();
-        FileTime lastModifiedTime = attrs.lastModifiedTime();
-        long fileSize = attrs.size();
         return Objects.hash(creationTime.toMillis(), lastModifiedTime.toMillis(), fileSize);
     }
 }

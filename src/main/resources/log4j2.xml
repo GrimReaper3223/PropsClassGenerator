@@ -7,13 +7,13 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="com.dsl.classgen.io.file_handler.Writer" level="info" additivity="false">
+        <Logger name="com.dsl.classgen.io.file_manager.Writer" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="com.dsl.classgen.io.file_handler.Reader" level="info" additivity="false">
+        <Logger name="com.dsl.classgen.io.file_manager.Reader" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="com.dsl.classgen.io.file_handler.Compiler" level="info" additivity="false">
+        <Logger name="com.dsl.classgen.io.file_manager.Compiler" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="com.dsl.classgen.generators.OutterClassGenerator" level="info" additivity="false">
@@ -22,16 +22,19 @@
         <Logger name="com.dsl.classgen.generators.OutputLogGeneration" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="com.dsl.classgen.io.cache_system.FileCacheSystem" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.io.Values" level="info" additivity="false">
+        <Logger name="com.dsl.classgen.io.cache_manager.CacheManager" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="com.dsl.classgen.services.WatchServiceImpl" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="com.dsl.classgen.Generator" level="info" additivity="false">
+        <Logger name="com.dsl.classgen.context.PathsContext" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="com.dsl.classgen.Generator" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="com.dsl.classgen.io.Values" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Root level="fatal">

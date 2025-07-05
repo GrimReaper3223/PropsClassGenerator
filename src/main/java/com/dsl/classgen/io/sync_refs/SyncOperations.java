@@ -1,4 +1,4 @@
-package com.dsl.classgen.io.file_handler;
+package com.dsl.classgen.io.sync_refs;
 
 sealed interface SyncOperations permits SyncBin, SyncSource {
 

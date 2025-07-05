@@ -1,53 +1,61 @@
 package com.dsl.classgen.generators;
 
-import com.dsl.classgen.annotations.GeneratedClass;
-import com.dsl.classgen.annotations.PrivateConstructor;
-import com.dsl.classgen.io.Values;
-import com.dsl.classgen.io.file_handler.Reader;
-
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Level;
 
+import com.dsl.classgen.annotations.GeneratedClass;
+import com.dsl.classgen.annotations.PrivateConstructor;
+import com.dsl.classgen.context.FlagsContext;
+import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.PathsContext;
+import com.dsl.classgen.io.file_manager.Reader;
+
 public final class OutterClassGenerator implements OutputLogGeneration {
+	
+	static FrameworkContext fwCtx = FrameworkContext.get();
+	static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
+	static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
 	
     public void generateOutterClass() {
         InnerStaticClassGenerator innerStaticClassGenerator = new InnerStaticClassGenerator();
-        String outterClassName = Values.getOutterClassName();
+        String outterClassName = pathsCtx.getOutterClassName();
         logger.log(Level.INFO, "Generating classes...\n");
         formatGenerationOutput("Outter Class", outterClassName, "\n");
         
-        Values.setGeneratedClass(String.format("""
-        package %1$s;
+        String outterClassPattern = """
+                package %1$s;
+                
+                import com.dsl.classgen.annotations.GeneratedClass;
+                import com.dsl.classgen.annotations.GeneratedInnerClass;
+                import com.dsl.classgen.annotations.InnerField;
+                import com.dsl.classgen.annotations.PrivateConstructor;
+                
+                /*
+                 *	*** DO NOT DELETE THE COMMENT BELOW! ***
+                 */ 
+                @%2$s
+                public final class %3$s {
+                
+                	@%4$s
+                	private %3$s() {}
+                	
+                	// PROPS-FILE-START
+                	%5$s
+                	// PROPS-FILE-END
+                }
+                """; 
         
-        import com.dsl.classgen.annotations.GeneratedClass;
-        import com.dsl.classgen.annotations.GeneratedInnerClass;
-        import com.dsl.classgen.annotations.InnerField;
-        import com.dsl.classgen.annotations.PrivateConstructor;
-        
-        /*
-         *	*** DO NOT DELETE THE COMMENT BELOW! ***
-         */ 
-        @%2$s
-        public final class %3$s {
-        
-        	@%4$s
-        	private %3$s() {}
-        	
-        	// PROPS-FILE-START
-        	%5$s
-        	// PROPS-FILE-END
-        }
-        """, Values.getPackageClass(), 
+        pathsCtx.setGeneratedClass(String.format(outterClassPattern, pathsCtx.getPackageClass(),
         	GeneratedClass.class.getSimpleName(), 
         	outterClassName, 
         	PrivateConstructor.class.getSimpleName(), 
-        	Values.isSingleFile() ? innerStaticClassGenerator.generateInnerStaticClass() : 
-        		Values.getFileList()
-        			  .stream()
-        			  .map(path -> {
-				          Reader.loadPropFile(path);
-				          return innerStaticClassGenerator.generateInnerStaticClass();
-        			  }).collect(Collectors.joining("\n\t"))));
+        	flagsCtx.getIsSingleFile() ? innerStaticClassGenerator.generateInnerStaticClass() : 
+        		pathsCtx.getFileList()
+	        			.stream()
+	        			.map(path -> {
+					        Reader.loadPropFile(path);
+					        return innerStaticClassGenerator.generateInnerStaticClass();
+	        			}).collect(Collectors.joining("\n\t"))));
     }
 }

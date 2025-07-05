@@ -18,17 +18,24 @@ import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dsl.classgen.io.Values;
+import com.dsl.classgen.context.FlagsContext;
+import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.utils.Utils;
 
 public class WatchServiceImpl {
 	private static final Logger LOGGER = LogManager.getLogger(WatchServiceImpl.class);
+	
+	private static FrameworkContext fwCtx = FrameworkContext.get();
+	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
+	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
 	
     private static final Thread watchServiceThread = new Thread(WatchServiceImpl::processEvents);
     private static final Map<WatchKey, Path> keys = new HashMap<>();
@@ -36,6 +43,8 @@ public class WatchServiceImpl {
     
     private static final Kind<?>[] EVENT_KIND_ARR = {ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY}; 
 
+    private WatchServiceImpl() {}
+    
     // inicializa o servico de monitoramento de diretorio
     public static void initialize() {
         if (!watchServiceThread.isAlive()) {
@@ -54,8 +63,8 @@ public class WatchServiceImpl {
 
     // faz o registro inicial dos caminhos ja processados
     private static void initialRegistration() throws IOException {
-        if (Values.isRecursive()) {
-            Values.getDirList().stream().map(path -> {
+        if (flagsCtx.getIsRecursive()) {
+        	pathsCtx.getDirList().stream().map(path -> {
                 WatchKey key = null;
                 try {
                     key = path.register(watcher, EVENT_KIND_ARR);
@@ -66,7 +75,7 @@ public class WatchServiceImpl {
                 return Map.ofEntries(WatchServiceImpl.verifyKey(key, path));
             }).forEach(keys::putAll);
         } else {
-            Path inputPath = Files.isDirectory(Values.getInputPropertiesPath()) ? Values.getInputPropertiesPath() : Values.getInputPropertiesPath().getParent();
+            Path inputPath = Files.isDirectory(pathsCtx.getInputPropertiesPath()) ? pathsCtx.getInputPropertiesPath() : pathsCtx.getInputPropertiesPath().getParent();
             WatchKey key = inputPath.register(watcher, EVENT_KIND_ARR);
             keys.putAll(Map.ofEntries(WatchServiceImpl.verifyKey(key, inputPath)));
         }
@@ -76,7 +85,7 @@ public class WatchServiceImpl {
     // registra um novo diretorio sob demanda
     public static void registerNewDir(Path path) {
 		try {
-			if (Values.isRecursive()) {
+			if (flagsCtx.getIsRecursive()) {
 				Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
 					@Override
 					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -87,7 +96,7 @@ public class WatchServiceImpl {
 					@Override
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 						if(Utils.isPropertiesFile(file)) {
-							Values.addFileToList(file);
+							pathsCtx.addFileToList(file);
 						}
 						return FileVisitResult.CONTINUE;
 					}
@@ -97,7 +106,7 @@ public class WatchServiceImpl {
 				try(Stream<Path> files = Files.list(path)) {
 					files.forEach(file -> {
 						if(Utils.isPropertiesFile(file)) {
-							Values.addFileToList(file);
+							pathsCtx.addFileToList(file);
 						}
 					});
 				}
@@ -116,7 +125,6 @@ public class WatchServiceImpl {
         
         if (mappedPath == null) {
         	LOGGER.log(Level.INFO, "Registering: {}...", path);
-            System.out.format("%n", path);
             
         } else if (!path.equals(mappedPath)) {
         	LOGGER.log(Level.INFO, "Updating: {} -> {}...", mappedPath, path);
@@ -129,7 +137,7 @@ public class WatchServiceImpl {
     private static void processPropertyDir(Path dir) throws IOException {
 		var pair = verifyKey(dir.register(watcher, EVENT_KIND_ARR), dir);
 		keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue());
-		Values.addDirToList(dir);
+		pathsCtx.addDirToList(dir);
     }
 
     // casting utilitario
@@ -145,26 +153,25 @@ public class WatchServiceImpl {
     private static void processEvents() {
     	LOGGER.log(Level.WARN, "\nWatching...");
         while (true) {
-            WatchKey key;
+            WatchKey key = null;
             
             try {
                 key = watcher.take();
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException _) {
             	if(Thread.currentThread().isInterrupted()) {
             		LOGGER.log(Level.ERROR, "Watcher thread is interrupted");
             		Thread.currentThread().interrupt();
             	}
-                break;
             }
             
             Path path = keys.get(key);
             if (path == null) {
             	LOGGER.log(Level.WARN, "WatchKey not recognized.");
-                continue;
+            	continue;
             }
             
-            key.pollEvents().stream()
+            Objects.requireNonNull(key).pollEvents().stream()
             				.filter(event -> event.kind() != StandardWatchEventKinds.OVERFLOW)
             				.map(event -> {
 					                WatchEvent<Path> eventPath = cast(event);
@@ -174,7 +181,7 @@ public class WatchServiceImpl {
             				.filter(entry -> Utils.isPropertiesFile(entry.getKey()) || Files.isDirectory(entry.getKey()))
             				.forEach(entry -> {
             					LOGGER.log(Level.INFO, "{}: {}", entry.getValue().name(), entry.getKey());
-            					Values.addChangedValueToDeque(entry);
+            					pathsCtx.addChangedEntryToQueue(entry);
             				});
             				
             if (!key.reset()) {

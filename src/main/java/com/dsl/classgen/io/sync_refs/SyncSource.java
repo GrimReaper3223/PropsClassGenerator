@@ -1,18 +1,18 @@
-package com.dsl.classgen.io.file_handler;
+package com.dsl.classgen.io.sync_refs;
 
 import java.nio.file.Path;
 
-import com.dsl.classgen.io.Values;
-import com.dsl.classgen.io.cache_system.HashTableModel;
+import com.dsl.classgen.io.cache_manager.CacheManager;
+import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.utils.Utils;
 
 public final class SyncSource implements SyncOperations {
 
-	private final HashTableModel htm;
+	private final CacheModel cm;
 	private final Path jsonFilePath;
 	
 	public SyncSource(Path jsonFilePath) {
-		this.htm = Values.getElementFromHashTableMap(Utils.resolveJsonFilePath(jsonFilePath.getFileName()));
+		this.cm = CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(jsonFilePath.getFileName()));
 		this.jsonFilePath = jsonFilePath;
 	}
 

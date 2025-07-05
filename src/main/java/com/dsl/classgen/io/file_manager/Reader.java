@@ -1,4 +1,4 @@
-package com.dsl.classgen.io.file_handler;
+package com.dsl.classgen.io.file_manager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,13 +16,19 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.dsl.classgen.context.FlagsContext;
+import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.io.FileVisitorImpl;
-import com.dsl.classgen.io.Values;
 import com.dsl.classgen.utils.Utils;
 
 public class Reader {
 	
-	private static final Logger LOGGER = LogManager.getLogger(Values.class);
+	private static final Logger LOGGER = LogManager.getLogger(Reader.class);
+	
+	private static FrameworkContext fwCtx = FrameworkContext.get();
+	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
+	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
 	
     private Reader() {}
 
@@ -31,7 +37,7 @@ public class Reader {
     	// se for um diretorio, deve chamar o metodo que processa a lista de arquivos no diretorio
         if (Files.isRegularFile(inputPath)) {
             loadPropFile(inputPath);
-            Values.setIsSingleFile(true);
+            flagsCtx.setIsSingleFile(true);
             
         } else if (Files.isDirectory(inputPath)) {
             processDirectoryFileList(inputPath);
@@ -41,8 +47,8 @@ public class Reader {
     // carrega o arquivo de propriedades
     public static void loadPropFile(Path inputPath) {
         try {
-            Properties props = Values.getProps();
-            try (InputStream in = Files.newInputStream(inputPath)){
+            Properties props = fwCtx.getProps();
+            try (InputStream in = Files.newInputStream(inputPath)) {
                 if (!props.isEmpty()) {
                     props.clear();
                 }
@@ -51,9 +57,8 @@ public class Reader {
             
             LOGGER.log(Level.INFO, "\n***Properties file loaded from path: {}***\n", inputPath);
                 
-            Values.setPropertiesDataType(readJavaType(inputPath));
-            Values.setRawPropertiesfileName(inputPath.getFileName());
-            Values.setSoftPropertiesfileName(Utils.formatFileName(inputPath));
+			pathsCtx.setPropertiesDataType(readJavaType(inputPath));
+            pathsCtx.setPropertiesFileName(inputPath.getFileName());
         }
         catch (InterruptedException | ExecutionException | IOException e) {
             e.printStackTrace();
@@ -66,33 +71,32 @@ public class Reader {
     // processa a lista de arquivos contida em um diretorio e/ou subdiretorios
     private static void processDirectoryFileList(Path inputPath) {
         try {
-            FileVisitorImpl.ReaderFileVisitor fileVisitor = new FileVisitorImpl.ReaderFileVisitor();
-            if (Values.isRecursive()) {
-                Files.walkFileTree(inputPath, fileVisitor);
+            if (flagsCtx.getIsRecursive()) {
+                Files.walkFileTree(inputPath, new FileVisitorImpl.ReaderFileVisitor());
             } else {
                 try (Stream<Path> pathStream = Files.list(inputPath)){
-                    Values.setFileList(pathStream.filter(Files::isRegularFile)
-						                    	 .filter(Utils::isPropertiesFile)
-						                    	 .toList());
+                    pathStream.filter(Files::isRegularFile)
+	                    	  .filter(Utils::isPropertiesFile)
+	                    	  .forEach(pathsCtx::addFileToList);
                 }
-                Values.addDirToList(inputPath);
+                pathsCtx.addDirToList(inputPath);
             }
         }
         catch (IOException e) {
             e.printStackTrace();
         }
         finally {
-            Values.setIsSingleFile(false);
+            flagsCtx.setIsSingleFile(false);
         }
     }
 
     // le o tipo java dentro do arquivo de propriedades correspondente ao padrao # $javatype:@<tipo_de_dado_java>
-    private static String readJavaType(Path path) throws IOException, InterruptedException, ExecutionException {
+    private static String readJavaType(Path path) throws InterruptedException, ExecutionException {
     	return Utils.getExecutor().submit(() -> {
 	        try (Stream<String> lines = Files.lines(path, StandardCharsets.ISO_8859_1);){
 	            return lines.filter(input -> input.contains("$javatype:"))
 	            				.findFirst().map(input -> input.substring(input.indexOf("@") + 1))
-	            				.orElseThrow(() -> new IOException(Values.getExceptionTxt()));
+	            				.orElseThrow(FrameworkContext::throwIOException);
 	        }
     	}).get();
     }
@@ -100,9 +104,10 @@ public class Reader {
     // carrega o binario da classe P.java gerado
     public static Class<?> loadGeneratedBinClass() {
         Class<?> generatedClass = null;
+        String fullPackageClass = pathsCtx.getFullPackageClass().replace(".java", "");
         try {
-            URLClassLoader classLoader = new URLClassLoader(new URL[] {Values.getCompilationPath().toUri().toURL()}, ClassLoader.getPlatformClassLoader());
-            generatedClass = Class.forName(Values.getPackageClassWithOutterClassName(), true, classLoader);
+            URLClassLoader classLoader = new URLClassLoader(new URL[] {pathsCtx.getOutputClassFilePath().toUri().toURL()}, ClassLoader.getPlatformClassLoader());
+            generatedClass = Class.forName(fullPackageClass , true, classLoader);
         }
         catch (ClassNotFoundException | MalformedURLException e) {
             e.printStackTrace();

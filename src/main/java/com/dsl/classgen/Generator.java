@@ -7,14 +7,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.annotations.processors.ProcessAnnotation;
+import com.dsl.classgen.context.FlagsContext;
+import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.generators.OutterClassGenerator;
 import com.dsl.classgen.io.GeneratedStructureChecker;
 import com.dsl.classgen.io.ProcessQueuedFileEvents;
-import com.dsl.classgen.io.Values;
-import com.dsl.classgen.io.cache_system.FileCacheSystem;
-import com.dsl.classgen.io.file_handler.Compiler;
-import com.dsl.classgen.io.file_handler.Reader;
-import com.dsl.classgen.io.file_handler.Writer;
+import com.dsl.classgen.io.cache_manager.CacheManager;
+import com.dsl.classgen.io.file_manager.Compiler;
+import com.dsl.classgen.io.file_manager.Reader;
+import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.services.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
@@ -22,24 +24,29 @@ public final class Generator {
 	
 	private static final Logger LOGGER = LogManager.getLogger(Generator.class);
 	
+	private static FrameworkContext fwCtx = FrameworkContext.get();
+	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
+	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
+	
 	private Generator() {}
 
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
 		// verifica se a estrutura ja esta gerada
-		GeneratedStructureChecker.checkGeneratedStructure();
+		new GeneratedStructureChecker().checkFileSystem();
 		
 		// define e resolve alguns dados
-		Values.setIsRecursive(isRecursive);
-		Values.setInputPropertiesPath(inputPath);
-		Values.setPackageClass(Utils.normalizePath(packageClass.concat(".generated"), "/", ".").toString());
-		Values.resolvePaths();
+		flagsCtx.setIsRecursive(isRecursive);
+		pathsCtx.setInputPropertiesPath(inputPath);
+		pathsCtx.setPackageClass(Utils.normalizePath(packageClass.concat(".generated"), "/", ".").toString());
+		pathsCtx.resolvePaths(pathsCtx.getPackageClass());
 		
 		// le o caminho passado e processa o cache
 		Reader.read(inputPath);
-		FileCacheSystem.processCache();
+		CacheManager.processCache();
 		
 		LOGGER.log(Level.INFO, """
-				\n-----------------------------
+				
+				-----------------------------
 				--- Framework Initialized ---
 				-----------------------------
 				
@@ -56,14 +63,15 @@ public final class Generator {
 				-----------------------------
 				-----------------------------
 				
-				Call 'Generator.generate()' to generate java classes or parse existing classes.\n
+				Call 'Generator.generate()' to generate java classes or parse existing classes.
+				
 				""", inputPath, 
-					 Values.getOutputSourceDirPath(), 
-					 Values.getPackageClass(), 
+					 pathsCtx.getOutputSourceDirPath(), 
+					 pathsCtx.getPackageClass(), 
 					 isRecursive, 
-					 Values.isSingleFile(),
-					 Values.isDirStructureAlreadyGenerated(), 
-					 Values.isDebugMode());
+					 flagsCtx.getIsSingleFile(),
+					 flagsCtx.getIsDirStructureAlreadyGenerated(), 
+					 flagsCtx.getIsDebugMode());
 	}
 
 	public static void init(String inputPath, String packageClass, boolean isRecursive) {
@@ -73,15 +81,14 @@ public final class Generator {
 	public static void generate() {
 		// inicia a geracao se a estrutura de diretorios ou o arquivo final P.java nao existir
 		// do contrario, deve efetuar o processamento do que ja existe
-		if (!Values.isDirStructureAlreadyGenerated() || !Values.isExistsPJavaSource()) {
+		if (!flagsCtx.getIsDirStructureAlreadyGenerated() || !flagsCtx.getIsExistsPJavaSource()) {
 			Utils.calculateElapsedTime();
 			new OutterClassGenerator().generateOutterClass();
 			
-			if(Values.isDebugMode()) {
-				System.out.println(Values.getGeneratedClass());
-			} else {
-				Writer.write();
-			}
+			if(flagsCtx.getIsDebugMode()) {
+				LOGGER.log(Level.DEBUG, pathsCtx.getGeneratedClass());
+			} 
+			Writer.write();
 				
 		} else {
 			LOGGER.log(Level.WARN, """

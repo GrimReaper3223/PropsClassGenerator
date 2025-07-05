@@ -1,11 +1,14 @@
 package com.dsl.classgen.annotations.processors;
 
 import com.dsl.classgen.annotations.GeneratedInnerClass;
-import com.dsl.classgen.io.file_handler.Reader;
+import com.dsl.classgen.io.file_manager.Reader;
 
 import java.util.Arrays;
 
 public class ProcessAnnotation {
+	
+	private ProcessAnnotation() {}
+	
     public static void processAnnotations() {
         System.out.println('\n');
         

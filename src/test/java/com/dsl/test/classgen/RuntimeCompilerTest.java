@@ -8,13 +8,15 @@ import javax.tools.ToolProvider;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.dsl.classgen.io.Values;
+import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.PathsContext;
 
 class RuntimeCompilerTest {
 	
 	@Test
 	@Disabled("Teste bem-sucedido")
-	void executeRuntimeCompiler() throws ClassNotFoundException, InterruptedException {
+	void executeRuntimeCompiler() {
+		PathsContext pathsCtx = FrameworkContext.get().getPathsContextInstance();
 		String libs = getClass().getResource("/libs").getPath();
 		assertTrue(libs.contains("libs"));
 		
@@ -22,7 +24,7 @@ class RuntimeCompilerTest {
 		jc.run(null, null, null, 
 				"-d","target/classes",
 				"--module-path", libs,
-				"-sourcepath", "/src/main/java/:" + Values.getOutputSourceDirPath(),
-				Values.getExistingPJavaGeneratedSourcePath().toString());
+				"-sourcepath", "/src/main/java/:" + pathsCtx.getOutputSourceDirPath(),
+				pathsCtx.getExistingPJavaGeneratedSourcePath().toString());
 	}
 }
