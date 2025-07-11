@@ -6,7 +6,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dsl.classgen.annotations.processors.ProcessAnnotation;
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.FrameworkContext;
 import com.dsl.classgen.context.PathsContext;
@@ -101,6 +100,5 @@ public final class Generator {
 		Compiler.compile();
 		WatchServiceImpl.initialize();
 		ProcessQueuedFileEvents.initialize();
-		ProcessAnnotation.processAnnotations();
 	}
 }

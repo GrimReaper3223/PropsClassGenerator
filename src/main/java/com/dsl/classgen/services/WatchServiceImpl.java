@@ -136,7 +136,9 @@ public class WatchServiceImpl {
     // processa o caminho recebido, verificando a chave e computando ela no mapa
     private static void processPropertyDir(Path dir) throws IOException {
 		var pair = verifyKey(dir.register(watcher, EVENT_KIND_ARR), dir);
-		keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue());
+		if(keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue()) == null) {
+			keys.put(pair.getKey(), pair.getValue());
+		}
 		pathsCtx.addDirToList(dir);
     }
 
@@ -189,7 +191,7 @@ public class WatchServiceImpl {
             	
             	LOGGER.log(Level.INFO, "Key removed from KeyMap: {}", path);
             	if (keys.isEmpty()) {
-            		LOGGER.log(Level.WARN, "There are no keys remaining for processing. Ending Watcher...");
+            		LOGGER.warn("There are no keys remaining for processing. Ending Watcher...");
             		break;
             	}
             }

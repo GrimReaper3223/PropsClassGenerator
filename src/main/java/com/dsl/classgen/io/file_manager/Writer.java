@@ -53,13 +53,28 @@ public class Writer {
             LOGGER.log(Level.WARN, "***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
         }
         catch (IOException | InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            LOGGER.error(e);
             treatInterruptions(e);
         }
         finally {
         	// apos toda a etapa de processamento acima, podemos garantir que o caminho do arquivo de saida sera atribuido a variavel de caminho do arquivo fonte existente 
         	pathCtx.setExistingPJavaGeneratedSourcePath(outputFilePath);
         }
+    }
+    
+    public static void write(String content) {
+    	LOGGER.log(Level.INFO, "Writing data...\n");
+    	Path outputFilePath = pathCtx.getExistingPJavaGeneratedSourcePath();
+    	
+    	try {
+    		Files.deleteIfExists(outputFilePath);
+    		Files.createFile(outputFilePath);
+    		pathCtx.setGeneratedClass(content);
+    		fileWriter(outputFilePath);
+    	} catch (IOException | InterruptedException | ExecutionException e) {
+    		LOGGER.error(e);
+    		treatInterruptions(e);
+    	}
     }
 
     // escreve o arquivo de classe gerada no sistema de arquivos
@@ -69,7 +84,7 @@ public class Writer {
                 out.write(pathCtx.getGeneratedClass().getBytes());
             }
             catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error(e);
             }
         }).get();
     }
@@ -81,7 +96,7 @@ public class Writer {
                 out.write(new Gson().toJson(htm).getBytes());
             }
             catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error(e);
             }
         }).get();
     }
@@ -100,7 +115,7 @@ public class Writer {
 	            CacheManager.computeElementToCacheModelMap(jsonFilePath, htm);
 				Writer.jsonWriter(htm, jsonFilePath);
 			} catch (InterruptedException | ExecutionException e) {
-				e.printStackTrace();
+				LOGGER.error(e);
 				treatInterruptions(e);
 			}
             
@@ -118,7 +133,7 @@ public class Writer {
 							try {
 								Writer.jsonWriter(t);
 							} catch (InterruptedException | ExecutionException e) {
-								e.printStackTrace();
+								LOGGER.error(e);
 								treatInterruptions(e);
 							}
 						});
@@ -127,6 +142,7 @@ public class Writer {
     
     private static void treatInterruptions(Exception e) {
     	if(e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
+    		LOGGER.error("Thread is interrupted.", e);
         	Thread.currentThread().interrupt();
         }
     }

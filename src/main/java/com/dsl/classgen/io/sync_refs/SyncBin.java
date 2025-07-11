@@ -1,33 +1,36 @@
 package com.dsl.classgen.io.sync_refs;
 
-import java.nio.file.Path;
-
-import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.cache_manager.CacheModel;
-import com.dsl.classgen.utils.Utils;
 
 public final class SyncBin implements SyncOperations {
 
-	private final CacheModel cm;
-	private final Path jsonFilePath;
-	
-	public SyncBin(CacheModel htm, Path jsonFilePath) {
-		this.cm = CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(jsonFilePath.getFileName()));
-		this.jsonFilePath = jsonFilePath;
-	}
-
 	@Override
-	public boolean insertSection() {
+	public boolean insertClassSection(CacheModel model) {
 		return false;
 	}
 
 	@Override
-	public boolean eraseSection() {
+	public boolean insertFieldSection(CacheModel model) {
 		return false;
 	}
 
 	@Override
-	public boolean modifySection() {
+	public void eraseClassSection(CacheModel model) {
+	}
+
+	@Override
+	public boolean eraseFielSection(CacheModel model) {
 		return false;
 	}
+
+	@Override
+	public boolean modifyClassSection(CacheModel model) {
+		return false;
+	}
+
+	@Override
+	public boolean modifyFieldSection(CacheModel model) {
+		return false;
+	}
+
 }

@@ -8,12 +8,13 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
-interface Tools {
+interface HarnessTestTools {
 
 	final Path inPropsPath = Path.of("src/test/resources/values/strings/");
 	final String packageClass = "com.dsl.test.classgen";
 	final Path cachePath = Paths.get(System.getProperty("user.dir")).resolve(".jsonProperties-cache");
-	final Path sourcePath = Path.of("src/test/java/com/dsl/test/classgen/generated");
+	final Path sourceDirPath = Path.of("src/test/java/com/dsl/test/classgen/generated");
+	final Path sourceFilePath = sourceDirPath.resolve("P.java");
 	
 	default void eraseCache() {
 		if(Files.exists(cachePath)) {
@@ -39,7 +40,7 @@ interface Tools {
 	
 	default void eraseGeneratedData() {
 		try {
-			Files.walkFileTree(sourcePath, new SimpleFileVisitor<Path>() {
+			Files.walkFileTree(sourceDirPath, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 					if(file.getFileName().toString().equals("P.java")) {

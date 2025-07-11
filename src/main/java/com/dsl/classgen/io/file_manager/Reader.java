@@ -44,6 +44,19 @@ public class Reader {
         }
     }
 
+    public static StringBuilder readSource(Path sourceFile) {
+    	StringBuilder sourceBuffer = new StringBuilder();
+    	
+    	try(Stream<String> lines = Files.lines(sourceFile)) {
+    		lines.forEach(line -> sourceBuffer.append(line + '\n'));
+    	} 
+    	catch (IOException e) {
+			e.printStackTrace();
+		}
+    	
+    	return sourceBuffer;
+    }
+    
     // carrega o arquivo de propriedades
     public static void loadPropFile(Path inputPath) {
         try {

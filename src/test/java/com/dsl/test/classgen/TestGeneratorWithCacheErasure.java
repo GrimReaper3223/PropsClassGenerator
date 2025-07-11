@@ -15,7 +15,7 @@ import com.dsl.classgen.Generator;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Tests with cache erasure")
-class TestGeneratorWithCacheErasure implements Tools {
+class TestGeneratorWithCacheErasure implements HarnessTestTools {
 
 	@BeforeEach
 	void setup() {
@@ -29,7 +29,7 @@ class TestGeneratorWithCacheErasure implements Tools {
 		Assertions.assertFalse(Files.exists(cachePath));
 		Generator.init(inPropsPath.resolve("exception-message.properties"), packageClass, false);
 		Generator.generate();
-		Assertions.assertTrue(Files.exists(sourcePath));
+		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
 	
 	@Test
@@ -39,7 +39,7 @@ class TestGeneratorWithCacheErasure implements Tools {
 		Assertions.assertFalse(Files.exists(cachePath));
 		Generator.init(inPropsPath, packageClass, false);
 		Generator.generate();
-		Assertions.assertTrue(Files.exists(sourcePath));
+		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
 	
 	@Test

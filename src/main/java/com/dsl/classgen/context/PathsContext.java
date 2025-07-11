@@ -31,11 +31,11 @@ public class PathsContext {
 	// caminhos no sistema de arquivos
 	private final Path userDir;
 	private final Path cacheDir;
-    private Path inputPropertiesPath;						// caminho referente ao arquivo de propriedades (ou diretorio contendo os arquivos de propriedades a serem examinados)
-    private Path existingPJavaGeneratedSourcePath;			// caminho referente ao arquivo fonte P.java caso ele exista
-    private Path outputSourceDirPath;						// caminho indicando onde o pacote ...generated deve ser criado
-    private Path outputSourceFilePath;						// caminho indicando onde o arquivo P.java deve ser escrito, resolvido com o caminho de onde o pacote deve ser criado
-    private Path outputClassFilePath;						// caminho indicando onde o arquivo P.class deve ser encontrado, resolvido com o caminho do pacote existente
+    private Path inputPropertiesPath;					// caminho referente ao arquivo de propriedades (ou diretorio contendo os arquivos de propriedades a serem examinados)
+    private Path existingPJavaGeneratedSourcePath;		// caminho referente ao arquivo fonte P.java caso ele exista
+    private Path outputSourceDirPath;					// caminho indicando onde o pacote ...generated deve ser criado
+    private Path outputSourceFilePath;					// caminho indicando onde o arquivo P.java deve ser escrito, resolvido com o caminho de onde o pacote deve ser criado
+    private Path outputClassFilePath;					// caminho indicando onde o arquivo P.class deve ser encontrado, resolvido com o caminho do pacote existente
     
     // informacoes para geracao e formatacao
  	private String propertiesDataType;					// o tipo de dados encontrado no arquivo de propriedades correspondente ao padrao # $javatype:@<tipo_de_dado_java>
@@ -96,16 +96,19 @@ public class PathsContext {
 	
     // changedFiles
     public <T extends WatchEvent.Kind<?>> void addChangedEntryToQueue(Map.Entry<Path, T> entry) {
-   		INSTANCE.flagsContextInstance.setHasChangedFilesLeft((changedFiles.offer(entry)) || !changedFiles.isEmpty());
+    	boolean isSuccessOffering = changedFiles.offer(entry);
+   		INSTANCE.flagsContextInstance.setHasChangedFilesLeft(isSuccessOffering || !changedFiles.isEmpty());
     }
     
     public List<Map.Entry<Path, ?>> getAllChangedEntriesFromQueue() {
     	List<Map.Entry<Path, ?>> entryList = new ArrayList<>();
     	
-    	while(!changedFiles.isEmpty()) {
+    	do {
     		entryList.add(changedFiles.poll());
     	}
+    	while(!changedFiles.isEmpty());
     	INSTANCE.flagsContextInstance.setHasChangedFilesLeft(!changedFiles.isEmpty());
+    	
     	return entryList;
     }
     

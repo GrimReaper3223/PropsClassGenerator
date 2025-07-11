@@ -74,7 +74,7 @@ public class GeneratedStructureChecker {
     private void checkIfIsExistsSourceFile() {
         try (Stream<Path> files = Files.list(pathsCtx.getOutputSourceDirPath())) {
             Path foundedPath = transformer.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".java"));
-            pathsCtx.setOutputSourceFilePath(foundedPath);
+            pathsCtx.setExistingPJavaGeneratedSourcePath(foundedPath);
             flagsCtx.setIsExistsPJavaSource(foundedPath != null);
         }
         catch (IOException e) {

@@ -51,7 +51,7 @@ public class CacheManager {
     }
 	
 	public static void computeElementToCacheModelMap(Path key, CacheModel value) {
-        if((cacheModelMap.computeIfPresent(key, (_, _) -> value)) == null) {
+        if(cacheModelMap.computeIfPresent(key, (_, _) -> value) == null) {
         	cacheModelMap.put(key, value);
         }
     }
@@ -61,6 +61,11 @@ public class CacheManager {
     }
 	
 	public static CacheModel removeElementFromCacheModelMap(Path key) {
+		try {
+			Files.deleteIfExists(key);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		return cacheModelMap.remove(key);
 	}
 	

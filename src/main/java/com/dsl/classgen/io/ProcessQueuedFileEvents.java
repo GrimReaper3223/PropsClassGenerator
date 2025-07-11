@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.FrameworkContext;
 import com.dsl.classgen.context.PathsContext;
@@ -18,11 +21,14 @@ import com.dsl.classgen.utils.Utils;
 
 public class ProcessQueuedFileEvents {
 
+	private static final Logger LOGGER = LogManager.getLogger(ProcessQueuedFileEvents.class);
 	private static final Thread eventProcessorThread = new Thread(ProcessQueuedFileEvents::processChanges);
 	
 	private static FrameworkContext fwCtx = FrameworkContext.get();
 	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
 	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
+	
+	private static SyncSource syncSource = new SyncSource();
 	
 	private ProcessQueuedFileEvents() {}
 	
@@ -40,12 +46,11 @@ public class ProcessQueuedFileEvents {
 				Thread.onSpinWait();
 				continue;
 			}
-			var eventMap = pathsCtx.getAllChangedEntriesFromQueue()
-									.stream()
-									.collect(Collectors.groupingBy(entry -> (WatchEvent.Kind<?>) entry.getValue(), 
-									  Collectors.mapping(Map.Entry::getKey, Collectors.toList())));
-			
-			eventMap.entrySet()
+			pathsCtx.getAllChangedEntriesFromQueue()
+					.stream()
+					.collect(Collectors.groupingBy(entry -> (WatchEvent.Kind<?>) entry.getValue(), 
+					  Collectors.mapping(Map.Entry::getKey, Collectors.toList())))
+					.entrySet()
 					.stream()
 					.forEach(entry -> {
 						Stream<Path> pipeline = entry.getValue().stream();
@@ -56,12 +61,14 @@ public class ProcessQueuedFileEvents {
 							default -> {}
 						}
 					});
+			
 		}
 		
 		eventProcessorThread.interrupt();
 	}
 	
 	// adiciona um novo arquivo a lista de arquivos e, se for um diretorio, registra o novo diretorio como chave
+	// ao adicionar um novo arquivo, deve-se adicionar a classe interna correspondente no source, junto com todos os seus campos
 	private static void createEntry(Stream<Path> pipeline) {
 		pipeline.forEach(path -> {
 			 if(Files.isDirectory(path)) {
@@ -74,48 +81,37 @@ public class ProcessQueuedFileEvents {
 	}
 	
 	// remove um arquivo da lista de arquivos e, se for um diretorio, desregistra a chave do diretorio existente
+	// ao remover o arquivo, deve-se remover a classe interna correspondente no source.
 	private static void deleteEntry(Stream<Path> pipeline) {
 		pipeline.forEach(path -> {
+			// se for removido um diretorio, devemos atualizar o source removendo toda a classe interna estatica e seus membros
 			if(Files.isDirectory(path)) {
-				System.out.println("Existing directory deleted. Deleting cache and reprocessing files...");
+				LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
 				
-				try(Stream<Path> elements = Files.walk(path)) {
-					elements.filter(Files::isRegularFile)
-							.filter(Utils::isPropertiesFile)
-							.map(propertyFile -> {
-								Path jsonFilePath = Utils.resolveJsonFilePath(propertyFile);
-								try {
-									Files.deleteIfExists(jsonFilePath);
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-								return jsonFilePath;
-							})
-							.forEach(CacheManager::removeElementFromCacheModelMap);
+				try(Stream<Path> files = Files.walk(path)) {
+					files.filter(Files::isRegularFile)
+						 .filter(Utils::isPropertiesFile)
+						 .map(Utils::resolveJsonFilePath)
+						 .forEach(jsonPath -> syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(jsonPath)));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				// deve verificar o cache e invalidar o diretorio excluido junto ao seu conteudo
-			} else {
-				// este objeto retornado deve ser usado para remover todas as entradas do .java e do .class
-				SyncSource syncSource = new SyncSource(path);
-				syncSource.eraseSection();
-				
-				/*
-				 * ...
-				 * ...
-				 */
-				// por fim, devemos deletar o arquivo de cache do sistema de arquivos e o cache do mapa de cache carregado
-				CacheManager.removeElementFromCacheModelMap(path);
+			// se for removido somente o arquivo, devemos atualizar o source removendo somente a propriedade de uma determinada classe interna estatica
+			// por fim, devemos deletar o arquivo de cache do sistema de arquivos e o cache do mapa de cache carregado
+			} else if(Utils.isPropertiesFile(path)) {
+				syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
 			}
 		});
 	}
 	
 	// modifica somente os dados dentro do arquivo. Toda operacao de modificacao opera em cima de alguma alteracao no conteudo do arquivo
+	// ao modificar somente uma secao do arquivo, deve-se utilizar do hash do arquivo modificado para achar a classe interna
+	// encontrando a classe interna, devemos verificar seu hash em cache com o novo hash feito
+	// apos a identificacao, devemos atualizar somente a secao do campo que corresponder ao hash e a chave presente no map daquele CacheModel
 	private static void modifyEntry(Stream<Path> pipeline) {
 		pipeline.forEach(path -> {
 			if(Files.isDirectory(path)) {
-				System.out.println("Existing directory modified. Modifying cache and reprocessing files...");
+				LOGGER.warn("Existing directory modified. Modifying cache and reprocessing files...");
 				// deve verificar o cache e modificar o conteudo do diretorio alterado
 			}
 		});
