@@ -20,6 +20,7 @@ import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.FrameworkContext;
 import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.io.FileVisitorImpl;
+import com.dsl.classgen.services.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
 public class Reader {
@@ -36,10 +37,11 @@ public class Reader {
     	// se for um arquivo, deve carregar ele no objeto de propriedades diretamente
     	// se for um diretorio, deve chamar o metodo que processa a lista de arquivos no diretorio
         if (Files.isRegularFile(inputPath)) {
+        	flagsCtx.setIsSingleFile(true);
             loadPropFile(inputPath);
-            flagsCtx.setIsSingleFile(true);
             
         } else if (Files.isDirectory(inputPath)) {
+        	flagsCtx.setIsSingleFile(false);
             processDirectoryFileList(inputPath);
         }
     }
@@ -94,12 +96,10 @@ public class Reader {
                 }
                 pathsCtx.addDirToList(inputPath);
             }
+            WatchServiceImpl.analysePropertyDirKeyPath(inputPath);
         }
         catch (IOException e) {
             e.printStackTrace();
-        }
-        finally {
-            flagsCtx.setIsSingleFile(false);
         }
     }
 

@@ -162,13 +162,6 @@ public class PathsContext {
 	}
 
 	/**
-	 * @param outputSourceFilePath the outputSourceFilePath to set
-	 */
-	public void setOutputSourceFilePath(Path outputSourceFilePath) {
-		this.outputSourceFilePath = outputSourceFilePath;
-	}
-
-	/**
 	 * @return the outputClassFilePath
 	 */
 	public Path getOutputClassFilePath() {

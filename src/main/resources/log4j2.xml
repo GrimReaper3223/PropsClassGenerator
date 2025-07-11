@@ -19,6 +19,9 @@
         <Logger name="com.dsl.classgen.io.sync_refs.SyncSource" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
+        <Logger name="com.dsl.classgen.io.GeneratedStructureChecker" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
         <Logger name="com.dsl.classgen.generators.OutterClassGenerator" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>

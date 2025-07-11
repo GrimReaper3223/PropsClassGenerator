@@ -6,20 +6,15 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -45,13 +40,21 @@ public class WatchServiceImpl {
 
     private WatchServiceImpl() {}
     
+    static {
+    	try {
+            watcher = FileSystems.getDefault().newWatchService();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
     // inicializa o servico de monitoramento de diretorio
     public static void initialize() {
         if (!watchServiceThread.isAlive()) {
             watchServiceThread.setDaemon(false);
             watchServiceThread.setName("Watch Service - Thread");
             try {
-                watcher = FileSystems.getDefault().newWatchService();
                 initialRegistration();
                 watchServiceThread.start();
             }
@@ -82,41 +85,6 @@ public class WatchServiceImpl {
         LOGGER.log(Level.INFO, "Done\n");
     }
     
-    // registra um novo diretorio sob demanda
-    public static void registerNewDir(Path path) {
-		try {
-			if (flagsCtx.getIsRecursive()) {
-				Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-					@Override
-					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-						processPropertyDir(dir);
-						return FileVisitResult.CONTINUE;
-					}
-					
-					@Override
-					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-						if(Utils.isPropertiesFile(file)) {
-							pathsCtx.addFileToList(file);
-						}
-						return FileVisitResult.CONTINUE;
-					}
-				});
-			} else {
-				processPropertyDir(path);
-				try(Stream<Path> files = Files.list(path)) {
-					files.forEach(file -> {
-						if(Utils.isPropertiesFile(file)) {
-							pathsCtx.addFileToList(file);
-						}
-					});
-				}
-			}
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
-    }
-
     // faz a verificacao da chave do diretorio e imprime na tela o estado 
     // em que aquela chave vai ser registrada: se e registro ou atualizacao de chave de diretorio
     private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path) {
@@ -134,12 +102,11 @@ public class WatchServiceImpl {
     }
     
     // processa o caminho recebido, verificando a chave e computando ela no mapa
-    private static void processPropertyDir(Path dir) throws IOException {
+    public static void analysePropertyDirKeyPath(Path dir) throws IOException {
 		var pair = verifyKey(dir.register(watcher, EVENT_KIND_ARR), dir);
 		if(keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue()) == null) {
 			keys.put(pair.getKey(), pair.getValue());
 		}
-		pathsCtx.addDirToList(dir);
     }
 
     // casting utilitario
@@ -173,7 +140,7 @@ public class WatchServiceImpl {
             	continue;
             }
             
-            Objects.requireNonNull(key).pollEvents().stream()
+            key.pollEvents().stream()
             				.filter(event -> event.kind() != StandardWatchEventKinds.OVERFLOW)
             				.map(event -> {
 					                WatchEvent<Path> eventPath = cast(event);

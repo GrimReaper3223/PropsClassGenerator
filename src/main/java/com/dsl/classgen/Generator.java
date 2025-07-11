@@ -27,17 +27,22 @@ public final class Generator {
 	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
 	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
 	
+	private static GeneratedStructureChecker checker = new GeneratedStructureChecker();
+	
 	private Generator() {}
 
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
 		// verifica se a estrutura ja esta gerada
-		new GeneratedStructureChecker().checkFileSystem();
+		checker.checkFileSystem();
 		
 		// define e resolve alguns dados
 		flagsCtx.setIsRecursive(isRecursive);
 		pathsCtx.setInputPropertiesPath(inputPath);
 		pathsCtx.setPackageClass(Utils.normalizePath(packageClass.concat(".generated"), "/", ".").toString());
-		pathsCtx.resolvePaths(pathsCtx.getPackageClass());
+		
+		if(!flagsCtx.getIsDirStructureAlreadyGenerated()) {
+			pathsCtx.resolvePaths(pathsCtx.getPackageClass());
+		}
 		
 		// le o caminho passado e processa o cache
 		Reader.read(inputPath);
@@ -88,7 +93,8 @@ public final class Generator {
 				LOGGER.log(Level.DEBUG, pathsCtx.getGeneratedClass());
 			} 
 			Writer.write();
-				
+			checker.checkFileSystem();	// verifica novamente o sistema de arquivos para atualizar variaveis
+			
 		} else {
 			LOGGER.log(Level.WARN, """
 					There is already a generated structure.

@@ -15,6 +15,7 @@ import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.FrameworkContext;
 import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.io.cache_manager.CacheManager;
+import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.sync_refs.SyncSource;
 import com.dsl.classgen.services.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
@@ -71,13 +72,12 @@ public class ProcessQueuedFileEvents {
 	// ao adicionar um novo arquivo, deve-se adicionar a classe interna correspondente no source, junto com todos os seus campos
 	private static void createEntry(Stream<Path> pipeline) {
 		pipeline.forEach(path -> {
-			 if(Files.isDirectory(path)) {
-				 WatchServiceImpl.registerNewDir(path);
-			 } else {
-				 pathsCtx.addFileToList(path);
-			 }
-			 CacheManager.processCache();
-		 });
+			if(Files.isRegularFile(path)) {
+				pathsCtx.addFileToList(path);
+			}
+			Reader.read(path);
+			CacheManager.processCache();
+		});
 	}
 	
 	// remove um arquivo da lista de arquivos e, se for um diretorio, desregistra a chave do diretorio existente

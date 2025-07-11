@@ -8,11 +8,16 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.FrameworkContext;
 import com.dsl.classgen.context.PathsContext;
 
 public class GeneratedStructureChecker {
+	
+	private static final Logger LOGGER = LogManager.getLogger(GeneratedStructureChecker.class);	
 	
 	private final PathsContext pathsCtx;
 	private final FlagsContext flagsCtx;
@@ -24,7 +29,7 @@ public class GeneratedStructureChecker {
 	}
 	
 	private Function<String, Predicate<Path>> predicateFactory = str -> p -> p.getFileName().toString().equals(str);
-	private BiFunction<Stream<Path>, Predicate<Path>, Path> transformer = 
+	private BiFunction<Stream<Path>, Predicate<Path>, Path> genFilter = 
 						(pathStream, predicate) -> pathStream.filter(predicate::test)
 															 .findFirst()
 															 .orElse(null);
@@ -38,6 +43,7 @@ public class GeneratedStructureChecker {
 	 */
 	
 	public void checkFileSystem() {
+		LOGGER.info("Analyzing the file system...\n");
 		checkDirGeneratedStructure();
 		checkIfExistsCompiledClass();
 		checkIfIsExistsSourceFile();
@@ -45,7 +51,7 @@ public class GeneratedStructureChecker {
 	
     private void checkDirGeneratedStructure() {
         try (Stream<Path> dirs = Files.find(pathsCtx.getOutputSourceDirPath(), Integer.MAX_VALUE, (path, _) -> Files.isDirectory(path))){
-        	Path foundedPath = transformer.apply(dirs, predicateFactory.apply("generated"));
+        	Path foundedPath = genFilter.apply(dirs, predicateFactory.apply("generated"));
         	if(foundedPath != null) {
         		pathsCtx.setOutputSourceDirPath(foundedPath);
         		flagsCtx.setIsDirStructureAlreadyGenerated(true);
@@ -59,7 +65,7 @@ public class GeneratedStructureChecker {
     // verifica se a classe compilada existe
     private void checkIfExistsCompiledClass() {
     	try(Stream<Path> dirs = Files.find(pathsCtx.getOutputClassFilePath(), Integer.MAX_VALUE, (path, _) -> Files.isRegularFile(path))) {
-			Path foundedPath = transformer.apply(dirs, predicateFactory.apply(pathsCtx.getOutterClassName() + ".class"));
+			Path foundedPath = genFilter.apply(dirs, predicateFactory.apply(pathsCtx.getOutterClassName() + ".class"));
 			if(foundedPath != null) {
         		pathsCtx.setOutputClassFilePath(foundedPath);
         		flagsCtx.setIsExistsCompiledPJavaClass(true);
@@ -73,7 +79,7 @@ public class GeneratedStructureChecker {
     // verifica se o arquivo P.java existe
     private void checkIfIsExistsSourceFile() {
         try (Stream<Path> files = Files.list(pathsCtx.getOutputSourceDirPath())) {
-            Path foundedPath = transformer.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".java"));
+            Path foundedPath = genFilter.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".java"));
             pathsCtx.setExistingPJavaGeneratedSourcePath(foundedPath);
             flagsCtx.setIsExistsPJavaSource(foundedPath != null);
         }
