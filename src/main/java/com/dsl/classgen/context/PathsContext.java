@@ -2,7 +2,6 @@ package com.dsl.classgen.context;
 
 import static com.dsl.classgen.context.FrameworkContext.INSTANCE;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
@@ -89,16 +88,14 @@ public class PathsContext {
     }
     
     public void addFileToCacheList(Path filePath) {
-    	if(Files.isRegularFile(filePath) && Utils.isPropertiesFile(filePath)) {
-    		var flagsInstance = FrameworkContext.INSTANCE.flagsContextInstance;
-    		if(flagsInstance.getIsDirStructureAlreadyGenerated() && flagsInstance.getIsExistsPJavaSource()) {
-    			if(!CacheManager.hasValidCacheFile(filePath)) {
-    				CacheManager.addNewCacheFileToWrite(filePath);
-    			}
-    		} else {
-    			CacheManager.addNewCacheFileToWrite(filePath);
-    		}
-    	}
+		var flagsInstance = FrameworkContext.INSTANCE.flagsContextInstance;
+		if(flagsInstance.getIsDirStructureAlreadyGenerated() && flagsInstance.getIsExistsPJavaSource()) {
+			if(!CacheManager.hasValidCacheFile(filePath)) {
+				CacheManager.addNewCacheFileToWrite(filePath);
+			}
+		} else {
+			CacheManager.addNewCacheFileToWrite(filePath);
+		}
     }
 	
     // changedFiles

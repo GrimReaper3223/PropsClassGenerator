@@ -11,19 +11,7 @@ public final class SyncBin implements SyncOperations {
 	}
 
 	@Override
-	public void insertFieldSection(CacheModel model) {
-	}
-
-	@Override
 	public void eraseClassSection(CacheModel model) {
-	}
-
-	@Override
-	public void eraseFielSection(CacheModel model) {
-	}
-
-	@Override
-	public void modifyClassSection(CacheModel model) {
 	}
 
 	@Override

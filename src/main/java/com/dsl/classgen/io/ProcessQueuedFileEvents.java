@@ -31,13 +31,12 @@ public class ProcessQueuedFileEvents {
 	
 	private static SyncSource syncSource = new SyncSource();
 
-	private static Function<Path, Stream<Path>> streamCreator = path -> {
+	private static Function<Path, Stream<Path>> streamFilterCreator = path -> {
 		Stream<Path> pathStream = null;
 		try {
 			pathStream = Files.walk(path)
 							  .filter(Files::isRegularFile)
-							  .filter(Utils::isPropertiesFile)
-							  .map(Utils::resolveJsonFilePath);
+							  .filter(Utils::isPropertiesFile);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -88,12 +87,9 @@ public class ProcessQueuedFileEvents {
 		LOGGER.warn("Generating new inner data...");
 		pipeline.forEach(path -> {
 			if(Files.isDirectory(path)) {
-				try(Stream<Path> files = Files.walk(path)) {
+				try(Stream<Path> files = streamFilterCreator.apply(path)) {
 					files.forEach(syncSource::insertClassSection);
 				} 
-				catch (IOException e) {
-					e.printStackTrace();
-				}
 			} else {
 				syncSource.insertClassSection(path);
 			}
@@ -108,8 +104,9 @@ public class ProcessQueuedFileEvents {
 			if(Files.isDirectory(path)) {
 				LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
 				
-				try(Stream<Path> files = streamCreator.apply(path)) {
-					files.forEach(jsonPath -> syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(jsonPath)));
+				try(Stream<Path> files = streamFilterCreator.apply(path)) {
+					files.map(Utils::resolveJsonFilePath)
+						 .forEach(jsonPath -> syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(jsonPath)));
 				}
 			// se for removido somente o arquivo, devemos atualizar o source removendo somente a propriedade de uma determinada classe interna estatica
 			// por fim, devemos deletar o arquivo de cache do sistema de arquivos e o cache do mapa de cache carregado
@@ -124,6 +121,7 @@ public class ProcessQueuedFileEvents {
 	// ao modificar somente uma secao do arquivo, deve-se utilizar do hash do arquivo modificado para achar a classe interna
 	// encontrando a classe interna, devemos verificar seu hash em cache com o novo hash feito
 	// apos a identificacao, devemos atualizar somente a secao do campo que corresponder ao hash e a chave presente no map daquele CacheModel
+	// RECEBE SOMENTE ARQUIVOS, POIS OS DIRETORIOS ADICIONAIS SAO NOVAS CHAVES DE MONITORAMENTO
 	private static void modifyEntry(Stream<Path> pipeline) {
 		pipeline.forEach(path -> {
 			if(Files.isDirectory(path)) {

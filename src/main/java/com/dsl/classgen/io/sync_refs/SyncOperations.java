@@ -4,6 +4,7 @@ import java.nio.file.Path;
 
 import com.dsl.classgen.context.FrameworkContext;
 import com.dsl.classgen.context.PathsContext;
+import com.dsl.classgen.generators.InnerFieldGenerator;
 import com.dsl.classgen.generators.InnerStaticClassGenerator;
 import com.dsl.classgen.io.cache_manager.CacheModel;
 
@@ -13,11 +14,9 @@ sealed interface SyncOperations permits SyncBin, SyncSource {
 	final PathsContext pathsCtx = fwCtx.getPathsContextInstance();
 	
 	final InnerStaticClassGenerator innerClassGen = new InnerStaticClassGenerator();
+	final InnerFieldGenerator innerFieldGen = new InnerFieldGenerator();
 	
 	void insertClassSection(Path path);
-	void insertFieldSection(CacheModel model);
 	void eraseClassSection(CacheModel model);
-	void eraseFielSection(CacheModel model);
-	void modifyClassSection(CacheModel model);
 	void modifyFieldSection(CacheModel model);
 }

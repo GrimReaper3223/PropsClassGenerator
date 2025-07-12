@@ -19,7 +19,7 @@ public final class SyncSource implements SyncOperations {
 	
 	@Override
 	public void insertClassSection(Path path) {
-		String propsFileEndPattern = "// PROPS-FILE-END";
+		final String propsFileEndPattern = "// PROPS-FILE-END";
 		StringBuilder sb = sbSupplier.get();
 		int propsFileEndIndex = sb.indexOf(propsFileEndPattern) - 1;	// -1 retorna para a linha acima, evitando sobrescrever o padrao no arquivo
 		
@@ -33,12 +33,6 @@ public final class SyncSource implements SyncOperations {
 		Writer.write(sb.toString());
 	}
 
-
-	@Override
-	public void insertFieldSection(CacheModel model) {
-	}
-
-
 	@Override
 	public void eraseClassSection(CacheModel model) {
 		String lookupPattern = ProcessAnnotation.processClassAnnotations(model.fileHash);
@@ -49,24 +43,13 @@ public final class SyncSource implements SyncOperations {
 			int endPatternFullIndex = classSourceEndHint.length();
 			
 			StringBuilder sb = sbSupplier.get();
-			sb.delete(sb.indexOf(classSourceStartHint), sb.indexOf(classSourceEndHint) + endPatternFullIndex);
+			sb.delete(sb.indexOf(classSourceStartHint) - 1, sb.indexOf(classSourceEndHint) + endPatternFullIndex + 2);
 			
 			Writer.write(sb.toString());
 		} else {
 			LOGGER.warn("Static inner class cannot be found.");
 		}
 	}
-
-
-	@Override
-	public void eraseFielSection(CacheModel model) {
-	}
-
-
-	@Override
-	public void modifyClassSection(CacheModel model) {
-	}
-
 
 	@Override
 	public void modifyFieldSection(CacheModel model) {
