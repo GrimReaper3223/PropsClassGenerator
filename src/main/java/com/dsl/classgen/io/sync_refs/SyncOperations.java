@@ -1,13 +1,23 @@
 package com.dsl.classgen.io.sync_refs;
 
+import java.nio.file.Path;
+
+import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.PathsContext;
+import com.dsl.classgen.generators.InnerStaticClassGenerator;
 import com.dsl.classgen.io.cache_manager.CacheModel;
 
 sealed interface SyncOperations permits SyncBin, SyncSource {
 
-	boolean insertClassSection(CacheModel model);
-	boolean insertFieldSection(CacheModel model);
+	final FrameworkContext fwCtx = FrameworkContext.get();
+	final PathsContext pathsCtx = fwCtx.getPathsContextInstance();
+	
+	final InnerStaticClassGenerator innerClassGen = new InnerStaticClassGenerator();
+	
+	void insertClassSection(Path path);
+	void insertFieldSection(CacheModel model);
 	void eraseClassSection(CacheModel model);
-	boolean eraseFielSection(CacheModel model);
-	boolean modifyClassSection(CacheModel model);
-	boolean modifyFieldSection(CacheModel model);
+	void eraseFielSection(CacheModel model);
+	void modifyClassSection(CacheModel model);
+	void modifyFieldSection(CacheModel model);
 }

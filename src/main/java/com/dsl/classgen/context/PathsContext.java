@@ -2,6 +2,7 @@ package com.dsl.classgen.context;
 
 import static com.dsl.classgen.context.FrameworkContext.INSTANCE;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
@@ -77,14 +78,7 @@ public class PathsContext {
 	}
 	
 	public void addFileToList(Path filePath) {
-		var flagsInstance = FrameworkContext.INSTANCE.flagsContextInstance;
-		if(flagsInstance.getIsDirStructureAlreadyGenerated() && flagsInstance.getIsExistsPJavaSource()) {
-			if(!CacheManager.hasValidCacheFile(filePath)) {
-				CacheManager.addNewCacheFileToWrite(filePath);
-			}
-		} else {
-			CacheManager.addNewCacheFileToWrite(filePath);
-		}
+		addFileToCacheList(filePath);
     	fileList.add(filePath);
         LOGGER.log(Level.INFO, "Properties file added to file list: {}\n", filePath);
     }
@@ -92,6 +86,19 @@ public class PathsContext {
     public void addDirToList(Path dirPath) {
     	dirList.add(dirPath);
         LOGGER.log(Level.INFO, "Directory added to dir list: {}\n", dirPath);
+    }
+    
+    public void addFileToCacheList(Path filePath) {
+    	if(Files.isRegularFile(filePath) && Utils.isPropertiesFile(filePath)) {
+    		var flagsInstance = FrameworkContext.INSTANCE.flagsContextInstance;
+    		if(flagsInstance.getIsDirStructureAlreadyGenerated() && flagsInstance.getIsExistsPJavaSource()) {
+    			if(!CacheManager.hasValidCacheFile(filePath)) {
+    				CacheManager.addNewCacheFileToWrite(filePath);
+    			}
+    		} else {
+    			CacheManager.addNewCacheFileToWrite(filePath);
+    		}
+    	}
     }
 	
     // changedFiles
@@ -250,11 +257,6 @@ public class PathsContext {
 	 */
 	public void setGeneratedClass(String generatedClass) {
 		this.generatedClass = generatedClass;
-	}
-	
-	public Path getSoftPropertiesFileName() {
-		String stringPropertiesFileName = propertiesFileName.toString();
-		return Path.of(stringPropertiesFileName.substring(0, stringPropertiesFileName.indexOf('.')));
 	}
 	
 	public String getFullPackageClass() {

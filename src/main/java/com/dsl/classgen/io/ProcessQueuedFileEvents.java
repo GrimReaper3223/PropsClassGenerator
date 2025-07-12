@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -15,7 +16,6 @@ import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.FrameworkContext;
 import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.sync_refs.SyncSource;
 import com.dsl.classgen.services.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
@@ -30,6 +30,20 @@ public class ProcessQueuedFileEvents {
 	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
 	
 	private static SyncSource syncSource = new SyncSource();
+
+	private static Function<Path, Stream<Path>> streamCreator = path -> {
+		Stream<Path> pathStream = null;
+		try {
+			pathStream = Files.walk(path)
+							  .filter(Files::isRegularFile)
+							  .filter(Utils::isPropertiesFile)
+							  .map(Utils::resolveJsonFilePath);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return pathStream;
+	};
 	
 	private ProcessQueuedFileEvents() {}
 	
@@ -71,12 +85,18 @@ public class ProcessQueuedFileEvents {
 	// adiciona um novo arquivo a lista de arquivos e, se for um diretorio, registra o novo diretorio como chave
 	// ao adicionar um novo arquivo, deve-se adicionar a classe interna correspondente no source, junto com todos os seus campos
 	private static void createEntry(Stream<Path> pipeline) {
+		LOGGER.warn("Generating new inner data...");
 		pipeline.forEach(path -> {
-			if(Files.isRegularFile(path)) {
-				pathsCtx.addFileToList(path);
+			if(Files.isDirectory(path)) {
+				try(Stream<Path> files = Files.walk(path)) {
+					files.forEach(syncSource::insertClassSection);
+				} 
+				catch (IOException e) {
+					e.printStackTrace();
+				}
+			} else {
+				syncSource.insertClassSection(path);
 			}
-			Reader.read(path);
-			CacheManager.processCache();
 		});
 	}
 	
@@ -88,17 +108,13 @@ public class ProcessQueuedFileEvents {
 			if(Files.isDirectory(path)) {
 				LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
 				
-				try(Stream<Path> files = Files.walk(path)) {
-					files.filter(Files::isRegularFile)
-						 .filter(Utils::isPropertiesFile)
-						 .map(Utils::resolveJsonFilePath)
-						 .forEach(jsonPath -> syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(jsonPath)));
-				} catch (IOException e) {
-					e.printStackTrace();
+				try(Stream<Path> files = streamCreator.apply(path)) {
+					files.forEach(jsonPath -> syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(jsonPath)));
 				}
 			// se for removido somente o arquivo, devemos atualizar o source removendo somente a propriedade de uma determinada classe interna estatica
 			// por fim, devemos deletar o arquivo de cache do sistema de arquivos e o cache do mapa de cache carregado
 			} else if(Utils.isPropertiesFile(path)) {
+				LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
 				syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
 			}
 		});

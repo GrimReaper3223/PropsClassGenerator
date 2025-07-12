@@ -22,6 +22,9 @@
         <Logger name="com.dsl.classgen.io.GeneratedStructureChecker" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
+        <Logger name="com.dsl.classgen.io.ProcessQueuedFileEvents" level="info" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
         <Logger name="com.dsl.classgen.generators.OutterClassGenerator" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>

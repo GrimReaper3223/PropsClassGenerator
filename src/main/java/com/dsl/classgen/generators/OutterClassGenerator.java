@@ -6,16 +6,9 @@ import org.apache.logging.log4j.Level;
 
 import com.dsl.classgen.annotations.GeneratedClass;
 import com.dsl.classgen.annotations.PrivateConstructor;
-import com.dsl.classgen.context.FlagsContext;
-import com.dsl.classgen.context.FrameworkContext;
-import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.io.file_manager.Reader;
 
 public final class OutterClassGenerator implements OutputLogGeneration {
-	
-	static FrameworkContext fwCtx = FrameworkContext.get();
-	static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
-	static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
 	
     public void generateOutterClass() {
         InnerStaticClassGenerator innerStaticClassGenerator = new InnerStaticClassGenerator();

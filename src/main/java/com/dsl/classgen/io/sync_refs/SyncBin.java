@@ -1,17 +1,17 @@
 package com.dsl.classgen.io.sync_refs;
 
+import java.nio.file.Path;
+
 import com.dsl.classgen.io.cache_manager.CacheModel;
 
 public final class SyncBin implements SyncOperations {
 
 	@Override
-	public boolean insertClassSection(CacheModel model) {
-		return false;
+	public void insertClassSection(Path path) {
 	}
 
 	@Override
-	public boolean insertFieldSection(CacheModel model) {
-		return false;
+	public void insertFieldSection(CacheModel model) {
 	}
 
 	@Override
@@ -19,18 +19,14 @@ public final class SyncBin implements SyncOperations {
 	}
 
 	@Override
-	public boolean eraseFielSection(CacheModel model) {
-		return false;
+	public void eraseFielSection(CacheModel model) {
 	}
 
 	@Override
-	public boolean modifyClassSection(CacheModel model) {
-		return false;
+	public void modifyClassSection(CacheModel model) {
 	}
 
 	@Override
-	public boolean modifyFieldSection(CacheModel model) {
-		return false;
+	public void modifyFieldSection(CacheModel model) {
 	}
-
 }

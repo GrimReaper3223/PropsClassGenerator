@@ -1,10 +1,5 @@
 package com.dsl.classgen.generators;
 
-import static com.dsl.classgen.generators.OutterClassGenerator.fwCtx;
-import static com.dsl.classgen.generators.OutterClassGenerator.pathsCtx;
-import static com.dsl.classgen.generators.OutterClassGenerator.flagsCtx;
-
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -18,9 +13,8 @@ public final class InnerStaticClassGenerator implements OutputLogGeneration {
 	
     public String generateInnerStaticClass() {
         InnerFieldGenerator innerFieldGenerator = new InnerFieldGenerator();
-        Path softPropertyFileName = pathsCtx.getSoftPropertiesFileName();
-        String formattedClassName = formatClassName(softPropertyFileName);
-        CacheModel cm = CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(softPropertyFileName));
+        String formattedClassName = formatClassName();
+        CacheModel cm = CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(pathsCtx.getPropertiesFileName()));
         
         formatGenerationOutput("Static Inner Class", formattedClassName, null);
         
@@ -44,7 +38,7 @@ public final class InnerStaticClassGenerator implements OutputLogGeneration {
         				pathsCtx.getPropertiesDataType(),
         				cm.fileHash,
         				formattedClassName, 
-        				PrivateConstructor.class.getSimpleName(), 
+        				PrivateConstructor.class.getSimpleName(),
         				fwCtx.getProps()
         					  .entrySet()
         					  .stream()
@@ -56,9 +50,10 @@ public final class InnerStaticClassGenerator implements OutputLogGeneration {
         					  }).collect(Collectors.joining("\n\t\t")));
     }
 
-    private String formatClassName(Path softPropertyFileName) {
-        String regex = "[\\s\\Q`!@#$%^&*()_+{}:\"<>?|\\~/.;',[]=-\\E]+";
-        return Arrays.stream(softPropertyFileName.toString().split(regex))
+    private String formatClassName() {
+        final String regex = "[\\s\\Q`!@#$%^&*()_+{}:\"<>?|\\~/.;',[]=-\\E]+";
+        String propertyFileName = Utils.formatFileName(pathsCtx.getPropertiesFileName()).toString();
+        return Arrays.stream(propertyFileName.split(regex))
         			 .map(token -> token.replaceFirst(Character.toString(token.charAt(0)), Character.toString(Character.toUpperCase(token.charAt(0)))))
         			 .collect(Collectors.joining());
     }
