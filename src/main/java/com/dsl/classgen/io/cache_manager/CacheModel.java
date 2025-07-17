@@ -11,7 +11,9 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-public class CacheModel implements Serializable {
+import com.dsl.classgen.io.SupportProvider;
+
+public final class CacheModel extends SupportProvider implements Serializable {
 	
     private static final long serialVersionUID = 1L;
     
@@ -29,6 +31,10 @@ public class CacheModel implements Serializable {
         this.fileHash = hashCode();
         this.hashTableMap = initPropertyMapGraph();
     }
+    
+    public CacheModel(String filePath, Properties props) {
+    	this(Path.of(filePath), props);
+    }
 
     // inicializa o grafo dos dados do arquivo de propriedades dentro de hashTableMap
     public Map<String, Integer> initPropertyMapGraph() {
@@ -37,8 +43,18 @@ public class CacheModel implements Serializable {
         			.map(entry -> Map.entry(entry.getKey().toString(), Objects.hash(entry.getKey().toString(), entry.getValue())))
         			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
-
-    // compara dois objetos HashTableModel pelos seus hashTableMaps e hash de arquivo
+    
+    // compara o hash do arquivo
+    public boolean compareFileHash(CacheModel other) {
+    	return this.fileHash == other.fileHash;
+    }
+    
+    // compara se as entradas de ambos os mapas sao iguais
+    public boolean comparePropertyMapEntries(CacheModel other) {
+    	return this.hashTableMap.entrySet().containsAll(other.hashTableMap.entrySet());
+    }
+    
+    // comparacao geral
     @Override
     public boolean equals(Object obj) {
         CacheModel cm = (CacheModel) Objects.requireNonNull(obj);
@@ -60,7 +76,7 @@ public class CacheModel implements Serializable {
             fileSize = attrs.size();
         }
         catch (IOException e) {
-            e.printStackTrace();
+        	LOGGER.error(e);
         }
         
         return Objects.hash(creationTime.toMillis(), lastModifiedTime.toMillis(), fileSize);

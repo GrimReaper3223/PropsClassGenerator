@@ -12,32 +12,20 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.dsl.classgen.context.FlagsContext;
-import com.dsl.classgen.context.FrameworkContext;
-import com.dsl.classgen.context.PathsContext;
-import com.dsl.classgen.io.FileVisitorImpl;
-import com.dsl.classgen.services.WatchServiceImpl;
+import com.dsl.classgen.context.GeneralContext;
+import com.dsl.classgen.io.FileVisitorImpls;
+import com.dsl.classgen.io.SupportProvider;
+import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
-public class Reader {
-	
-	private static final Logger LOGGER = LogManager.getLogger(Reader.class);
-	
-	private static FrameworkContext fwCtx = FrameworkContext.get();
-	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
-	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
+public final class Reader extends SupportProvider {
 	
     private Reader() {}
 
     public static void read(Path inputPath) {
-    	// se for um arquivo, deve carregar ele no objeto de propriedades diretamente
-    	// se for um diretorio, deve chamar o metodo que processa a lista de arquivos no diretorio
         if (Files.isRegularFile(inputPath)) {
         	flagsCtx.setIsSingleFile(true);
+        	pathsCtx.checkFileInCache(inputPath);
             loadPropFile(inputPath);
             
         } else if (Files.isDirectory(inputPath)) {
@@ -53,16 +41,15 @@ public class Reader {
     		lines.forEach(line -> sourceBuffer.append(line + '\n'));
     	} 
     	catch (IOException e) {
-			e.printStackTrace();
+    		logException(e);
 		}
     	
     	return sourceBuffer;
     }
     
-    // carrega o arquivo de propriedades
     public static void loadPropFile(Path inputPath) {
         try {
-            Properties props = fwCtx.getProps();
+            Properties props = generalCtx.getProps();
             try (InputStream in = Files.newInputStream(inputPath)) {
                 if (!props.isEmpty()) {
                     props.clear();
@@ -70,51 +57,16 @@ public class Reader {
                 props.load(in);
             }
             
-            LOGGER.log(Level.INFO, "\n***Properties file loaded from path: {}***\n", inputPath);
+            LOGGER.info("\n***Properties file loaded from path: {}***\n", inputPath);
                 
 			pathsCtx.setPropertiesDataType(readJavaType(inputPath));
             pathsCtx.setPropertiesFileName(inputPath.getFileName());
         }
         catch (InterruptedException | ExecutionException | IOException e) {
-            e.printStackTrace();
-            if (e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
-            	Thread.currentThread().interrupt();
-            }
+        	logException(e);
         }
     }
 
-    // processa a lista de arquivos contida em um diretorio e/ou subdiretorios
-    private static void processDirectoryFileList(Path inputPath) {
-        try {
-            if (flagsCtx.getIsRecursive()) {
-                Files.walkFileTree(inputPath, new FileVisitorImpl.ReaderFileVisitor());
-            } else {
-                try (Stream<Path> pathStream = Files.list(inputPath)){
-                    pathStream.filter(Files::isRegularFile)
-	                    	  .filter(Utils::isPropertiesFile)
-	                    	  .forEach(pathsCtx::addFileToList);
-                }
-                pathsCtx.addDirToList(inputPath);
-            }
-            WatchServiceImpl.analysePropertyDirKeyPath(inputPath);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // le o tipo java dentro do arquivo de propriedades correspondente ao padrao # $javatype:@<tipo_de_dado_java>
-    private static String readJavaType(Path path) throws InterruptedException, ExecutionException {
-    	return Utils.getExecutor().submit(() -> {
-	        try (Stream<String> lines = Files.lines(path, StandardCharsets.ISO_8859_1);){
-	            return lines.filter(input -> input.contains("$javatype:"))
-	            				.findFirst().map(input -> input.substring(input.indexOf("@") + 1))
-	            				.orElseThrow(FrameworkContext::throwIOException);
-	        }
-    	}).get();
-    }
-    
-    // carrega o binario da classe P.java gerado
     public static Class<?> loadGeneratedBinClass() {
         Class<?> generatedClass = null;
         String fullPackageClass = pathsCtx.getFullPackageClass().replace(".java", "");
@@ -123,9 +75,47 @@ public class Reader {
             generatedClass = Class.forName(fullPackageClass , true, classLoader);
         }
         catch (ClassNotFoundException | MalformedURLException e) {
-            e.printStackTrace();
+        	logException(e);
         }
         return generatedClass;
+    }
+    
+    private static void processDirectoryFileList(Path inputPath) {
+        try {
+            if (flagsCtx.getIsRecursive()) {
+                Files.walkFileTree(inputPath, new FileVisitorImpls.ReaderFileVisitor());
+            } else {
+                try (Stream<Path> pathStream = Files.list(inputPath)){
+                    pathStream.filter(Files::isRegularFile)
+	                    	  .filter(Utils::isPropertiesFile)
+	                    	  .forEach(pathsCtx::queueFile);
+                }
+                pathsCtx.queueDir(inputPath);
+            }
+            WatchServiceImpl.analysePropertyDir(inputPath);
+        }
+        catch (IOException e) {
+        	logException(e);
+        }
+    }
+
+    private static String readJavaType(Path path) throws InterruptedException, ExecutionException {
+    	return Utils.getExecutor().submit(() -> {
+	        try (Stream<String> lines = Files.lines(path, StandardCharsets.ISO_8859_1);){
+	            return lines.filter(input -> input.contains("$javatype:"))
+	            				.findFirst().map(input -> input.substring(input.indexOf("@") + 1))
+	            				.orElseThrow(GeneralContext::throwIOException);
+	        }
+    	}).get();
+    }
+    
+    private static void logException(Exception e) {
+    	if(e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
+    		LOGGER.error("Thread is interrupted.", e);
+        	Thread.currentThread().interrupt();
+        } else {
+        	LOGGER.error(e);
+        }
     }
 }
 

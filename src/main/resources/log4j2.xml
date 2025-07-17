@@ -7,31 +7,10 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="com.dsl.classgen.io.file_manager.Writer" level="info" additivity="false">
+        <Logger name="com.dsl.classgen.io.SupportProvider" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="com.dsl.classgen.io.file_manager.Reader" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.io.file_manager.Compiler" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.io.sync_refs.SyncSource" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.io.GeneratedStructureChecker" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.io.ProcessQueuedFileEvents" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.generators.OutterClassGenerator" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.generators.OutputLogGeneration" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.io.cache_manager.CacheManager" level="info" additivity="false">
+        <Logger name="com.dsl.classgen.generator.SupportProvider" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="com.dsl.classgen.services.WatchServiceImpl" level="info" additivity="false">

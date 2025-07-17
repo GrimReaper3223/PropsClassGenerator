@@ -4,16 +4,16 @@ import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
 
 public final class Utils {
 	
 	// executor que inicia uma thread virtual por task
     private static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-    private static FrameworkContext fwCtx = FrameworkContext.get();
-    private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
     
+    private static GeneralContext generalCtx = GeneralContext.get();
+    private static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
 
     private Utils() {}
     
@@ -23,11 +23,11 @@ public final class Utils {
 
     // calcula o tempo decorrido de uma operacao de geracao
     public static long calculateElapsedTime() {
-        if (fwCtx.getTimeOperation() == 0L) {
-        	fwCtx.setTimeOperation(System.currentTimeMillis());
+        if (generalCtx.getTimeOperation() == 0L) {
+        	generalCtx.setTimeOperation(System.currentTimeMillis());
             return 0L;
         }
-        return System.currentTimeMillis() - fwCtx.getTimeOperation();
+        return System.currentTimeMillis() - generalCtx.getTimeOperation();
     }
 
     /*
@@ -46,6 +46,10 @@ public final class Utils {
     public static Path formatFileName(Path filePath) {
         String fileName = filePath.getFileName().toString();
         return Path.of(fileName.substring(0, fileName.lastIndexOf(".")));
+    }
+    
+    public static String formatSourcePattern(PatternType type, String path) {
+    	return String.format("// %s HINT ~>> %s@// %1$s HINT <<~ %2$s", type.name(), path);
     }
 
     public static <T> Path normalizePath(T path, String toReplace, String replaceWith) {

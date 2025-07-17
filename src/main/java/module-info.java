@@ -1,4 +1,4 @@
-module props_class_generator {
+module propsClassGenerator {
 	requires static org.junit.jupiter.api;
 	
 	requires org.apache.logging.log4j.core;
@@ -7,8 +7,8 @@ module props_class_generator {
 	requires java.compiler;
 
 	exports com.dsl.classgen;
-	exports com.dsl.classgen.annotations;
-	exports com.dsl.classgen.annotations.containers;
+	exports com.dsl.classgen.annotation;
+	exports com.dsl.classgen.annotation.containers;
 	
 	opens com.dsl.classgen.io.cache_manager to com.google.gson;
 }

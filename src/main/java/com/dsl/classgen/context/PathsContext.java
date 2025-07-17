@@ -1,17 +1,16 @@
 package com.dsl.classgen.context;
 
-import static com.dsl.classgen.context.FrameworkContext.INSTANCE;
+import static com.dsl.classgen.context.GeneralContext.INSTANCE;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,7 +21,7 @@ public class PathsContext {
 
 	private static final Logger LOGGER = LogManager.getLogger(PathsContext.class);
 	
-	private final Deque<Map.Entry<Path, ?>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
+	private final BlockingQueue<Map.Entry<Path, ?>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
 	private final List<Path> fileList;						// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
 	private final List<Path> dirList;						// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista
 	
@@ -41,11 +40,11 @@ public class PathsContext {
  	private String propertiesDataType;					// o tipo de dados encontrado no arquivo de propriedades correspondente ao padrao # $javatype:@<tipo_de_dado_java>
     private Path propertiesFileName;					// nome do arquivo de propriedades com a extensao .properties
     private String packageClass;						// pacote que deve ser inserido no cabecalho do arquivo de classe para indicar sua localizacao
+    
     private String generatedClass;						// contem o conteudo da classe gerada. Esta variavel deve ser usada pelo escritor para armazenar os dados no caminho de saida, ou a saida padrao para imprimir na tela, caso o debug esteja habilitado
 	
 	PathsContext(boolean isDebugMode) {
-		
-		changedFiles = new ArrayDeque<>();
+		changedFiles = new SynchronousQueue<>();
 		fileList = new ArrayList<>();
 		dirList = new ArrayList<>();
 		
@@ -72,45 +71,41 @@ public class PathsContext {
     }
 	
 	// changedFilesDeque
-	public Deque<Map.Entry<Path, ?>> getChangedFilesQueue() {
+	public BlockingQueue<Map.Entry<Path, ?>> getChangedFilesQueue() {
 		return changedFiles;
 	}
 	
-	public void addFileToList(Path filePath) {
-		addFileToCacheList(filePath);
+	public void queueFile(Path filePath) {
+		checkFileInCache(filePath);
     	fileList.add(filePath);
-        LOGGER.log(Level.INFO, "Properties file added to file list: {}\n", filePath);
+    	LOGGER.info("Properties file added to file list: {}\n", filePath);
     }
 	
-    public void addDirToList(Path dirPath) {
+    public void queueDir(Path dirPath) {
     	dirList.add(dirPath);
-        LOGGER.log(Level.INFO, "Directory added to dir list: {}\n", dirPath);
+        LOGGER.info("Directory added to dir list: {}\n", dirPath);
     }
     
-    public void addFileToCacheList(Path filePath) {
-		var flagsInstance = FrameworkContext.INSTANCE.flagsContextInstance;
+    public void checkFileInCache(Path filePath) {
+		var flagsInstance = GeneralContext.INSTANCE.flagsContextInstance;
 		if(flagsInstance.getIsDirStructureAlreadyGenerated() && flagsInstance.getIsExistsPJavaSource()) {
 			if(!CacheManager.hasValidCacheFile(filePath)) {
-				CacheManager.addNewCacheFileToWrite(filePath);
+				CacheManager.queueNewCacheFile(filePath);
 			}
 		} else {
-			CacheManager.addNewCacheFileToWrite(filePath);
+			CacheManager.queueNewCacheFile(filePath);
 		}
     }
 	
     // changedFiles
-    public <T extends WatchEvent.Kind<?>> void addChangedEntryToQueue(Map.Entry<Path, T> entry) {
+    public <T extends WatchEvent.Kind<?>> void queueChangedFileEntry(Map.Entry<Path, T> entry) {
     	boolean isSuccessOffering = changedFiles.offer(entry);
    		INSTANCE.flagsContextInstance.setHasChangedFilesLeft(isSuccessOffering || !changedFiles.isEmpty());
     }
     
-    public List<Map.Entry<Path, ?>> getAllChangedEntriesFromQueue() {
+    public List<Map.Entry<Path, ?>> getQueuedChangedFilesEntries() {
     	List<Map.Entry<Path, ?>> entryList = new ArrayList<>();
-    	
-    	do {
-    		entryList.add(changedFiles.poll());
-    	}
-    	while(!changedFiles.isEmpty());
+    	changedFiles.drainTo(entryList);
     	INSTANCE.flagsContextInstance.setHasChangedFilesLeft(!changedFiles.isEmpty());
     	
     	return entryList;

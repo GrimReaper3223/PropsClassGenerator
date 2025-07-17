@@ -8,26 +8,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+public final class GeneratedStructureChecker extends SupportProvider {
 
-import com.dsl.classgen.context.FlagsContext;
-import com.dsl.classgen.context.FrameworkContext;
-import com.dsl.classgen.context.PathsContext;
-
-public class GeneratedStructureChecker {
-	
-	private static final Logger LOGGER = LogManager.getLogger(GeneratedStructureChecker.class);	
-	
-	private final PathsContext pathsCtx;
-	private final FlagsContext flagsCtx;
-
-	public GeneratedStructureChecker() {
-		FrameworkContext fwCtx = FrameworkContext.get();
-		pathsCtx = fwCtx.getPathsContextInstance();
-		flagsCtx = fwCtx.getFlagsInstance();
-	}
-	
 	private Function<String, Predicate<Path>> predicateFactory = str -> p -> p.getFileName().toString().equals(str);
 	private BiFunction<Stream<Path>, Predicate<Path>, Path> genFilter = 
 						(pathStream, predicate) -> pathStream.filter(predicate::test)
@@ -58,7 +40,7 @@ public class GeneratedStructureChecker {
         	}
         }
         catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e);
         }
     }
     
@@ -72,7 +54,7 @@ public class GeneratedStructureChecker {
         	}
     	}
     	catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e);
         }
     }
 
@@ -84,7 +66,7 @@ public class GeneratedStructureChecker {
             flagsCtx.setIsExistsPJavaSource(foundedPath != null);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e);
         }
     }
 }

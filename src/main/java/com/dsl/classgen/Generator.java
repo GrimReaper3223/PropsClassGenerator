@@ -7,23 +7,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.context.FlagsContext;
-import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
-import com.dsl.classgen.generators.OutterClassGenerator;
+import com.dsl.classgen.generator.OutterClassGenerator;
 import com.dsl.classgen.io.GeneratedStructureChecker;
-import com.dsl.classgen.io.ProcessQueuedFileEvents;
+import com.dsl.classgen.io.FileEventsProcessor;
 import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.file_manager.Compiler;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
-import com.dsl.classgen.services.WatchServiceImpl;
+import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
 public final class Generator {
 	
 	private static final Logger LOGGER = LogManager.getLogger(Generator.class);
 	
-	private static FrameworkContext fwCtx = FrameworkContext.get();
+	private static GeneralContext fwCtx = GeneralContext.get();
 	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
 	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
 	
@@ -105,6 +105,6 @@ public final class Generator {
 		// compila a classe gerada, inicializa o servico de monitoramento de diretorios e processa as anotacoes da classe gerada/existente
 		Compiler.compile();
 		WatchServiceImpl.initialize();
-		ProcessQueuedFileEvents.initialize();
+		FileEventsProcessor.initialize();
 	}
 }

@@ -5,22 +5,11 @@ import java.util.concurrent.ExecutionException;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.dsl.classgen.annotations.processors.ProcessAnnotation;
-import com.dsl.classgen.context.FlagsContext;
-import com.dsl.classgen.context.FrameworkContext;
-import com.dsl.classgen.context.PathsContext;
+import com.dsl.classgen.annotation.processors.AnnotationProcessor;
+import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.utils.Utils;
 
-public class Compiler {
-	
-	private static final Logger LOGGER = LogManager.getLogger(Compiler.class);
-	
-	private static FrameworkContext fwCtx = FrameworkContext.get();
-	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
-	private static PathsContext pathCtx = fwCtx.getPathsContextInstance();
+public final class Compiler extends SupportProvider {
 	
 	private Compiler() {}
 	
@@ -30,14 +19,14 @@ public class Compiler {
             try {
                 Utils.getExecutor().submit(() -> {
                 	LOGGER.info("Compiling classes from annotations and generated classes...\n");
-                    String libs = ProcessAnnotation.class.getResource("/libs").getPath();
+                    String libs = AnnotationProcessor.class.getResource("/libs").getPath();
                     JavaCompiler jc = ToolProvider.getSystemJavaCompiler();
                     
                     int opStats = jc.run(null, null, null, 
-                    		"-d", pathCtx.getOutputClassFilePath().toString(), 
+                    		"-d", pathsCtx.getOutputClassFilePath().toString(), 
                     		"--module-path", libs, 
-                    		"-sourcepath", "/src/main/java/:" + pathCtx.getOutputSourceDirPath().toString(), 
-                    		pathCtx.getExistingPJavaGeneratedSourcePath().toString());
+                    		"-sourcepath", "/src/main/java/:" + pathsCtx.getOutputSourceDirPath().toString(), 
+                    		pathsCtx.getExistingPJavaGeneratedSourcePath().toString());
                     if(opStats == 0) {
                     	LOGGER.warn("Compilation was successful!\n");
                     } else {

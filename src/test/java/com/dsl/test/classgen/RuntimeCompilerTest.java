@@ -8,7 +8,7 @@ import javax.tools.ToolProvider;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.dsl.classgen.context.FrameworkContext;
+import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
 
 class RuntimeCompilerTest {
@@ -16,7 +16,7 @@ class RuntimeCompilerTest {
 	@Test
 	@Disabled("Teste bem-sucedido")
 	void executeRuntimeCompiler() {
-		PathsContext pathsCtx = FrameworkContext.get().getPathsContextInstance();
+		PathsContext pathsCtx = GeneralContext.get().getPathsContextInstance();
 		String libs = getClass().getResource("/libs").getPath();
 		assertTrue(libs.contains("libs"));
 		
