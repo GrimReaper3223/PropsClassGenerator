@@ -8,18 +8,21 @@ import java.nio.file.WatchEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
+import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
 public class PathsContext {
 
 	private static final Logger LOGGER = LogManager.getLogger(PathsContext.class);
+	private static final Level SUCCESS = Level.getLevel("SUCCESS");
 	
 	private final BlockingQueue<Map.Entry<Path, ?>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
 	private final List<Path> fileList;						// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
@@ -44,7 +47,7 @@ public class PathsContext {
     private String generatedClass;						// contem o conteudo da classe gerada. Esta variavel deve ser usada pelo escritor para armazenar os dados no caminho de saida, ou a saida padrao para imprimir na tela, caso o debug esteja habilitado
 	
 	PathsContext(boolean isDebugMode) {
-		changedFiles = new SynchronousQueue<>();
+		changedFiles = new ArrayBlockingQueue<>(1024);
 		fileList = new ArrayList<>();
 		dirList = new ArrayList<>();
 		
@@ -78,12 +81,13 @@ public class PathsContext {
 	public void queueFile(Path filePath) {
 		checkFileInCache(filePath);
     	fileList.add(filePath);
-    	LOGGER.info("Properties file added to file list: {}\n", filePath);
+    	LOGGER.log(SUCCESS,"Properties file added to file list: {}", filePath);
     }
 	
     public void queueDir(Path dirPath) {
+		WatchServiceImpl.analysePropertyDir(dirPath);
     	dirList.add(dirPath);
-        LOGGER.info("Directory added to dir list: {}\n", dirPath);
+    	LOGGER.log(SUCCESS, "Directory added to dir list: {}", dirPath);
     }
     
     public void checkFileInCache(Path filePath) {
@@ -99,8 +103,7 @@ public class PathsContext {
 	
     // changedFiles
     public <T extends WatchEvent.Kind<?>> void queueChangedFileEntry(Map.Entry<Path, T> entry) {
-    	boolean isSuccessOffering = changedFiles.offer(entry);
-   		INSTANCE.flagsContextInstance.setHasChangedFilesLeft(isSuccessOffering || !changedFiles.isEmpty());
+    	INSTANCE.flagsContextInstance.setHasChangedFilesLeft(changedFiles.offer(entry) || !changedFiles.isEmpty());
     }
     
     public List<Map.Entry<Path, ?>> getQueuedChangedFilesEntries() {

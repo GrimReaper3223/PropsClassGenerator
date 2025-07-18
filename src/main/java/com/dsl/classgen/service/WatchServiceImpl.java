@@ -3,12 +3,12 @@ package com.dsl.classgen.service;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
@@ -16,6 +16,7 @@ import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,6 +27,7 @@ import com.dsl.classgen.utils.Utils;
 
 public class WatchServiceImpl {
 	private static final Logger LOGGER = LogManager.getLogger(WatchServiceImpl.class);
+	private static final Level NOTICE = Level.getLevel("NOTICE");
 
 	private static GeneralContext generalCtx = GeneralContext.get();
 	private static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
@@ -44,7 +46,7 @@ public class WatchServiceImpl {
             watcher = FileSystems.getDefault().newWatchService();
         }
         catch (IOException e) {
-        	LOGGER.error(e);
+        	LOGGER.fatal(e);
         }
     }
     
@@ -80,27 +82,31 @@ public class WatchServiceImpl {
             WatchKey key = inputPath.register(watcher, EVENT_KIND_ARR);
             keys.putAll(Map.ofEntries(WatchServiceImpl.verifyKey(key, inputPath)));
         }
-        LOGGER.info("Done\n");
+        LOGGER.log(NOTICE, "Done");
     }
     
     private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path) {
-    	LOGGER.info("Checking {}...", path);
+    	LOGGER.log(NOTICE, "Checking {}...", path);
         Path mappedPath = keys.get(key);
         
         if (mappedPath == null) {
-        	LOGGER.info("Registering: {}...", path);
+        	LOGGER.log(NOTICE, "Registering: {}...", path);
             
         } else if (!path.equals(mappedPath)) {
-        	LOGGER.info("Updating: {} -> {}...", mappedPath, path);
+        	LOGGER.log(NOTICE, "Updating: {} -> {}...", mappedPath, path);
         }
         
         return Map.entry(key, path);
     }
     
-    public static void analysePropertyDir(Path dir) throws IOException {
-		var pair = verifyKey(dir.register(watcher, EVENT_KIND_ARR), dir);
-		if(keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue()) == null) {
-			keys.put(pair.getKey(), pair.getValue());
+    public static void analysePropertyDir(Path dir) {
+		try {
+			var pair = verifyKey(dir.register(watcher, EVENT_KIND_ARR), dir);
+			if(keys.computeIfPresent(pair.getKey(), (_, _) -> pair.getValue()) == null) {
+				keys.put(pair.getKey(), pair.getValue());
+			}
+		} catch (IOException e) {
+			LOGGER.error(e);
 		}
     }
 
@@ -110,7 +116,7 @@ public class WatchServiceImpl {
     }
 
     private static void processEvents() {
-    	LOGGER.warn("\nWatching...");
+    	LOGGER.warn("Watching...");
         while (true) {
             WatchKey key = null;
             
@@ -145,7 +151,7 @@ public class WatchServiceImpl {
     private static void processStream(WatchKey key) {
     	key.pollEvents()
     		.stream()
-    		.filter(event -> event.kind() != StandardWatchEventKinds.OVERFLOW)
+    		.filter(event -> event.kind() != OVERFLOW)
     		.map(event -> {
     			WatchEvent<Path> eventPath = cast(event);
     			Path occurrence = keys.get(key).resolve(eventPath.context());
@@ -153,8 +159,11 @@ public class WatchServiceImpl {
 		  	 })
 		  	 .filter(entry -> Utils.isPropertiesFile(entry.getKey()) || Files.isDirectory(entry.getKey()))
 		  	 .forEach(entry -> {
-					LOGGER.info("{}: {}", entry.getValue().name(), entry.getKey());
-					pathsCtx.queueChangedFileEntry(entry);
+		  		 	LOGGER.info("{}: {}", entry.getValue().name(), entry.getKey());
+		  		 	pathsCtx.queueChangedFileEntry(entry);
+		  		 	if(entry.getValue().name().equals("ENTRY_CREATE") && Files.isDirectory(entry.getKey())) {
+		  		 		pathsCtx.queueDir(entry.getKey());
+		  		 	}
 		   	});
     }
     

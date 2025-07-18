@@ -25,7 +25,7 @@ public final class GeneratedStructureChecker extends SupportProvider {
 	 */
 	
 	public void checkFileSystem() {
-		LOGGER.info("Analyzing the file system...\n");
+		LOGGER.info("Analyzing the file system...");
 		checkDirGeneratedStructure();
 		checkIfExistsCompiledClass();
 		checkIfIsExistsSourceFile();
@@ -40,7 +40,7 @@ public final class GeneratedStructureChecker extends SupportProvider {
         	}
         }
         catch (IOException e) {
-            LOGGER.error(e);
+            LOGGER.fatal(e);
         }
     }
     
@@ -54,7 +54,7 @@ public final class GeneratedStructureChecker extends SupportProvider {
         	}
     	}
     	catch (IOException e) {
-            LOGGER.error(e);
+            LOGGER.fatal(e);
         }
     }
 
@@ -66,7 +66,7 @@ public final class GeneratedStructureChecker extends SupportProvider {
             flagsCtx.setIsExistsPJavaSource(foundedPath != null);
         }
         catch (IOException e) {
-            LOGGER.error(e);
+            LOGGER.fatal(e);
         }
     }
 }

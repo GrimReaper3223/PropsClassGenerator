@@ -1,28 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="ERROR" monitorInterval="10">
+<Configuration status="WARN" monitorInterval="10">
+	<CustomLevels>
+	    <CustomLevel name="SUCCESS" intLevel="250" />
+	    <CustomLevel name="NOTICE" intLevel="350" />
+	    <CustomLevel name="CACHE" intLevel="450" />
+	</CustomLevels>
     <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout
-                    pattern="%highlight{%d{dd-MM-yyyy HH:mm:ss} [%t] %-5level: %msg%n%throwable}{FATAL=bright_red, ERROR=bright_red, WARN=bright_yellow, INFO=cyan, DEBUG=bright_green, TRACE=bright_magenta}"/>
+        <Console name="Console">
+            <PatternLayout disableAnsi="false" pattern="%highlight{%d{dd-MM-yyyy HH:mm:ss} [%t] %-5level: %msg%n%throwable}{FATAL=blink red, ERROR=bright_red, SUCCESS=bright_green bold, WARN=bright_yellow bold, INFO=white, NOTICE=bright_cyan, CACHE=bright_black, DEBUG=bright_blue, TRACE=bright_magenta}"/>
         </Console>
     </Appenders>
-    <Loggers>
-        <Logger name="com.dsl.classgen.io.SupportProvider" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.generator.SupportProvider" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.services.WatchServiceImpl" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.context.PathsContext" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.dsl.classgen.Generator" level="debug" additivity="false">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Root level="fatal">
+     <Loggers>
+        <Root level="debug">
             <AppenderRef ref="Console"/>
         </Root>
     </Loggers>

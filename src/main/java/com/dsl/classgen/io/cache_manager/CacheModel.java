@@ -51,7 +51,7 @@ public final class CacheModel extends SupportProvider implements Serializable {
     
     // compara se as entradas de ambos os mapas sao iguais
     public boolean comparePropertyMapEntries(CacheModel other) {
-    	return this.hashTableMap.entrySet().containsAll(other.hashTableMap.entrySet());
+    	return this.hashTableMap.entrySet().equals(other.hashTableMap.entrySet());
     }
     
     // comparacao geral

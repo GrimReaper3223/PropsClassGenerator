@@ -52,7 +52,7 @@ public final class FileVisitorImpls extends SupportProvider {
             try {
                 Utils.getExecutor().submit(() -> {
                     try (BufferedReader br = Files.newBufferedReader(file)){
-                        LOGGER.info("[CACHE] Loading JSON file: %s%n", file);
+                    	LOGGER.log(CACHE, "Loading JSON file: {}", file);
                         CacheManager.computeElementToCacheModelMap(file, new Gson().fromJson(br, CacheModel.class));
                     }
                     catch (IOException e) {

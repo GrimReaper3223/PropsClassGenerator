@@ -2,7 +2,6 @@ package com.dsl.classgen;
 
 import java.nio.file.Path;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +47,7 @@ public final class Generator {
 		Reader.read(inputPath);
 		CacheManager.processCache();
 		
-		LOGGER.log(Level.INFO, """
+		LOGGER.info("""
 				
 				-----------------------------
 				--- Framework Initialized ---
@@ -90,17 +89,14 @@ public final class Generator {
 			new OutterClassGenerator().generateOutterClass();
 			
 			if(flagsCtx.getIsDebugMode()) {
-				LOGGER.log(Level.DEBUG, pathsCtx.getGeneratedClass());
+				LOGGER.debug(pathsCtx.getGeneratedClass());
 			} 
 			Writer.write();
 			checker.checkFileSystem();	// verifica novamente o sistema de arquivos para atualizar variaveis
 			
 		} else {
-			LOGGER.log(Level.WARN, """
-					There is already a generated structure.
-					
-					Generating additional classes and checking the existing ones...
-					""");
+			LOGGER.warn("There is already a generated structure.");
+			LOGGER.warn("Generating additional classes and checking the existing ones...");
 		}
 		// compila a classe gerada, inicializa o servico de monitoramento de diretorios e processa as anotacoes da classe gerada/existente
 		Compiler.compile();

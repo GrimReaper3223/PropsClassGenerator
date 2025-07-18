@@ -13,8 +13,9 @@ import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.io.sync.SyncBin;
 import com.dsl.classgen.io.sync.SyncSource;
+import com.dsl.classgen.utils.Levels;
 
-public abstract sealed class SupportProvider permits CacheManager, Compiler, Reader, Writer, SyncSource, FileEventsProcessor, SyncBin, FileVisitorImpls, GeneratedStructureChecker, CacheModel {
+public abstract sealed class SupportProvider implements Levels permits CacheManager, Compiler, Reader, Writer, SyncSource, FileEventsProcessor, SyncBin, FileVisitorImpls, GeneratedStructureChecker, CacheModel {
 
 	protected static final Logger LOGGER = LogManager.getLogger(SupportProvider.class);
 	

@@ -18,7 +18,7 @@ public final class OutterClassGenerator extends SupportProvider implements Parse
 	@Override
 	public void initClass() {
 		outterClassName = pathsCtx.getOutterClassName();
-		LOGGER.info("Generating classes...\n");
+		LOGGER.log(NOTICE, "Generating classes...\n");
         formatGenerationOutput("Outter Class", outterClassName, "\n");
         imports = createImports(List.of(
     			GeneratedOutterClass.class,

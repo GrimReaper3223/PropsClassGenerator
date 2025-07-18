@@ -18,7 +18,7 @@ public final class Compiler extends SupportProvider {
         if (!flagsCtx.getIsExistsCompiledPJavaClass()) {
             try {
                 Utils.getExecutor().submit(() -> {
-                	LOGGER.info("Compiling classes from annotations and generated classes...\n");
+                	LOGGER.log(NOTICE, "Compiling classes from annotations and generated classes...\n");
                     String libs = AnnotationProcessor.class.getResource("/libs").getPath();
                     JavaCompiler jc = ToolProvider.getSystemJavaCompiler();
                     
@@ -28,14 +28,14 @@ public final class Compiler extends SupportProvider {
                     		"-sourcepath", "/src/main/java/:" + pathsCtx.getOutputSourceDirPath().toString(), 
                     		pathsCtx.getExistingPJavaGeneratedSourcePath().toString());
                     if(opStats == 0) {
-                    	LOGGER.warn("Compilation was successful!\n");
+                    	LOGGER.log(SUCCESS, "Compilation was successful!\n");
                     } else {
                     	LOGGER.error("An error occurred while compiling\n");
                     }
                 }).get();
             }
             catch (InterruptedException | ExecutionException e) {
-            	LOGGER.error(e.getMessage(), e);
+            	LOGGER.fatal(e.getMessage(), e);
                 if (e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
                 	Thread.currentThread().interrupt();
                 }

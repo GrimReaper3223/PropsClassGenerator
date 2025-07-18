@@ -28,7 +28,7 @@ public final class InnerFieldGenerator extends SupportProvider implements Parser
         if (!fieldValue.isEmpty()) {
             formatGenerationOutput("Inner Field", fieldKey, null);
             return MessageFormat.format(fieldPattern1,
-            		propertiesDataType, 
+            		fieldKey, 
             		createAnnotation(GeneratedInnerField.class, map),
             		propertiesDataType,
             		parseFieldName(fieldKey), 
@@ -37,6 +37,7 @@ public final class InnerFieldGenerator extends SupportProvider implements Parser
         
         formatGenerationOutput("Inner Field", fieldKey, "UNINITIALIZED FIELD");
         return MessageFormat.format(fieldPattern2, 
+        		fieldKey,
         		createAnnotation(GeneratedInnerField.class, map),
         		propertiesDataType, 
         		parseFieldName(fieldKey));

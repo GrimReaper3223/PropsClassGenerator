@@ -15,7 +15,6 @@ import java.util.stream.Stream;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
-import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
 public final class Reader extends SupportProvider {
@@ -57,7 +56,7 @@ public final class Reader extends SupportProvider {
                 props.load(in);
             }
             
-            LOGGER.info("\n***Properties file loaded from path: {}***\n", inputPath);
+            LOGGER.log(SUCCESS, "Properties file loaded from path: {}", inputPath);
                 
 			pathsCtx.setPropertiesDataType(readJavaType(inputPath));
             pathsCtx.setPropertiesFileName(inputPath.getFileName());
@@ -92,7 +91,6 @@ public final class Reader extends SupportProvider {
                 }
                 pathsCtx.queueDir(inputPath);
             }
-            WatchServiceImpl.analysePropertyDir(inputPath);
         }
         catch (IOException e) {
         	logException(e);
@@ -114,7 +112,7 @@ public final class Reader extends SupportProvider {
     		LOGGER.error("Thread is interrupted.", e);
         	Thread.currentThread().interrupt();
         } else {
-        	LOGGER.error(e);
+        	LOGGER.fatal(e);
         }
     }
 }

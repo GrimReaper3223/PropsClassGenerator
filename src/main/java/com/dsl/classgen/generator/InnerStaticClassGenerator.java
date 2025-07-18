@@ -14,20 +14,20 @@ public final class InnerStaticClassGenerator extends SupportProvider implements 
 	
 	private String formattedClassName;
 	private CacheModel cm;
-	private Path inputPropertiesPath;
+	private Path propertyPath;
 	private Map<String, ?> map;
 	
 	@Override
 	public void initClass() {
 		Path propertiesFileName = pathsCtx.getPropertiesFileName();
 		
-		inputPropertiesPath = flagsCtx.getIsSingleFile() ? pathsCtx.getInputPropertiesPath() : pathsCtx.getInputPropertiesPath().resolve(propertiesFileName);
+		propertyPath = flagsCtx.getIsSingleFile() ? pathsCtx.getInputPropertiesPath() : pathsCtx.getInputPropertiesPath().resolve(propertiesFileName);
 		formattedClassName = parseClassName(propertiesFileName);
 		cm = CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(propertiesFileName));
 		
 		formatGenerationOutput("Static Inner Class", formattedClassName, null);
 		
-		map = Map.of("filePath", inputPropertiesPath.toString(), 
+		map = Map.of("filePath", propertyPath.toString(), 
 				 "javaType", pathsCtx.getPropertiesDataType() + ".class",
 				 "hash", cm.fileHash);
 	}
@@ -43,16 +43,17 @@ public final class InnerStaticClassGenerator extends SupportProvider implements 
 	        		\t@%4$s
 	        		\tprivate %3$s() {}
 	        		
-	        		\t// PROPS-CONTENT-START
-	        		\t%5$s
-	        		\t// PROPS-CONTENT-END
+	        		\t// PROPS-CONTENT-START: %5$s
+	        		\t%6$s
+	        		\t// PROPS-CONTENT-END: %5$s
         		\t}
         		\t// CLASS HINT <<~ %1$s
         		""",
-				inputPropertiesPath,
+				propertyPath,
         		createAnnotation(GeneratedInnerStaticClass.class, map),
         		formattedClassName, 
 				GeneratedPrivateConstructor.class.getSimpleName(),
+				propertyPath.getFileName(),
 				generalCtx.getProps()
 					  .entrySet()
 					  .stream()

@@ -69,7 +69,7 @@ public final class CacheManager extends SupportProvider {
 				CacheModel cm = new CacheModel(propsPath, generalCtx.getProps());
 				result = cm.equals(new Gson().fromJson(br, CacheModel.class));
 			} catch (IOException e) {
-				LOGGER.error(e);
+				LOGGER.fatal(e);
 			}
 		}
 		return result;
@@ -80,8 +80,9 @@ public final class CacheManager extends SupportProvider {
         	Path cacheDir = pathsCtx.getCacheDir();
             boolean isCacheDirValid = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
             
+            //TODO: nenhuma acao deve ser tomada caso nao haja cache para processamento
             if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && !cacheFilesToWrite.isEmpty()) {
-            	LOGGER.warn("Updating cache...\n");
+            	LOGGER.log(NOTICE, "Updating cache...");
             	updateCache();
             	
             	if(cacheModelMap.size() == 0) {
@@ -92,17 +93,17 @@ public final class CacheManager extends SupportProvider {
                 loadCache();
                 
             } else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
-            	LOGGER.warn("Cache exists, but directory structure does not exist. Revalidating cache...\n");
+            	LOGGER.log(NOTICE, "Cache exists, but directory structure does not exist. Revalidating cache...");
                 eraseCache();
                 createCache();
                 
-            } else {
-            	LOGGER.warn("Cache does not exist. Generating new cache structure...\n");
+            } else if(!isCacheDirValid) {
+            	LOGGER.log(NOTICE, "Cache does not exist. Generating new cache structure...");
                 createCache();
             }
         }
         catch (IOException e) {
-            LOGGER.error(e);
+            LOGGER.fatal(e);
         }
     }
 

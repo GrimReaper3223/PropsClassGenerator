@@ -68,10 +68,8 @@ public final class FileEventsProcessor extends SupportProvider {
 		eventProcessorThread.interrupt();
 	}
 	
-	// adiciona um novo arquivo a lista de arquivos e, se for um diretorio, registra o novo diretorio como chave
-	// ao adicionar um novo arquivo, deve-se adicionar a classe interna correspondente no source, junto com todos os seus campos
 	private static void createSection(Stream<Path> pipeline) {
-		LOGGER.warn("Generating new data entries...");
+		LOGGER.log(NOTICE, "Generating new data entries...");
 		pipeline.forEach(path -> {
 			if(Files.isDirectory(path)) {
 				try(Stream<Path> files = streamFilterCreator.apply(path)) {
@@ -83,11 +81,8 @@ public final class FileEventsProcessor extends SupportProvider {
 		});
 	}
 	
-	// remove um arquivo da lista de arquivos e, se for um diretorio, desregistra a chave do diretorio existente
-	// ao remover o arquivo, deve-se remover a classe interna correspondente no source.
 	private static void deleteSection(Stream<Path> pipeline) {
 		pipeline.forEach(path -> {
-			// se for removido um diretorio, devemos atualizar o source removendo toda a classe interna estatica e seus membros
 			if(Files.isDirectory(path)) {
 				LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
 				
@@ -95,8 +90,6 @@ public final class FileEventsProcessor extends SupportProvider {
 					files.map(Utils::resolveJsonFilePath)
 						 .forEach(jsonPath -> syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(jsonPath)));
 				}
-			// se for removido somente o arquivo, devemos atualizar o source removendo somente a propriedade de uma determinada classe interna estatica
-			// por fim, devemos deletar o arquivo de cache do sistema de arquivos e o cache do mapa de cache carregado
 			} else if(Utils.isPropertiesFile(path)) {
 				LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
 				syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
@@ -104,13 +97,8 @@ public final class FileEventsProcessor extends SupportProvider {
 		});
 	}
 	
-	// modifica somente os dados dentro do arquivo. Toda operacao de modificacao opera em cima de alguma alteracao no conteudo do arquivo
-	// ao modificar somente uma secao do arquivo, deve-se utilizar do hash do arquivo modificado para achar a classe interna
-	// encontrando a classe interna, devemos verificar seu hash em cache com o novo hash feito
-	// apos a identificacao, devemos atualizar somente a secao do campo que corresponder ao hash e a chave presente no map daquele CacheModel
-	// RECEBE SOMENTE ARQUIVOS, POIS OS DIRETORIOS ADICIONAIS SAO NOVAS CHAVES DE MONITORAMENTO
 	private static void modifySection(Stream<Path> pipeline) {
-		LOGGER.warn("Modifying source entries...");
+		LOGGER.log(NOTICE, "Modifying source entries...");
 		pipeline.forEach(path -> syncSource.modifySection(CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(path))));
 	}
 }

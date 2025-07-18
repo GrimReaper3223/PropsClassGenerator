@@ -18,7 +18,7 @@ public final class Writer extends SupportProvider {
     private Writer() {}
 
     public static void write() {
-    	LOGGER.info("Writing data...\n");
+    	LOGGER.log(NOTICE, "Writing data...\n");
         Path outputPackagePath = pathsCtx.getOutputSourceDirPath();
         Path outputFilePath = pathsCtx.getOutputSourceFilePath();
         
@@ -38,7 +38,7 @@ public final class Writer extends SupportProvider {
                 return;
             }
             Writer.fileWriter(outputFilePath);
-            LOGGER.warn("***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
+            LOGGER.log(SUCCESS, "***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
         }
         catch (IOException | InterruptedException | ExecutionException e) {
             logException(e);
@@ -50,7 +50,7 @@ public final class Writer extends SupportProvider {
     }
     
     public static void write(String content) {
-    	LOGGER.info("Writing data...\n");
+    	LOGGER.log(NOTICE, "Writing data...\n");
     	Path outputFilePath = pathsCtx.getExistingPJavaGeneratedSourcePath();
     	
     	try {
@@ -114,7 +114,7 @@ public final class Writer extends SupportProvider {
     		LOGGER.error("Thread is interrupted.", e);
         	Thread.currentThread().interrupt();
         } else {
-        	LOGGER.error(e);
+        	LOGGER.fatal(e);
         }
     }
 }
