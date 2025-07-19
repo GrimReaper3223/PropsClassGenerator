@@ -8,14 +8,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent.Kind;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
+import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.synchronizer.SyncSource;
 import com.dsl.classgen.service.WatchServiceImpl;
-import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 
 public final class FileEventsProcessor extends SupportProvider {
@@ -71,7 +72,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	}
 	
 	private static void createSection(Stream<Path> pipeline) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Generating new data entries...");
+		LOGGER.info("Generating new data entries...");
 		pipeline.forEach(path -> {
 			if(Files.isDirectory(path)) {
 				try(Stream<Path> files = streamFilterCreator.apply(path)) {
@@ -84,23 +85,27 @@ public final class FileEventsProcessor extends SupportProvider {
 	}
 	
 	private static void deleteSection(Stream<Path> pipeline) {
-		pipeline.forEach(path -> {
+		pipeline.map(path -> {
+			List<CacheModel> cmList = new ArrayList<>();
+			
 			if(Files.isDirectory(path)) {
 				LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
 				
 				try(Stream<Path> files = streamFilterCreator.apply(path)) {
-					files.map(Utils::resolveJsonFilePath)
-						 .forEach(jsonPath -> syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(jsonPath)));
+					cmList = files.map(element -> CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(element)))
+								  .toList();
 				}
 			} else if(Utils.isPropertiesFile(path)) {
 				LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
-				syncSource.eraseClassSection(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
+				cmList.add(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
 			}
-		});
+			
+			return cmList;
+		}).forEach(syncSource::eraseClassSection);
 	}
 	
 	private static void modifySection(Stream<Path> pipeline) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying source entries...");
+		LOGGER.info("Modifying source entries...");
 		pipeline.forEach(path -> syncSource.modifySection(CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(path))));
 	}
 }

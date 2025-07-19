@@ -82,7 +82,7 @@ public final class CacheManager extends SupportProvider {
             boolean isCacheDirValid = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
             
             if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && !cacheFilesToWrite.isEmpty()) {
-            	LOGGER.log(Levels.NOTICE.getLevel(), "Updating cache...");
+            	LOGGER.log(Levels.CACHE.getLevel(), "Updating cache...");
             	updateCache();
             	
             	if(cacheModelMap.size() == 0) {
@@ -93,12 +93,12 @@ public final class CacheManager extends SupportProvider {
                 loadCache();
                 
             } else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
-            	LOGGER.log(Levels.NOTICE.getLevel(), "Cache exists, but directory structure does not exist. Revalidating cache...");
+            	LOGGER.log(Levels.CACHE.getLevel(), "Cache exists, but directory structure does not exist. Revalidating cache...");
                 eraseCache();
                 createCache();
                 
             } else if(!isCacheDirValid) {
-            	LOGGER.log(Levels.NOTICE.getLevel(), "Cache does not exist. Generating new cache structure...");
+            	LOGGER.log(Levels.CACHE.getLevel(), "Cache does not exist. Generating new cache structure...");
                 createCache();
             }
         }

@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
-import com.dsl.classgen.utils.Levels;
 
 public abstract sealed class SupportProvider permits OutterClassGenerator, InnerStaticClassGenerator, InnerFieldGenerator {
 
@@ -21,6 +20,6 @@ public abstract sealed class SupportProvider permits OutterClassGenerator, Inner
 	protected SupportProvider() {}
 	
     protected void formatGenerationOutput(String input1, String input2, String input3) {
-    	LOGGER.log(Levels.NOTICE.getLevel(), "Generating {} '{}' {}", input1, input2, Objects.isNull(input3) ? "" : input3.equals(System.lineSeparator()) ? "\n" : "[" + input3 + "]");
+    	LOGGER.info("Generating {} '{}' {}", input1, input2, Objects.isNull(input3) ? "" : input3.equals(System.lineSeparator()) ? "\n" : "[" + input3 + "]");
     }
 }

@@ -1,6 +1,7 @@
 package com.dsl.classgen.annotation.processors;
 
 import java.util.Arrays;
+import java.util.List;
 
 import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
@@ -12,13 +13,12 @@ public class AnnotationProcessor {
 
 	private AnnotationProcessor() {}
 	
-    public static String processClassAnnotations(int fileHash) {
+    public static List<String> processClassAnnotations(List<Integer> fileHash) {
         return Arrays.stream(Reader.loadGeneratedBinClass().getDeclaredClasses())
 		        	 .flatMap(cl -> Arrays.stream(cl.getDeclaredAnnotationsByType(GeneratedInnerStaticClass.class)))
-		        	 .filter(val -> val.hash() == fileHash)
-		        	 .findFirst()
+		        	 .filter(val -> fileHash.contains(val.hash()))
 		        	 .map(val -> Utils.formatSourcePattern(PatternType.CLASS,  val.filePath()))
-		        	 .orElse(null);
+		        	 .toList();
     }
     
     public static String processFieldAnnotations(int fileHash, int fieldHash) {

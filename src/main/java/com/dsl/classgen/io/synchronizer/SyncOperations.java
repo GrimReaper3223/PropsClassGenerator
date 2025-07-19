@@ -1,6 +1,7 @@
 package com.dsl.classgen.io.synchronizer;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import com.dsl.classgen.generator.InnerFieldGenerator;
 import com.dsl.classgen.generator.InnerStaticClassGenerator;
@@ -12,6 +13,6 @@ sealed interface SyncOperations permits SyncBin, SyncSource {
 	final InnerFieldGenerator innerFieldGen = new InnerFieldGenerator();
 	
 	void insertClassSection(Path path);
-	void eraseClassSection(CacheModel model);
+	void eraseClassSection(List<CacheModel> currentCacheModelList);
 	void modifySection(CacheModel model);
 }

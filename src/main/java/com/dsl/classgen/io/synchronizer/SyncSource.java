@@ -5,6 +5,7 @@ import static com.dsl.classgen.io.synchronizer.FieldSyncOperation.INSERT;
 
 import java.nio.file.Path;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -17,7 +18,6 @@ import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
-import com.dsl.classgen.utils.Levels;
 
 public final class SyncSource extends SupportProvider implements SyncOperations {
 
@@ -67,13 +67,17 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 	}
 
 	@Override
-	public void eraseClassSection(CacheModel currentCacheModel) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Erasing class section...");
-		String lookupPattern = AnnotationProcessor.processClassAnnotations(currentCacheModel.fileHash);
+	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
+		LOGGER.info("Erasing class section...");
+		List<String> lookupPatternList = AnnotationProcessor.processClassAnnotations(currentCacheModelList.stream().map(val -> val.fileHash).toList());
 		StringBuilder sb = sbSupplier.get();
 		
-		deleteSourceContentUsingDelimiters(sb, lookupPattern, 2);
+		deleteSourceContentUsingDelimiters(sb, lookupPatternList, 2);
 		invokeWriterCondition(sb);
+	}
+	
+	public void eraseClassSection(CacheModel currentCacheModel) {
+		eraseClassSection(List.of(currentCacheModel));
 	}
 	
 	@Override
@@ -115,27 +119,34 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 									   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, element.getValue()))
 									   .forEach(lookupPattern -> deleteSourceContentUsingDelimiters(sb, lookupPattern, 3));
 							break;
-						}
+					}
 				});
 				invokeWriterCondition(sb);
 			}
 			CacheManager.processCache();
 			
 		} else {
-			LOGGER.log(Levels.NOTICE.getLevel(), "Nothing to update.");
+			LOGGER.info("Nothing to update.");
 		}
 	}
 
+	private void deleteSourceContentUsingDelimiters(StringBuilder sb, List<String> lookupPatternList, int endPatternFullIndexIncrement) {
+		lookupPatternList.stream()
+						 .forEach(pattern -> {
+							 if(pattern != null) {
+								String sourceStartHint = pattern.substring(0, pattern.indexOf('@'));
+								String sourceEndHint = pattern.substring(pattern.indexOf('@') + 1);
+								int endPatternFullIndex = sourceEndHint.length() + endPatternFullIndexIncrement;
+								
+								sb.delete(sb.indexOf(sourceStartHint) - 1, sb.indexOf(sourceEndHint) + endPatternFullIndex);
+							 } else {
+								 LOGGER.error("Source element cannot be found.");
+							 }
+						 });
+	}
+	
 	private void deleteSourceContentUsingDelimiters(StringBuilder sb, String lookupPattern, int endPatternFullIndexIncrement) {
-		if(lookupPattern != null) {
-			String sourceStartHint = lookupPattern.substring(0, lookupPattern.indexOf('@'));
-			String sourceEndHint = lookupPattern.substring(lookupPattern.indexOf('@') + 1);
-			int endPatternFullIndex = sourceEndHint.length() + endPatternFullIndexIncrement;
-			
-			sb.delete(sb.indexOf(sourceStartHint) - 1, sb.indexOf(sourceEndHint) + endPatternFullIndex);
-		} else {
-			LOGGER.error("Source element cannot be found.");
-		}
+		deleteSourceContentUsingDelimiters(sb, List.of(lookupPattern), endPatternFullIndexIncrement);
 	}
 	
 	private void invokeWriterCondition(StringBuilder sb) {

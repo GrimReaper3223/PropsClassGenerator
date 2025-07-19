@@ -16,18 +16,17 @@ import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
+import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 
 public class WatchServiceImpl {
 	private static final Logger LOGGER = LogManager.getLogger(WatchServiceImpl.class);
-	private static final Level NOTICE = Level.getLevel("NOTICE");
 
 	private static GeneralContext generalCtx = GeneralContext.getInstance();
 	private static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
@@ -66,7 +65,7 @@ public class WatchServiceImpl {
     }
 
     private static void initialRegistration() throws IOException {
-        if (flagsCtx.getIsRecursive()) {
+        if (flagsCtx.getIsRecursive() && !flagsCtx.getIsSingleFile()) {
         	pathsCtx.getDirList().stream().map(path -> {
                 WatchKey key = null;
                 try {
@@ -82,18 +81,18 @@ public class WatchServiceImpl {
             WatchKey key = inputPath.register(watcher, EVENT_KIND_ARR);
             keys.putAll(Map.ofEntries(WatchServiceImpl.verifyKey(key, inputPath)));
         }
-        LOGGER.log(NOTICE, "Done");
+        LOGGER.log(Levels.NOTICE.getLevel(), "Done");
     }
     
     private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path) {
-    	LOGGER.log(NOTICE, "Checking {}...", path);
+    	LOGGER.log(Levels.NOTICE.getLevel(), "Checking {}...", path);
         Path mappedPath = keys.get(key);
         
         if (mappedPath == null) {
-        	LOGGER.log(NOTICE, "Registering: {}...", path);
+        	LOGGER.log(Levels.NOTICE.getLevel(), "Registering: {}...", path);
             
         } else if (!path.equals(mappedPath)) {
-        	LOGGER.log(NOTICE, "Updating: {} -> {}...", mappedPath, path);
+        	LOGGER.log(Levels.NOTICE.getLevel(), "Updating: {} -> {}...", mappedPath, path);
         }
         
         return Map.entry(key, path);
@@ -156,7 +155,7 @@ public class WatchServiceImpl {
 		  	 })
 		  	 .filter(entry -> Utils.isPropertiesFile(entry.getKey()) || Files.isDirectory(entry.getKey()))
 		  	 .forEach(entry -> {
-	  		 	LOGGER.info("{}: {}", entry.getValue().name(), entry.getKey());
+	  		 	LOGGER.log(Levels.NOTICE.getLevel(), "{}: {}", entry.getValue().name(), entry.getKey());
 	  		 	
 	  		 	try {
 					pathsCtx.queueChangedFileEntry(entry);

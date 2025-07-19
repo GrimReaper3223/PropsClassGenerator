@@ -19,7 +19,7 @@ public final class Writer extends SupportProvider {
     private Writer() {}
 
     public static void write() {
-    	LOGGER.log(Levels.NOTICE.getLevel(), "Writing data...\n");
+    	LOGGER.info("Writing data...\n");
         Path outputPackagePath = pathsCtx.getOutputSourceDirPath();
         Path outputFilePath = pathsCtx.getOutputSourceFilePath();
         
@@ -51,7 +51,7 @@ public final class Writer extends SupportProvider {
     }
     
     public static void write(String content) {
-    	LOGGER.log(Levels.NOTICE.getLevel(), "Writing data...\n");
+    	LOGGER.info( "Writing data...\n");
     	Path outputFilePath = pathsCtx.getExistingPJavaGeneratedSourcePath();
     	
     	try {
