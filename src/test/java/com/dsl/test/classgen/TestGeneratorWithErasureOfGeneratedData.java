@@ -27,7 +27,7 @@ class TestGeneratorWithErasureOfGeneratedData implements HarnessTestTools {
 	@DisplayName("Generate single file with erasure of generated data and not recursive")
 	void generateSingleFileWithErasureOfGeneratedData() {
 		Assertions.assertFalse(Files.exists(sourceDirPath));
-		Generator.init(inPropsPath.resolve("exception-message.properties"), packageClass, false);
+		Generator.init(inPropsPath.resolve("exception-message.properties"), PACKAGE_CLASS, false);
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
@@ -37,7 +37,7 @@ class TestGeneratorWithErasureOfGeneratedData implements HarnessTestTools {
 	@DisplayName("Generate many files with erasure of generated data and not recursive")
 	void generateManyFilesWithoutRecursionAndWithErasureOfGeneratedData() {
 		Assertions.assertFalse(Files.exists(sourceDirPath));
-		Generator.init(inPropsPath, packageClass, false);
+		Generator.init(inPropsPath, PACKAGE_CLASS, false);
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
@@ -48,7 +48,7 @@ class TestGeneratorWithErasureOfGeneratedData implements HarnessTestTools {
 	@DisplayName("Generate many files with erasure of generated data and recursive")
 	void generateManyFilesWithRecursionAndWithErasureOfGeneratedData() {
 		Assertions.assertFalse(Files.exists(sourceDirPath));
-		Generator.init(inPropsPath, packageClass, true);
+		Generator.init(inPropsPath, PACKAGE_CLASS, true);
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}

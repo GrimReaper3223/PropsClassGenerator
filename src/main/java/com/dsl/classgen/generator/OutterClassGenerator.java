@@ -8,6 +8,7 @@ import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
 import com.dsl.classgen.annotation.GeneratedOutterClass;
 import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
 import com.dsl.classgen.io.file_manager.Reader;
+import com.dsl.classgen.utils.Levels;
 
 public final class OutterClassGenerator extends SupportProvider implements Parsers, Initializer {
 	
@@ -18,7 +19,7 @@ public final class OutterClassGenerator extends SupportProvider implements Parse
 	@Override
 	public void initClass() {
 		outterClassName = pathsCtx.getOutterClassName();
-		LOGGER.log(NOTICE, "Generating classes...\n");
+		LOGGER.log(Levels.NOTICE.getLevel(), "Generating classes...\n");
         formatGenerationOutput("Outter Class", outterClassName, "\n");
         imports = createImports(List.of(
     			GeneratedOutterClass.class,

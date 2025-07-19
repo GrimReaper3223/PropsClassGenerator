@@ -1,4 +1,4 @@
-package com.dsl.classgen.io.sync;
+package com.dsl.classgen.io.synchronizer;
 
 public enum FieldSyncOperation {
 	INSERT, DELETE

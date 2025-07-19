@@ -27,7 +27,7 @@ class TestGeneratorWithCacheErasure implements HarnessTestTools {
 	@DisplayName("Generate single file with cache erasure and without recursion")
 	void generateSingleFileWithCacheErasure() {
 		Assertions.assertFalse(Files.exists(cachePath));
-		Generator.init(inPropsPath.resolve("exception-message.properties"), packageClass, false);
+		Generator.init(inPropsPath.resolve("exception-message.properties"), PACKAGE_CLASS, false);
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
@@ -37,7 +37,7 @@ class TestGeneratorWithCacheErasure implements HarnessTestTools {
 	@DisplayName("Generate many files with cache erasure and without recursion")
 	void generateManyFilesWithCacheErasure() {
 		Assertions.assertFalse(Files.exists(cachePath));
-		Generator.init(inPropsPath, packageClass, false);
+		Generator.init(inPropsPath, PACKAGE_CLASS, false);
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
@@ -48,7 +48,7 @@ class TestGeneratorWithCacheErasure implements HarnessTestTools {
 	@DisplayName("Generate many files with cache erasure and with recursion")
 	void generateManyFilesWithRecursionAndWithCacheErasure() {
 		Assertions.assertFalse(Files.exists(cachePath));
-		Generator.init(inPropsPath, packageClass, true);
+		Generator.init(inPropsPath, PACKAGE_CLASS, true);
 		Generator.generate();
 	}
 }

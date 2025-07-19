@@ -12,7 +12,7 @@ public final class Utils {
 	// executor que inicia uma thread virtual por task
     private static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     
-    private static GeneralContext generalCtx = GeneralContext.get();
+    private static GeneralContext generalCtx = GeneralContext.getInstance();
     private static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
 
     private Utils() {}

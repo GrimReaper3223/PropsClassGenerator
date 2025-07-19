@@ -29,7 +29,7 @@ public class WatchServiceImpl {
 	private static final Logger LOGGER = LogManager.getLogger(WatchServiceImpl.class);
 	private static final Level NOTICE = Level.getLevel("NOTICE");
 
-	private static GeneralContext generalCtx = GeneralContext.get();
+	private static GeneralContext generalCtx = GeneralContext.getInstance();
 	private static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
 	private static FlagsContext flagsCtx = generalCtx.getFlagsInstance();
 	
@@ -117,35 +117,32 @@ public class WatchServiceImpl {
 
     private static void processEvents() {
     	LOGGER.warn("Watching...");
-        while (true) {
-            WatchKey key = null;
+    	
+    	do {
+    		try {
+        		WatchKey key = watcher.take();
             
-            try {
-                key = watcher.take();
-            }
-            catch (InterruptedException _) {
+	            if (!keys.containsKey(key)) {
+	            	LOGGER.warn("WatchKey not recognized.");
+	            	continue;
+	            }
+	            
+	            processStream(key);
+	            				
+	            if (!key.reset()) {
+	            	keys.remove(key);
+	            	
+	            	if (keys.isEmpty()) {
+	            		LOGGER.warn("There are no keys remaining for processing. Ending Watcher...");
+	            	}
+	            }
+        	} catch (InterruptedException _) {
             	if(Thread.currentThread().isInterrupted()) {
             		LOGGER.error("Watcher thread is interrupted");
             		Thread.currentThread().interrupt();
             	}
             }
-            
-            if (!keys.containsKey(key)) {
-            	LOGGER.warn("WatchKey not recognized.");
-            	continue;
-            }
-            
-            processStream(key);
-            				
-            if (!key.reset()) {
-            	keys.remove(key);
-            	
-            	if (keys.isEmpty()) {
-            		LOGGER.warn("There are no keys remaining for processing. Ending Watcher...");
-            		break;
-            	}
-            }
-        }
+    	} while (!keys.isEmpty()); 
     }
     
     private static void processStream(WatchKey key) {
@@ -159,16 +156,28 @@ public class WatchServiceImpl {
 		  	 })
 		  	 .filter(entry -> Utils.isPropertiesFile(entry.getKey()) || Files.isDirectory(entry.getKey()))
 		  	 .forEach(entry -> {
-		  		 	LOGGER.info("{}: {}", entry.getValue().name(), entry.getKey());
-		  		 	pathsCtx.queueChangedFileEntry(entry);
+	  		 	LOGGER.info("{}: {}", entry.getValue().name(), entry.getKey());
+	  		 	
+	  		 	try {
+					pathsCtx.queueChangedFileEntry(entry);
 		  		 	if(entry.getValue().name().equals("ENTRY_CREATE") && Files.isDirectory(entry.getKey())) {
 		  		 		pathsCtx.queueDir(entry.getKey());
 		  		 	}
+	  		 	} catch (InterruptedException e) {
+	  		 		if(watchServiceThread.isInterrupted()) {
+	  		 			LOGGER.error("{} is interrupted. \n{}", watchServiceThread.getName(), e);
+	  		 			watchServiceThread.interrupt();
+	  		 		}
+	  		 	}
 		   	});
     }
     
     public static boolean isWatchServiceThreadAlive() {
     	return watchServiceThread.isAlive();
+    }
+    
+    public static String getThreadName() {
+    	return watchServiceThread.getName();
     }
 }
 

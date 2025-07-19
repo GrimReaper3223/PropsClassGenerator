@@ -5,28 +5,21 @@ import java.util.Properties;
 
 public class GeneralContext {
 
-	static final GeneralContext INSTANCE = new GeneralContext();
+	private static final GeneralContext INSTANCE = new GeneralContext();
 	
-	final Properties props;							// objeto que vai armazenar as propriedades dos arquivos carregados
+	private final Properties props = new Properties();
 	
-	final PathsContext pathsContextInstance;
-	final FlagsContext flagsContextInstance;
+	private final FlagsContext flagsContextInstance = new FlagsContext();
+	private final PathsContext pathsContextInstance = new PathsContext(flagsContextInstance.getIsDebugMode());
 	
-    private long timeOperation;						// guarda o tempo do sistema no momento em que a geracao se inicia
+    private long timeOperation;
 	
-	private GeneralContext() {
-		props = new Properties();
-		
-		flagsContextInstance = new FlagsContext();
-		pathsContextInstance = new PathsContext(flagsContextInstance.getIsDebugMode());
-		
-		timeOperation = 0L;
-	}
+	private GeneralContext() {}
 	
 	/*
 	 * get() instances
 	 */
-	public static GeneralContext get() {
+	public static GeneralContext getInstance() {
 		return INSTANCE;
 	}
 	

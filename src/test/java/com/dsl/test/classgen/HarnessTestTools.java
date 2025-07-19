@@ -11,7 +11,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 interface HarnessTestTools {
 
 	final Path inPropsPath = Path.of("src/test/resources/values/stringsx/");
-	final String packageClass = "com.dsl.test.classgen";
+	final String PACKAGE_CLASS = "com.dsl.test.classgen";
 	final Path cachePath = Paths.get(System.getProperty("user.dir")).resolve(".jsonProperties-cache");
 	final Path sourceDirPath = Path.of("src/test/java/com/dsl/test/classgen/generated");
 	final Path sourceFilePath = sourceDirPath.resolve("P.java");

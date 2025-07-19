@@ -1,17 +1,21 @@
 package com.dsl.classgen.io;
 
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.WatchEvent;
-import java.util.Map;
+import java.nio.file.WatchEvent.Kind;
+import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.sync.SyncSource;
+import com.dsl.classgen.io.synchronizer.SyncSource;
 import com.dsl.classgen.service.WatchServiceImpl;
+import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 
 public final class FileEventsProcessor extends SupportProvider {
@@ -44,32 +48,30 @@ public final class FileEventsProcessor extends SupportProvider {
 	
 	private static void processChanges() {
 		while(WatchServiceImpl.isWatchServiceThreadAlive()) {
-			if(!flagsCtx.getHasChangedFilesLeft()) {
-				Thread.onSpinWait();
-				continue;
+			try {
+				var entry = pathsCtx.getQueuedChangedFilesEntries();
+				var kind = entry.getValue();
+				
+				switch(kind) {
+					case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(List.of(entry.getKey()).stream());
+					case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(List.of(entry.getKey()).stream());
+					case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(List.of(entry.getKey()).stream());
+					default -> throw new IllegalArgumentException("*** BUG *** - Unexpected value: " + entry.getValue());
+				}
+			} catch (InterruptedException _) {
+  		 		if(eventProcessorThread.isInterrupted()) {
+  		 			eventProcessorThread.interrupt();
+  		 			LOGGER.warn("{} is interrupted. Restarting thread...", eventProcessorThread.getName());
+  		 			initialize();
+  		 		}
 			}
-			
-			pathsCtx.getQueuedChangedFilesEntries()
-					.stream()
-					.collect(Collectors.groupingBy(entry -> (WatchEvent.Kind<?>) entry.getValue(), 
-					  Collectors.mapping(Map.Entry::getKey, Collectors.toList())))
-					.entrySet()
-					.stream()
-					.forEach(entry -> {
-						Stream<Path> pipeline = entry.getValue().stream();
-						switch(entry.getKey().name()) {
-							case "ENTRY_CREATE" -> createSection(pipeline);
-							case "ENTRY_DELETE" -> deleteSection(pipeline);
-							case "ENTRY_MODIFY" -> modifySection(pipeline);
-						}
-					});
 		}
-			
+		LOGGER.error("{} was interrupted. Finishing {}...", WatchServiceImpl.getThreadName(), eventProcessorThread.getName());
 		eventProcessorThread.interrupt();
 	}
 	
 	private static void createSection(Stream<Path> pipeline) {
-		LOGGER.log(NOTICE, "Generating new data entries...");
+		LOGGER.log(Levels.NOTICE.getLevel(), "Generating new data entries...");
 		pipeline.forEach(path -> {
 			if(Files.isDirectory(path)) {
 				try(Stream<Path> files = streamFilterCreator.apply(path)) {
@@ -98,7 +100,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	}
 	
 	private static void modifySection(Stream<Path> pipeline) {
-		LOGGER.log(NOTICE, "Modifying source entries...");
+		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying source entries...");
 		pipeline.forEach(path -> syncSource.modifySection(CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(path))));
 	}
 }

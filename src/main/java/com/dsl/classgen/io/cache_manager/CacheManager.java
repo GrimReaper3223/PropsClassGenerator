@@ -15,6 +15,7 @@ import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
+import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
@@ -80,9 +81,8 @@ public final class CacheManager extends SupportProvider {
         	Path cacheDir = pathsCtx.getCacheDir();
             boolean isCacheDirValid = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
             
-            //TODO: nenhuma acao deve ser tomada caso nao haja cache para processamento
             if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && !cacheFilesToWrite.isEmpty()) {
-            	LOGGER.log(NOTICE, "Updating cache...");
+            	LOGGER.log(Levels.NOTICE.getLevel(), "Updating cache...");
             	updateCache();
             	
             	if(cacheModelMap.size() == 0) {
@@ -93,12 +93,12 @@ public final class CacheManager extends SupportProvider {
                 loadCache();
                 
             } else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
-            	LOGGER.log(NOTICE, "Cache exists, but directory structure does not exist. Revalidating cache...");
+            	LOGGER.log(Levels.NOTICE.getLevel(), "Cache exists, but directory structure does not exist. Revalidating cache...");
                 eraseCache();
                 createCache();
                 
             } else if(!isCacheDirValid) {
-            	LOGGER.log(NOTICE, "Cache does not exist. Generating new cache structure...");
+            	LOGGER.log(Levels.NOTICE.getLevel(), "Cache does not exist. Generating new cache structure...");
                 createCache();
             }
         }

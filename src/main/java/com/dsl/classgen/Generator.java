@@ -22,7 +22,7 @@ public final class Generator {
 	
 	private static final Logger LOGGER = LogManager.getLogger(Generator.class);
 	
-	private static GeneralContext fwCtx = GeneralContext.get();
+	private static GeneralContext fwCtx = GeneralContext.getInstance();
 	private static FlagsContext flagsCtx = fwCtx.getFlagsInstance();
 	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
 	

@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
+import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 
 public final class Reader extends SupportProvider {
@@ -56,7 +57,7 @@ public final class Reader extends SupportProvider {
                 props.load(in);
             }
             
-            LOGGER.log(SUCCESS, "Properties file loaded from path: {}", inputPath);
+            LOGGER.log(Levels.SUCCESS.getLevel(), "Properties file loaded from path: {}", inputPath);
                 
 			pathsCtx.setPropertiesDataType(readJavaType(inputPath));
             pathsCtx.setPropertiesFileName(inputPath.getFileName());
@@ -79,17 +80,17 @@ public final class Reader extends SupportProvider {
         return generatedClass;
     }
     
-    private static void processDirectoryFileList(Path inputPath) {
+    private static void processDirectoryFileList(Path inputDirPath) {
         try {
             if (flagsCtx.getIsRecursive()) {
-                Files.walkFileTree(inputPath, new FileVisitorImpls.ReaderFileVisitor());
+                Files.walkFileTree(inputDirPath, new FileVisitorImpls.ReaderFileVisitor());
             } else {
-                try (Stream<Path> pathStream = Files.list(inputPath)){
+                try (Stream<Path> pathStream = Files.list(inputDirPath)){
                     pathStream.filter(Files::isRegularFile)
 	                    	  .filter(Utils::isPropertiesFile)
 	                    	  .forEach(pathsCtx::queueFile);
                 }
-                pathsCtx.queueDir(inputPath);
+                pathsCtx.queueDir(inputDirPath);
             }
         }
         catch (IOException e) {

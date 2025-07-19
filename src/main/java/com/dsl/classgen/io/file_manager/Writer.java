@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.cache_manager.CacheModel;
+import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
@@ -18,7 +19,7 @@ public final class Writer extends SupportProvider {
     private Writer() {}
 
     public static void write() {
-    	LOGGER.log(NOTICE, "Writing data...\n");
+    	LOGGER.log(Levels.NOTICE.getLevel(), "Writing data...\n");
         Path outputPackagePath = pathsCtx.getOutputSourceDirPath();
         Path outputFilePath = pathsCtx.getOutputSourceFilePath();
         
@@ -38,7 +39,7 @@ public final class Writer extends SupportProvider {
                 return;
             }
             Writer.fileWriter(outputFilePath);
-            LOGGER.log(SUCCESS, "***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
+            LOGGER.log(Levels.SUCCESS.getLevel(), "***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
         }
         catch (IOException | InterruptedException | ExecutionException e) {
             logException(e);
@@ -50,7 +51,7 @@ public final class Writer extends SupportProvider {
     }
     
     public static void write(String content) {
-    	LOGGER.log(NOTICE, "Writing data...\n");
+    	LOGGER.log(Levels.NOTICE.getLevel(), "Writing data...\n");
     	Path outputFilePath = pathsCtx.getExistingPJavaGeneratedSourcePath();
     	
     	try {

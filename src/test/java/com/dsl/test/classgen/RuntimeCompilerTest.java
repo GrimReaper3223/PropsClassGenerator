@@ -16,7 +16,7 @@ class RuntimeCompilerTest {
 	@Test
 	@Disabled("Teste bem-sucedido")
 	void executeRuntimeCompiler() {
-		PathsContext pathsCtx = GeneralContext.get().getPathsContextInstance();
+		PathsContext pathsCtx = GeneralContext.getInstance().getPathsContextInstance();
 		String libs = getClass().getResource("/libs").getPath();
 		assertTrue(libs.contains("libs"));
 		

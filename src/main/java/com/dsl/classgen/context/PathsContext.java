@@ -1,15 +1,12 @@
 package com.dsl.classgen.context;
 
-import static com.dsl.classgen.context.GeneralContext.INSTANCE;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -24,11 +21,11 @@ public class PathsContext {
 	private static final Logger LOGGER = LogManager.getLogger(PathsContext.class);
 	private static final Level SUCCESS = Level.getLevel("SUCCESS");
 	
-	private final BlockingQueue<Map.Entry<Path, ?>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
-	private final List<Path> fileList;						// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
-	private final List<Path> dirList;						// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista
+	private final SynchronousQueue<Map.Entry<Path, WatchEvent.Kind<Path>>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
+	private final List<Path> fileList;														// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
+	private final List<Path> dirList;														// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista
 	
-	private final String outterClassName;					// nome final da classe externa
+	private final String outterClassName;													// nome final da classe externa
 	
 	// caminhos no sistema de arquivos
 	private final Path userDir;
@@ -47,7 +44,7 @@ public class PathsContext {
     private String generatedClass;						// contem o conteudo da classe gerada. Esta variavel deve ser usada pelo escritor para armazenar os dados no caminho de saida, ou a saida padrao para imprimir na tela, caso o debug esteja habilitado
 	
 	PathsContext(boolean isDebugMode) {
-		changedFiles = new ArrayBlockingQueue<>(1024);
+		changedFiles = new SynchronousQueue<>();
 		fileList = new ArrayList<>();
 		dirList = new ArrayList<>();
 		
@@ -73,11 +70,6 @@ public class PathsContext {
         return dirList;
     }
 	
-	// changedFilesDeque
-	public BlockingQueue<Map.Entry<Path, ?>> getChangedFilesQueue() {
-		return changedFiles;
-	}
-	
 	public void queueFile(Path filePath) {
 		checkFileInCache(filePath);
     	fileList.add(filePath);
@@ -91,7 +83,7 @@ public class PathsContext {
     }
     
     public void checkFileInCache(Path filePath) {
-		var flagsInstance = GeneralContext.INSTANCE.flagsContextInstance;
+		var flagsInstance = GeneralContext.getInstance().getFlagsInstance();
 		if(flagsInstance.getIsDirStructureAlreadyGenerated() && flagsInstance.getIsExistsPJavaSource()) {
 			if(!CacheManager.hasValidCacheFile(filePath)) {
 				CacheManager.queueNewCacheFile(filePath);
@@ -102,16 +94,12 @@ public class PathsContext {
     }
 	
     // changedFiles
-    public <T extends WatchEvent.Kind<?>> void queueChangedFileEntry(Map.Entry<Path, T> entry) {
-    	INSTANCE.flagsContextInstance.setHasChangedFilesLeft(changedFiles.offer(entry) || !changedFiles.isEmpty());
+    public void queueChangedFileEntry(Map.Entry<Path, WatchEvent.Kind<Path>> entry) throws InterruptedException {
+		changedFiles.put(entry);
     }
     
-    public List<Map.Entry<Path, ?>> getQueuedChangedFilesEntries() {
-    	List<Map.Entry<Path, ?>> entryList = new ArrayList<>();
-    	changedFiles.drainTo(entryList);
-    	INSTANCE.flagsContextInstance.setHasChangedFilesLeft(!changedFiles.isEmpty());
-    	
-    	return entryList;
+    public Map.Entry<Path, WatchEvent.Kind<Path>> getQueuedChangedFilesEntries() throws InterruptedException {
+    	return changedFiles.take();
     }
     
 	/**

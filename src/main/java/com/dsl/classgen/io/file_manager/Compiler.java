@@ -7,6 +7,7 @@ import javax.tools.ToolProvider;
 
 import com.dsl.classgen.annotation.processors.AnnotationProcessor;
 import com.dsl.classgen.io.SupportProvider;
+import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 
 public final class Compiler extends SupportProvider {
@@ -18,7 +19,7 @@ public final class Compiler extends SupportProvider {
         if (!flagsCtx.getIsExistsCompiledPJavaClass()) {
             try {
                 Utils.getExecutor().submit(() -> {
-                	LOGGER.log(NOTICE, "Compiling classes from annotations and generated classes...\n");
+                	LOGGER.log(Levels.NOTICE.getLevel(), "Compiling classes from annotations and generated classes...\n");
                     String libs = AnnotationProcessor.class.getResource("/libs").getPath();
                     JavaCompiler jc = ToolProvider.getSystemJavaCompiler();
                     
@@ -28,7 +29,7 @@ public final class Compiler extends SupportProvider {
                     		"-sourcepath", "/src/main/java/:" + pathsCtx.getOutputSourceDirPath().toString(), 
                     		pathsCtx.getExistingPJavaGeneratedSourcePath().toString());
                     if(opStats == 0) {
-                    	LOGGER.log(SUCCESS, "Compilation was successful!\n");
+                    	LOGGER.log(Levels.SUCCESS.getLevel(), "Compilation was successful!\n");
                     } else {
                     	LOGGER.error("An error occurred while compiling\n");
                     }

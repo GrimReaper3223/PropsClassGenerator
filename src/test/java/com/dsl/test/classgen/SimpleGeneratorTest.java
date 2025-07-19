@@ -12,7 +12,7 @@ class SimpleGeneratorTest implements HarnessTestTools {
 	StringBuilder sb;
 	
 	void generationTest() {
-		Generator.init(inPropsPath, packageClass, false);
+		Generator.init(inPropsPath, PACKAGE_CLASS, false);
 		Generator.generate();
 		
 		// ignore os testes de assercao
@@ -31,7 +31,7 @@ class SimpleGeneratorTest implements HarnessTestTools {
 	
 	@Test
 	void fieldInsertTest() {
-		Generator.init(inPropsPath, packageClass, false);
+		Generator.init(inPropsPath, PACKAGE_CLASS, false);
 		sb = Reader.readSource(sourceFilePath);
 		
 		String pattern = "// PROPS-CONTENT-START: exception-message.properties";

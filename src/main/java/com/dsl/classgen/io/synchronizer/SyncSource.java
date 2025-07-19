@@ -1,7 +1,7 @@
-package com.dsl.classgen.io.sync;
+package com.dsl.classgen.io.synchronizer;
 
-import static com.dsl.classgen.io.sync.FieldSyncOperation.DELETE;
-import static com.dsl.classgen.io.sync.FieldSyncOperation.INSERT;
+import static com.dsl.classgen.io.synchronizer.FieldSyncOperation.DELETE;
+import static com.dsl.classgen.io.synchronizer.FieldSyncOperation.INSERT;
 
 import java.nio.file.Path;
 import java.util.EnumMap;
@@ -17,6 +17,7 @@ import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
+import com.dsl.classgen.utils.Levels;
 
 public final class SyncSource extends SupportProvider implements SyncOperations {
 
@@ -62,26 +63,17 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 		String generatedClass = '\t' + innerClassGen.generateInnerStaticClass() + '\n';
 
 		sb.insert(propsFileStartIndex, generatedClass);
-		Writer.write(sb.toString());
+		invokeWriterCondition(sb);
 	}
 
 	@Override
 	public void eraseClassSection(CacheModel currentCacheModel) {
-		LOGGER.log(NOTICE, "Erasing class section...");
+		LOGGER.log(Levels.NOTICE.getLevel(), "Erasing class section...");
 		String lookupPattern = AnnotationProcessor.processClassAnnotations(currentCacheModel.fileHash);
+		StringBuilder sb = sbSupplier.get();
 		
-		if(lookupPattern != null) {
-			String classSourceStartHint = lookupPattern.substring(0, lookupPattern.indexOf('@'));
-			String classSourceEndHint = lookupPattern.substring(lookupPattern.indexOf('@') + 1);
-			int endPatternFullIndex = classSourceEndHint.length();
-			
-			StringBuilder sb = sbSupplier.get();
-			sb.delete(sb.indexOf(classSourceStartHint) - 1, sb.indexOf(classSourceEndHint) + endPatternFullIndex + 2);
-			
-			Writer.write(sb.toString());
-		} else {
-			LOGGER.error("Static inner class cannot be found.");
-		}
+		deleteSourceContentUsingDelimiters(sb, lookupPattern, 2);
+		invokeWriterCondition(sb);
 	}
 	
 	@Override
@@ -97,48 +89,58 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 		boolean isHashEquals = currentCacheModel.compareFileHash(newCacheModel);
 		boolean isPropertyMapEntriesEquals = currentCacheModel.comparePropertyMapEntries(newCacheModel);
 		
-		if(!isHashEquals && isPropertyMapEntriesEquals) {
-			eraseClassSection(currentCacheModel);
-			insertClassSection(filePath);
-			
-		} else if(!isHashEquals) {
-			StringBuilder sb = sbSupplier.get();
-			
-			var changeMap = mapper(currentCacheModel.hashTableMap, newCacheModel.hashTableMap);
-			
-			changeMap.entrySet().forEach(entry -> {
-				Supplier<Stream<Map.Entry<String, Integer>>> streamEntry = () -> entry.getValue().entrySet().stream();
+		if(!isHashEquals) {
+			if(isPropertyMapEntriesEquals) {
+				eraseClassSection(currentCacheModel);
+				insertClassSection(filePath);
 				
-				switch(entry.getKey()) {
-					case INSERT: 
-						streamEntry.get()
-								   .map(element -> "\t\t" + innerFieldGen.generateInnerField(element.getKey(), generalCtx.getProps().getProperty(element.getKey()), element.getValue()) + "\n")
-							   	   .forEach(val -> {
-							   		   String pattern = String.format("// PROPS-CONTENT-START: %s", pathsCtx.getPropertiesFileName());
-							   		   sb.insert(sb.indexOf(pattern) + pattern.length() + 1, val);
-							   	   });
-						Writer.write(sb.toString());
-						break;
-						
-					case DELETE:
-						streamEntry.get()
-								   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, element.getValue()))
-								   .forEach(lookupPattern -> {
-									   if(lookupPattern != null) {
-											String classSourceStartHint = lookupPattern.substring(0, lookupPattern.indexOf('@'));
-											String classSourceEndHint = lookupPattern.substring(lookupPattern.indexOf('@') + 1);
-											int endPatternFullIndex = classSourceEndHint.length();
-											
-											sb.delete(sb.indexOf(classSourceStartHint) - 1, sb.indexOf(classSourceEndHint) + endPatternFullIndex + 3);
-										} else {
-											LOGGER.error("Inner field cannot be found.");
-										}
-								   });
-						Writer.write(sb.toString());
-						break;
-					}
-			});
+			} else {
+				StringBuilder sb = sbSupplier.get();
+				
+				mapper(currentCacheModel.hashTableMap, newCacheModel.hashTableMap).entrySet().forEach(entry -> {
+					Supplier<Stream<Map.Entry<String, Integer>>> streamEntry = () -> entry.getValue().entrySet().stream();
+					
+					switch(entry.getKey()) {
+						case INSERT: 
+							streamEntry.get()
+									   .map(element -> "\t\t" + innerFieldGen.generateInnerField(element.getKey(), generalCtx.getProps().getProperty(element.getKey()), element.getValue()) + "\n")
+								   	   .forEach(val -> {
+								   		   String pattern = String.format("// PROPS-CONTENT-START: %s", pathsCtx.getPropertiesFileName());
+								   		   sb.insert(sb.indexOf(pattern) + pattern.length() + 1, val);
+								   	   });
+							break;
+							
+						case DELETE:
+							streamEntry.get()
+									   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, element.getValue()))
+									   .forEach(lookupPattern -> deleteSourceContentUsingDelimiters(sb, lookupPattern, 3));
+							break;
+						}
+				});
+				invokeWriterCondition(sb);
+			}
+			CacheManager.processCache();
+			
+		} else {
+			LOGGER.log(Levels.NOTICE.getLevel(), "Nothing to update.");
 		}
-		CacheManager.processCache();
+	}
+
+	private void deleteSourceContentUsingDelimiters(StringBuilder sb, String lookupPattern, int endPatternFullIndexIncrement) {
+		if(lookupPattern != null) {
+			String sourceStartHint = lookupPattern.substring(0, lookupPattern.indexOf('@'));
+			String sourceEndHint = lookupPattern.substring(lookupPattern.indexOf('@') + 1);
+			int endPatternFullIndex = sourceEndHint.length() + endPatternFullIndexIncrement;
+			
+			sb.delete(sb.indexOf(sourceStartHint) - 1, sb.indexOf(sourceEndHint) + endPatternFullIndex);
+		} else {
+			LOGGER.error("Source element cannot be found.");
+		}
+	}
+	
+	private void invokeWriterCondition(StringBuilder sb) {
+		if(!sb.equals(sbSupplier.get())) {
+			Writer.write(sb.toString());
+		}
 	}
 }
