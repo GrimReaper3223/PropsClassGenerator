@@ -19,7 +19,7 @@ public abstract sealed class SupportProvider permits CacheManager, Compiler, Rea
 	protected static final Logger LOGGER = LogManager.getLogger(SupportProvider.class);
 	
 	protected static GeneralContext generalCtx = GeneralContext.getInstance();
-	protected static FlagsContext flagsCtx = generalCtx.getFlagsInstance();
+	protected static FlagsContext flagsCtx = generalCtx.getFlagsContextInstance();
 	protected static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
 	
 	protected SupportProvider() {}

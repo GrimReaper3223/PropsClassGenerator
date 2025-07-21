@@ -15,7 +15,7 @@ public abstract sealed class SupportProvider permits OutterClassGenerator, Inner
 	
 	protected final GeneralContext generalCtx = GeneralContext.getInstance();
 	protected final PathsContext pathsCtx = generalCtx.getPathsContextInstance();
-	protected final FlagsContext flagsCtx = generalCtx.getFlagsInstance();
+	protected final FlagsContext flagsCtx = generalCtx.getFlagsContextInstance();
 	
 	protected SupportProvider() {}
 	

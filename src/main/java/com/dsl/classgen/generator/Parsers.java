@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 import com.dsl.classgen.utils.Utils;
 
-sealed interface Parsers permits InnerFieldGenerator, InnerStaticClassGenerator, OutterClassGenerator {
+sealed interface Parsers permits InnerFieldGenerator, InnerStaticClassGenerator, OutterClassGenerator, ExtParsers {
 
 	default <T> String createAnnotation(Class<? extends Annotation> annotationClass, Map<String, T> elementMap) {
 		StringBuilder sb = new StringBuilder();

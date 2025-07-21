@@ -11,8 +11,9 @@ class SimpleGeneratorTest implements HarnessTestTools {
 	
 	StringBuilder sb;
 	
+	@Test
 	void generationTest() {
-		Generator.init(inPropsPath, PACKAGE_CLASS, false);
+		Generator.init(inPropsPath, PACKAGE_CLASS, true);
 		Generator.generate();
 		
 		// ignore os testes de assercao
@@ -29,7 +30,6 @@ class SimpleGeneratorTest implements HarnessTestTools {
 		System.out.println(sb.toString());
 	}
 	
-	@Test
 	void fieldInsertTest() {
 		Generator.init(inPropsPath, PACKAGE_CLASS, false);
 		sb = Reader.readSource(sourceFilePath);

@@ -46,8 +46,8 @@ public final class GeneratedStructureChecker extends SupportProvider {
     
     // verifica se a classe compilada existe
     private void checkIfExistsCompiledClass() {
-    	try(Stream<Path> dirs = Files.find(pathsCtx.getOutputClassFilePath(), Integer.MAX_VALUE, (path, _) -> Files.isRegularFile(path))) {
-			Path foundedPath = genFilter.apply(dirs, predicateFactory.apply(pathsCtx.getOutterClassName() + ".class"));
+    	try(Stream<Path> files = Files.find(pathsCtx.getOutputClassFilePath(), Integer.MAX_VALUE, (path, _) -> Files.isRegularFile(path))) {
+			Path foundedPath = genFilter.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".class"));
 			if(foundedPath != null) {
         		pathsCtx.setOutputClassFilePath(foundedPath);
         		flagsCtx.setIsExistsCompiledPJavaClass(true);

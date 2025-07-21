@@ -8,13 +8,14 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
-interface HarnessTestTools {
+public interface HarnessTestTools {
 
 	final Path inPropsPath = Path.of("src/test/resources/values/stringsx/");
 	final String PACKAGE_CLASS = "com.dsl.test.classgen";
 	final Path cachePath = Paths.get(System.getProperty("user.dir")).resolve(".jsonProperties-cache");
 	final Path sourceDirPath = Path.of("src/test/java/com/dsl/test/classgen/generated");
 	final Path sourceFilePath = sourceDirPath.resolve("P.java");
+	final Path classPath = Path.of("target/test-classes", sourceDirPath.subpath(3, sourceDirPath.getNameCount()).toString(), "P.class");
 	
 	default void eraseCache() {
 		if(Files.exists(cachePath)) {

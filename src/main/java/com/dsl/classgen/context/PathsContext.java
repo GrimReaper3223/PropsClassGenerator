@@ -51,7 +51,7 @@ public class PathsContext {
 		outterClassName = "P";
 		userDir = Paths.get(System.getProperty("user.dir"));
 		outputSourceDirPath = userDir.resolve(isDebugMode ? "src/test/java" : "src/main/java");
-		outputClassFilePath = Path.of("target").resolve(isDebugMode ? "test/java" : "classes");
+		outputClassFilePath = Path.of("target").resolve(isDebugMode ? "test-classes" : "classes");
 		cacheDir = userDir.resolve(".jsonProperties-cache");
 	}
 
@@ -83,7 +83,7 @@ public class PathsContext {
     }
     
     public void checkFileInCache(Path filePath) {
-		var flagsInstance = GeneralContext.getInstance().getFlagsInstance();
+		var flagsInstance = GeneralContext.getInstance().getFlagsContextInstance();
 		if(flagsInstance.getIsDirStructureAlreadyGenerated() && flagsInstance.getIsExistsPJavaSource()) {
 			if(!CacheManager.hasValidCacheFile(filePath)) {
 				CacheManager.queueNewCacheFile(filePath);

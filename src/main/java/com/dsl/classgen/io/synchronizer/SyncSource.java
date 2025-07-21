@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -86,12 +87,28 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 			return;
 		}
 		
+		class CustomCacheModel extends CacheModel {
+			private static final long serialVersionUID = 1L;
+			
+			CustomCacheModel(Path filePath, Properties props) {
+				super(filePath, props);
+			}
+
+			public boolean checkHash() {
+				return this.fileHash == currentCacheModel.fileHash;
+			}
+			
+			public boolean checkPropertyMap() {
+				return this.hashTableMap.entrySet().equals(currentCacheModel.hashTableMap.entrySet());
+			}
+		}
+		
 		Path filePath = Path.of(currentCacheModel.filePath);
 		Reader.read(filePath);
-		CacheModel newCacheModel = new CacheModel(filePath, generalCtx.getProps());
+		CustomCacheModel newCacheModel = new CustomCacheModel(filePath, generalCtx.getProps());
 		
-		boolean isHashEquals = currentCacheModel.compareFileHash(newCacheModel);
-		boolean isPropertyMapEntriesEquals = currentCacheModel.comparePropertyMapEntries(newCacheModel);
+		boolean isHashEquals = newCacheModel.checkHash(); 
+		boolean isPropertyMapEntriesEquals = newCacheModel.checkPropertyMap(); 
 		
 		if(!isHashEquals) {
 			if(isPropertyMapEntriesEquals) {

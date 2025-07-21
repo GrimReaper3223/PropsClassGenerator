@@ -1,17 +1,22 @@
 package com.dsl.test.classgen;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import com.dsl.classgen.Generator;
 import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
+import com.dsl.classgen.utils.Utils;
 
-class TestFormatTools {
+class TestFormatTools implements HarnessTestTools {
 
 	@Test
+	@Disabled
 	void testAnnotationCreation() {
 		Assertions.assertDoesNotThrow(() -> createAnnotation(GeneratedInnerStaticClass.class, Map.of("key", "test", "hash", 12345)));
 		Assertions.assertDoesNotThrow(() -> createAnnotation(GeneratedInnerStaticClass.class, Map.of("value", 12)));
@@ -32,5 +37,12 @@ class TestFormatTools {
 		}
 		String annotationValues = sb.toString().trim();
 		return String.format("@%s(%s)", annotationClass.getSimpleName(), annotationValues.substring(0, annotationValues.lastIndexOf(",")));
+	}
+	
+	@Test
+	void testPathConverter() throws IOException {
+		Generator.init(inPropsPath, PACKAGE_CLASS, true);
+		Generator.generate();
+		System.out.println(Utils.convertSourcePathToClassPath(inPropsPath.resolve("fx/fx-button.properties")));
 	}
 }

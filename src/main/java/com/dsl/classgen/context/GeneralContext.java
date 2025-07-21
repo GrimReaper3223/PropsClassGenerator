@@ -23,7 +23,7 @@ public class GeneralContext {
 		return INSTANCE;
 	}
 	
-	public FlagsContext getFlagsInstance() {
+	public FlagsContext getFlagsContextInstance() {
 		return flagsContextInstance;
 	}
 	

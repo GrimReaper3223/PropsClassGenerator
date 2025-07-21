@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 import com.dsl.classgen.io.SupportProvider;
 
-public final class CacheModel extends SupportProvider implements Serializable {
+public non-sealed class CacheModel extends SupportProvider implements Serializable {
 	
     private static final long serialVersionUID = 1L;
     
@@ -42,16 +42,6 @@ public final class CacheModel extends SupportProvider implements Serializable {
         			.stream()
         			.map(entry -> Map.entry(entry.getKey().toString(), Objects.hash(entry.getKey().toString(), entry.getValue())))
         			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-    
-    // compara o hash do arquivo
-    public boolean compareFileHash(CacheModel other) {
-    	return this.fileHash == other.fileHash;
-    }
-    
-    // compara se as entradas de ambos os mapas sao iguais
-    public boolean comparePropertyMapEntries(CacheModel other) {
-    	return this.hashTableMap.entrySet().equals(other.hashTableMap.entrySet());
     }
     
     // comparacao geral

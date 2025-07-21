@@ -30,7 +30,7 @@ public class WatchServiceImpl {
 
 	private static GeneralContext generalCtx = GeneralContext.getInstance();
 	private static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
-	private static FlagsContext flagsCtx = generalCtx.getFlagsInstance();
+	private static FlagsContext flagsCtx = generalCtx.getFlagsContextInstance();
 	
     private static final Thread watchServiceThread = new Thread(WatchServiceImpl::processEvents);
     private static WatchService watcher;
