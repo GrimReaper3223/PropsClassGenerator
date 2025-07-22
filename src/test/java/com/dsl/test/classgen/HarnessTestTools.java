@@ -10,7 +10,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 public interface HarnessTestTools {
 
-	final Path inPropsPath = Path.of("src/test/resources/values/stringsx/");
+	final Path inPropsPath = Path.of("src/test/resources/values/stringsx");
 	final String PACKAGE_CLASS = "com.dsl.test.classgen";
 	final Path cachePath = Paths.get(System.getProperty("user.dir")).resolve(".jsonProperties-cache");
 	final Path sourceDirPath = Path.of("src/test/java/com/dsl/test/classgen/generated");

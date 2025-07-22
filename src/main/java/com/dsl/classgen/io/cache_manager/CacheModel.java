@@ -19,9 +19,9 @@ public non-sealed class CacheModel extends SupportProvider implements Serializab
     
     private transient Properties props;
     
-    public String filePath;						// caminho do arquivo de propriedades
-    public int fileHash;						// hash do arquivo de propriedades
-    public Map<String, Integer> hashTableMap;	// pares chave-valor do arquivo de propriedades deste objeto
+    public String filePath;						// String do caminho do arquivo de propriedades
+    public int fileHash;								// hash do arquivo de propriedades
+    public Map<String, Integer> hashTableMap;			// pares chave-valor do arquivo de propriedades deste objeto
 
     public CacheModel() {}
     
@@ -47,9 +47,9 @@ public non-sealed class CacheModel extends SupportProvider implements Serializab
     // comparacao geral
     @Override
     public boolean equals(Object obj) {
-        CacheModel cm = (CacheModel) Objects.requireNonNull(obj);
-        boolean result = cm.hashTableMap.entrySet().containsAll(hashTableMap.entrySet());
-        return cm.fileHash == fileHash && result;
+    	CacheModel cm = CacheModel.class.cast(Objects.requireNonNull(obj));
+    	boolean result = cm.hashTableMap.entrySet().containsAll(hashTableMap.entrySet());
+    	return cm.fileHash == fileHash && result;
     }
 
     // faz o hash do arquivo de propriedades

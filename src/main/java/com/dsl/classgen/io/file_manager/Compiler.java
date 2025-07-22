@@ -6,6 +6,7 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
 import com.dsl.classgen.annotation.processors.AnnotationProcessor;
+import com.dsl.classgen.io.GeneratedStructureChecker;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
@@ -36,11 +37,12 @@ public final class Compiler extends SupportProvider {
                 }).get();
             }
             catch (InterruptedException | ExecutionException e) {
-            	LOGGER.fatal(e.getMessage(), e);
+            	LOGGER.catching(e);
                 if (e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
                 	Thread.currentThread().interrupt();
                 }
             }
+            new GeneratedStructureChecker().checkFileSystem();	// verifica novamente o sistema de arquivos para atualizar variaveis
         }
     }
 }

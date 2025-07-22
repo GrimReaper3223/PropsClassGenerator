@@ -54,7 +54,7 @@ public final class GeneratedStructureChecker extends SupportProvider {
         	}
     	}
     	catch (IOException e) {
-            LOGGER.fatal(e);
+            LOGGER.catching(e);
         }
     }
 

@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.cache_manager.CacheModel;
+import com.dsl.classgen.io.synchronizer.SyncBin;
 import com.dsl.classgen.io.synchronizer.SyncSource;
 import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
@@ -23,6 +24,7 @@ public final class FileEventsProcessor extends SupportProvider {
 
 	private static final Thread eventProcessorThread = new Thread(FileEventsProcessor::processChanges);
 	private static SyncSource syncSource = new SyncSource();
+	private static SyncBin syncBin = new SyncBin();
 
 	private static Function<Path, Stream<Path>> streamFilterCreator = path -> {
 		Stream<Path> pathStream = null;
@@ -85,23 +87,28 @@ public final class FileEventsProcessor extends SupportProvider {
 	}
 	
 	private static void deleteSection(Stream<Path> pipeline) {
-		pipeline.map(path -> {
-			List<CacheModel> cmList = new ArrayList<>();
+		List<CacheModel> modelList = pipeline.map(path -> {
+			List<CacheModel> list = new ArrayList<>();
 			
 			if(Files.isDirectory(path)) {
 				LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
 				
 				try(Stream<Path> files = streamFilterCreator.apply(path)) {
-					cmList = files.map(element -> CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(element)))
-								  .toList();
+					list.addAll(files.map(element -> CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(element)))
+								.toList());
 				}
 			} else if(Utils.isPropertiesFile(path)) {
 				LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
-				cmList.add(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
+				list.add(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
 			}
 			
-			return cmList;
-		}).forEach(syncSource::eraseClassSection);
+			return list;
+		})
+		.flatMap(List::stream)
+		.toList();
+		
+		syncSource.eraseClassSection(modelList);
+		syncBin.eraseClassSection(modelList);
 	}
 	
 	private static void modifySection(Stream<Path> pipeline) {

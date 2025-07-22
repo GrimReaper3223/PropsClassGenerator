@@ -4,7 +4,7 @@ public class FlagsContext {
 
 	// deve ser true ao depurar o projeto. 
 	// se true for definido, a classe gerada sera impressa ao inves de escrita
-    private boolean isDebugMode = true;
+    private boolean isDebugMode = false;
 	
 	// flags
     private boolean isSingleFile;						// indica se o caminho passado corresponde a um unico arquivo 

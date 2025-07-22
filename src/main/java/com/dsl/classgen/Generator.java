@@ -26,13 +26,11 @@ public final class Generator {
 	private static FlagsContext flagsCtx = fwCtx.getFlagsContextInstance();
 	private static PathsContext pathsCtx = fwCtx.getPathsContextInstance();
 	
-	private static GeneratedStructureChecker checker = new GeneratedStructureChecker();
-	
 	private Generator() {}
 
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
 		// verifica se a estrutura ja esta gerada
-		checker.checkFileSystem();
+		new GeneratedStructureChecker().checkFileSystem();
 		
 		// define e resolve alguns dados
 		flagsCtx.setIsRecursive(isRecursive);
@@ -59,6 +57,7 @@ public final class Generator {
 				Is Recursive?: {};
 				Is Single File?: {};
 				Is There a Generated Structure?: {};
+				Is there a compiled class?: {};
 				
 				Developer Options
 				Is Debug Mode?: {};
@@ -70,10 +69,11 @@ public final class Generator {
 				
 				""", inputPath, 
 					 pathsCtx.getOutputSourceDirPath(), 
-					 pathsCtx.getPackageClass(), 
+					 pathsCtx.getPackageClass(),
 					 isRecursive, 
 					 flagsCtx.getIsSingleFile(),
-					 flagsCtx.getIsDirStructureAlreadyGenerated(), 
+					 flagsCtx.getIsDirStructureAlreadyGenerated(),
+					 flagsCtx.getIsExistsCompiledPJavaClass(),
 					 flagsCtx.getIsDebugMode());
 	}
 
@@ -92,12 +92,12 @@ public final class Generator {
 				LOGGER.debug(pathsCtx.getGeneratedClass());
 			} 
 			Writer.write();
-			checker.checkFileSystem();	// verifica novamente o sistema de arquivos para atualizar variaveis
 			
 		} else {
 			LOGGER.warn("There is already a generated structure.");
 			LOGGER.warn("Generating additional classes and checking the existing ones...");
 		}
+		
 		// compila a classe gerada, inicializa o servico de monitoramento de diretorios e processa as anotacoes da classe gerada/existente
 		Compiler.compile();
 		WatchServiceImpl.initialize();

@@ -19,7 +19,7 @@ class SimpleGeneratorTest implements HarnessTestTools {
 		// ignore os testes de assercao
 		Assertions.assertTrue(true);
 	}
-
+	
 	void fieldDeleteTest() {
 		fieldInsertTest();
 		String classSourceStartHint = "// FIELD HINT ~>> test.javafx";

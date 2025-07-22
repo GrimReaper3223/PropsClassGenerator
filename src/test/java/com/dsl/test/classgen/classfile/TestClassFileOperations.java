@@ -31,9 +31,7 @@ class TestClassFileOperations implements HarnessTestTools {
 		  .stream()
 		  .filter(InnerClassesAttribute.class::isInstance)
 		  .map(InnerClassesAttribute.class::cast)
-		  .peek(e -> LOGGER.debug("CASTTED ATTR -> {}", e))
 		  .flatMap(attr -> attr.classes().stream())
-		  .peek(e -> LOGGER.debug("FLAT MAPPED ATTR -> {}", e))
 		  .<InnerClassInfo>mapMulti((elem, consumer) -> {
 				try {
 					if (elem.outerClass().orElseThrow().name().equalsString(fullClassName)) {
@@ -43,12 +41,9 @@ class TestClassFileOperations implements HarnessTestTools {
 					// exception not treated
 				}
 		  })
-		  .peek(e -> LOGGER.debug("MULTI MAPPED ATTR -> {}", e))
 		  .collect(Collectors.collectingAndThen(Collectors.toSet(), classInfo -> {
 				classInfo.stream()
-						 .peek(e -> LOGGER.warn("CLASS INFO STREAMED -> {}", e))
 						 .filter(e -> e.innerName().get().equalsString(className))
-						 .peek(e -> LOGGER.warn("CLASS INFO FILTERED -> {}", e))
 						 .flatMap(e -> {
 								ClassModel model = null;
 								try {
@@ -58,8 +53,7 @@ class TestClassFileOperations implements HarnessTestTools {
 								}
 								return model.fields().stream();
 						 })
-						 .peek(e -> LOGGER.warn("CLASS INFO FLAT MAPPED -> {}", e))
-						 .forEach(System.out::println);
+						 .forEach(LOGGER::debug);
 				return null;
 		  }));
 	}

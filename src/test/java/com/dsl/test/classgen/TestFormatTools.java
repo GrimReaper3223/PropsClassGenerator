@@ -1,6 +1,5 @@
 package com.dsl.test.classgen;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
@@ -40,7 +39,7 @@ class TestFormatTools implements HarnessTestTools {
 	}
 	
 	@Test
-	void testPathConverter() throws IOException {
+	void testPathConverter() throws ClassNotFoundException {
 		Generator.init(inPropsPath, PACKAGE_CLASS, true);
 		Generator.generate();
 		System.out.println(Utils.convertSourcePathToClassPath(inPropsPath.resolve("fx/fx-button.properties")));

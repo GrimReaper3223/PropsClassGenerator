@@ -63,6 +63,24 @@ public final class Writer extends SupportProvider {
     		logException(e);
     	}
     }
+    
+    public static void write(byte[] content) {
+    	LOGGER.info( "Writing byte data...\n");
+    	Path outputClassFilePath = pathsCtx.getOutputClassFilePath();
+    	
+    	try {
+			Utils.getExecutor().submit(() -> {
+			    try (OutputStream out = Files.newOutputStream(outputClassFilePath)){
+			        out.write(content);
+			    }
+			    catch (IOException e) {
+			    	logException(e);
+			    }
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
+			logException(e);
+		}
+    }
 
     // escreve o arquivo de classe gerada no sistema de arquivos
     private static final void fileWriter(Path outputFilePath) throws InterruptedException, ExecutionException {
@@ -115,7 +133,7 @@ public final class Writer extends SupportProvider {
     		LOGGER.error("Thread is interrupted.", e);
         	Thread.currentThread().interrupt();
         } else {
-        	LOGGER.fatal(e);
+        	LOGGER.catching(e);
         }
     }
 }
