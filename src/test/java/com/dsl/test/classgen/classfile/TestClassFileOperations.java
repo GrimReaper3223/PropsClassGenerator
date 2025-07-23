@@ -1,26 +1,31 @@
 package com.dsl.test.classgen.classfile;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
+import java.lang.classfile.FieldModel;
 import java.lang.classfile.attribute.InnerClassInfo;
 import java.lang.classfile.attribute.InnerClassesAttribute;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.dsl.test.classgen.HarnessTestTools;
 
+@SuppressWarnings("preview")
 class TestClassFileOperations implements HarnessTestTools {
 
 	private static final Logger LOGGER = LogManager.getLogger(TestClassFileOperations.class);
 	
 	@Test
-	@SuppressWarnings("preview")
+	@Disabled("null")
 	void readClassFile() throws IOException {
 		String fullClassName = "com/dsl/test/classgen/generated/P";
 		String className = "FxTable";
@@ -56,5 +61,23 @@ class TestClassFileOperations implements HarnessTestTools {
 						 .forEach(LOGGER::debug);
 				return null;
 		  }));
+	}
+	
+	@Test
+	@Disabled("Testes indicaram sucesso na eliminacao de um campo e sua anotacao no bytecode da classe P$FxButton.class. Esta funcionalidade esta pronta para ser implementada.")
+	void readInnerClassFile() throws IOException {
+		String fullClassName = "target/test-classes/com/dsl/test/classgen/generated/P$FxButton.class";
+		ClassFile cf = ClassFile.of();
+		ClassModel cm = cf.parse(Path.of(fullClassName));
+		String fieldNameToCompare = "fx.button.close";
+		
+		byte[] newBytes = cf.build(cm.thisClass().asSymbol(), 
+				builder -> cm.elementStream() 
+				  .filter(elem -> !(elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replaceAll("_", ".").contains(fieldNameToCompare)))
+				  .forEach(builder::with));
+		
+		try(OutputStream out = Files.newOutputStream(Path.of(System.getProperty("user.dir"), "test.class"))) {
+			out.write(newBytes);
+		}
 	}
 }

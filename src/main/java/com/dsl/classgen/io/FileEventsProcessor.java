@@ -10,11 +10,15 @@ import java.nio.file.Path;
 import java.nio.file.WatchEvent.Kind;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.cache_manager.CacheModel;
+import com.dsl.classgen.io.file_manager.Reader;
+import com.dsl.classgen.io.synchronizer.ModelMapper;
 import com.dsl.classgen.io.synchronizer.SyncBin;
 import com.dsl.classgen.io.synchronizer.SyncSource;
 import com.dsl.classgen.service.WatchServiceImpl;
@@ -56,9 +60,9 @@ public final class FileEventsProcessor extends SupportProvider {
 				var kind = entry.getValue();
 				
 				switch(kind) {
-					case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(List.of(entry.getKey()).stream());
-					case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(List.of(entry.getKey()).stream());
-					case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(List.of(entry.getKey()).stream());
+					case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(entry.getKey());
+					case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(entry.getKey());
+					case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(entry.getKey());
 					default -> throw new IllegalArgumentException("*** BUG *** - Unexpected value: " + entry.getValue());
 				}
 			} catch (InterruptedException _) {
@@ -73,46 +77,76 @@ public final class FileEventsProcessor extends SupportProvider {
 		eventProcessorThread.interrupt();
 	}
 	
-	private static void createSection(Stream<Path> pipeline) {
-		LOGGER.info("Generating new data entries...");
-		pipeline.forEach(path -> {
-			if(Files.isDirectory(path)) {
-				try(Stream<Path> files = streamFilterCreator.apply(path)) {
-					files.forEach(syncSource::insertClassSection);
-				} 
-			} else {
-				syncSource.insertClassSection(path);
-			}
-		});
+	private static void createSection(Path path) {
+		if(Files.isDirectory(path)) {
+			try(Stream<Path> files = streamFilterCreator.apply(path)) {
+				syncSource.insertClassSection(files.toList());
+			} 
+		} else {
+			syncSource.insertClassSection(path);
+		}
 	}
 	
-	private static void deleteSection(Stream<Path> pipeline) {
-		List<CacheModel> modelList = pipeline.map(path -> {
-			List<CacheModel> list = new ArrayList<>();
+	private static void deleteSection(Path path) {
+		List<CacheModel> list = new ArrayList<>();
 			
-			if(Files.isDirectory(path)) {
-				LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
-				
-				try(Stream<Path> files = streamFilterCreator.apply(path)) {
-					list.addAll(files.map(element -> CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(element)))
-								.toList());
-				}
-			} else if(Utils.isPropertiesFile(path)) {
-				LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
-				list.add(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
+		if(Files.isDirectory(path)) {
+			LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
+			
+			try(Stream<Path> files = streamFilterCreator.apply(path)) {
+				list.addAll(files.map(element -> CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(element)))
+								 .toList());
 			}
+		} else if(Utils.isPropertiesFile(path)) {
+			LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
+			list.add(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
+		}
 			
-			return list;
-		})
-		.flatMap(List::stream)
-		.toList();
+		syncSource.eraseClassSection(list);
+		syncBin.eraseClassSection(list);
+	}
+	
+	private static void modifySection(Path path) {
+		CacheModel currentCacheModel = CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(path));
+		if(currentCacheModel == null) {
+			return;
+		}
 		
-		syncSource.eraseClassSection(modelList);
-		syncBin.eraseClassSection(modelList);
-	}
-	
-	private static void modifySection(Stream<Path> pipeline) {
-		LOGGER.info("Modifying source entries...");
-		pipeline.forEach(path -> syncSource.modifySection(CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(path))));
+		final class ExtendedCacheModel extends CacheModel {
+
+			private static final long serialVersionUID = 1L;
+
+			public ExtendedCacheModel(Path filePath, Properties props) {
+				super(filePath, props);
+			}
+			
+			public boolean checkHash(CacheModel currentCacheModel) {
+				return this.fileHash == currentCacheModel.fileHash;
+			}
+			
+			public boolean checkPropertyMap(CacheModel currentCacheModel) {
+				return this.hashTableMap.entrySet().equals(currentCacheModel.hashTableMap.entrySet());
+			}
+		}
+		
+		Path filePath = Path.of(currentCacheModel.filePath);
+		Reader.read(filePath);
+		ExtendedCacheModel newCacheModel = new ExtendedCacheModel(filePath, generalCtx.getProps());
+		
+		boolean isHashEquals = newCacheModel.checkHash(currentCacheModel);
+		boolean isPropertyMapEntriesEquals = newCacheModel.checkPropertyMap(currentCacheModel);
+		
+		if(!isHashEquals) {
+			if(isPropertyMapEntriesEquals) {
+				// atualiza somente o arquivo de classe interna estatica quando nao ha atualizacoes de campos.
+				deleteSection(filePath);
+				createSection(filePath);
+				
+			} else {
+				// performa atualizacoes de alta precisao em membros da classe interna estatica
+				ModelMapper<Map<String, Integer>> mappedChanges = new ModelMapper<>(currentCacheModel.hashTableMap, newCacheModel.hashTableMap);
+				syncSource.modifySection(mappedChanges, currentCacheModel);
+			}
+		}
 	}
 }

@@ -6,6 +6,7 @@ import java.lang.classfile.ClassModel;
 import java.lang.classfile.attribute.InnerClassesAttribute;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.cache_manager.CacheModel;
@@ -27,7 +28,7 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 	}
 
 	@Override
-	public void insertClassSection(Path path) {
+	public void insertClassSection(List<Path> pathList) {
 		// document why this method is empty
 	}
 
@@ -58,7 +59,19 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 	}
 	
 	@Override
-	public void modifySection(CacheModel model) {
+	public void modifySection(ModelMapper<Map<String, Integer>> mappedChanges, CacheModel currentCacheModel) {
 		// document why this method is empty
+	}
+	
+	/*
+	 * HELPERS
+	 */
+
+	public <T> void insertClassSection(T path) {
+		insertClassSection(List.of(Path.of(path.toString())));
+	}
+	
+	public void eraseClassSection(CacheModel currentCacheModel) {
+		eraseClassSection(List.of(currentCacheModel));
 	}
 }
