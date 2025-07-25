@@ -3,9 +3,12 @@ package com.dsl.classgen.io.synchronizer;
 import java.io.IOException;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
+import java.lang.classfile.ClassTransform;
 import java.lang.classfile.FieldModel;
 import java.lang.classfile.attribute.InnerClassesAttribute;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -69,24 +72,24 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying binary entries...");
 		mappedChanges.modelMap.entrySet().forEach(entry -> {
 			Supplier<Stream<String>> keys = () -> entry.getValue().keySet().stream();
-			byte[] newBytes = null;
+			ByteBuffer bb = ByteBuffer.allocate(Short.MAX_VALUE);
 			
 			switch(entry.getKey()) {
 				case INSERT: 
 					break;
 					
 				case DELETE:
-					newBytes = keys.get()
-						.map(path -> cf.build(cm.thisClass().asSymbol(),
-								builder -> cm.elementStream()
-										.filter(elem -> !(elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replace("_", ".").contains(path)))
-										.forEach(builder::with)))
-						.findFirst()
-						.get();
+					Arrays.stream(keys.get()
+						.map(key -> {
+							ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replace("_", ".").contains(key));
+							return cf.transform(cm, ct);
+						}).toArray(Byte[]::new))
+						.map(Byte::byteValue)
+						.forEach(bb::put);
 					break;
 			}
 			
-			Writer.write(newBytes);
+			Writer.write(bb.array());
 		});
 	}
 	

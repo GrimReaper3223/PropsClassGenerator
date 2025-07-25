@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
+import java.lang.classfile.ClassTransform;
 import java.lang.classfile.FieldModel;
 import java.lang.classfile.attribute.InnerClassInfo;
 import java.lang.classfile.attribute.InnerClassesAttribute;
@@ -64,20 +65,26 @@ class TestClassFileOperations implements HarnessTestTools {
 	}
 	
 	@Test
-	@Disabled("Testes indicaram sucesso na eliminacao de um campo e sua anotacao no bytecode da classe P$FxButton.class. Esta funcionalidade esta pronta para ser implementada.")
-	void readInnerClassFile() throws IOException {
+//	@Disabled("Testes indicaram sucesso na eliminacao de um campo e sua anotacao no bytecode da classe P$FxButton.class. Esta funcionalidade esta pronta para ser implementada.")
+	void testEraseInnerFieldFromClassFile() throws IOException {
 		String fullClassName = "target/test-classes/com/dsl/test/classgen/generated/P$FxButton.class";
 		ClassFile cf = ClassFile.of();
 		ClassModel cm = cf.parse(Path.of(fullClassName));
 		String fieldNameToCompare = "fx.button.close";
 		
-		byte[] newBytes = cf.build(cm.thisClass().asSymbol(), 
-				builder -> cm.elementStream() 
-				  .filter(elem -> !(elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replaceAll("_", ".").contains(fieldNameToCompare)))
-				  .forEach(builder::with));
+		ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replaceAll("_", ".").contains(fieldNameToCompare));
+		byte[] newBytes = cf.transform(cm, ct);
 		
 		try(OutputStream out = Files.newOutputStream(Path.of(System.getProperty("user.dir"), "test.class"))) {
 			out.write(newBytes);
 		}
+	}
+	
+	void testInsertInnerFieldInClassFile() throws IOException {
+		String fullClassName = "target/test-classes/com/dsl/test/classgen/generated/P$FxButton.class";
+		ClassFile cf = ClassFile.of();
+		ClassModel cm = cf.parse(Path.of(fullClassName));
+		
+		
 	}
 }

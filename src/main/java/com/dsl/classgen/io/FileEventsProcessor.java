@@ -7,6 +7,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,12 +60,7 @@ public final class FileEventsProcessor extends SupportProvider {
 				var entry = pathsCtx.getQueuedChangedFilesEntries();
 				var kind = entry.getValue();
 				
-				switch(kind) {
-					case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(entry.getKey());
-					case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(entry.getKey());
-					case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(entry.getKey());
-					default -> throw new IllegalArgumentException("*** BUG *** - Unexpected value: " + entry.getValue());
-				}
+				caller(kind, entry.getKey());
 			} catch (InterruptedException _) {
   		 		if(eventProcessorThread.isInterrupted()) {
   		 			eventProcessorThread.interrupt();
@@ -77,13 +73,25 @@ public final class FileEventsProcessor extends SupportProvider {
 		eventProcessorThread.interrupt();
 	}
 	
+	public static final void caller(WatchEvent.Kind<Path> kind, Path path) {
+		switch(kind) {
+			case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(path);
+			case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(path);
+			case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(path);
+			default -> throw new IllegalArgumentException("*** BUG *** - Unexpected value: " + path);
+		}
+	}
+	
 	private static void createSection(Path path) {
 		if(Files.isDirectory(path)) {
 			try(Stream<Path> files = streamFilterCreator.apply(path)) {
-				syncSource.insertClassSection(files.toList());
+				var fileList = files.toList();
+				syncSource.insertClassSection(fileList);
+				syncBin.insertClassSection(fileList);
 			} 
 		} else {
 			syncSource.insertClassSection(path);
+			syncBin.insertClassSection(path);
 		}
 	}
 	
