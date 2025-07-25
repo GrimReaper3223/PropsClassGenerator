@@ -3,20 +3,24 @@ package com.dsl.classgen.io.synchronizer;
 import java.io.IOException;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
+import java.lang.classfile.FieldModel;
 import java.lang.classfile.attribute.InnerClassesAttribute;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.file_manager.Writer;
+import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 
 @SuppressWarnings("preview")
 public final class SyncBin extends SupportProvider implements SyncOperations {
 
-	private static final ClassFile cf = ClassFile.of();
+	private final ClassFile cf = ClassFile.of();
 	private ClassModel cm;
 	
 	public SyncBin() {
@@ -29,11 +33,13 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 
 	@Override
 	public void insertClassSection(List<Path> pathList) {
+		LOGGER.log(Levels.NOTICE.getLevel(), "Generating new compiled data entries...");
 		// document why this method is empty
 	}
 
 	@Override
 	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
+		LOGGER.log(Levels.NOTICE.getLevel(), "Erasing compiled class section...");
 		List<Path> fileNameList = currentCacheModelList.stream()
 													   .map(model -> {
 														   Path convertedPath = null;  
@@ -60,7 +66,28 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 	
 	@Override
 	public void modifySection(ModelMapper<Map<String, Integer>> mappedChanges, CacheModel currentCacheModel) {
-		// document why this method is empty
+		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying binary entries...");
+		mappedChanges.modelMap.entrySet().forEach(entry -> {
+			Supplier<Stream<String>> keys = () -> entry.getValue().keySet().stream();
+			byte[] newBytes = null;
+			
+			switch(entry.getKey()) {
+				case INSERT: 
+					break;
+					
+				case DELETE:
+					newBytes = keys.get()
+						.map(path -> cf.build(cm.thisClass().asSymbol(),
+								builder -> cm.elementStream()
+										.filter(elem -> !(elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replace("_", ".").contains(path)))
+										.forEach(builder::with)))
+						.findFirst()
+						.get();
+					break;
+			}
+			
+			Writer.write(newBytes);
+		});
 	}
 	
 	/*

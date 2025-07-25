@@ -41,6 +41,9 @@ public final class Utils {
     }
     
     public static Path resolveJsonFilePath(Path path) {
+    	if (path.getFileName().toString().contains("-cache.json")) {
+    		return path;
+    	}
     	String jsonFileNamePattern = "%s-cache.json";
     	Path jsonFileName = Path.of(String.format(jsonFileNamePattern, path.getFileName().toString().contains(".") ? formatFileName(path) : path));
         return pathsCtx.getCacheDir().resolve(jsonFileName);

@@ -8,7 +8,6 @@ import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
 import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
 import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.cache_manager.CacheModel;
-import com.dsl.classgen.utils.Utils;
 
 public final class InnerStaticClassGenerator extends SupportProvider implements Parsers, Initializer {
 	
@@ -23,7 +22,7 @@ public final class InnerStaticClassGenerator extends SupportProvider implements 
 		
 		propertyPath = flagsCtx.getIsSingleFile() ? pathsCtx.getInputPropertiesPath() : pathsCtx.getInputPropertiesPath().resolve(propertiesFileName);
 		formattedClassName = parseClassName(propertiesFileName);
-		cm = CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(propertiesFileName));
+		cm = CacheManager.getElementFromCacheModelMap(propertiesFileName);
 		
 		formatGenerationOutput("Static Inner Class", formattedClassName, null);
 		

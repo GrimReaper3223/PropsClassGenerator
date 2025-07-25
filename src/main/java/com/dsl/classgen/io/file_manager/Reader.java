@@ -25,8 +25,7 @@ public final class Reader extends SupportProvider {
     public static void read(Path inputPath) {
         if (Files.isRegularFile(inputPath)) {
         	flagsCtx.setIsSingleFile(true);
-        	pathsCtx.checkFileInCache(inputPath);
-            loadPropFile(inputPath);
+        	pathsCtx.queueFile(inputPath);
             
         } else if (Files.isDirectory(inputPath)) {
         	flagsCtx.setIsSingleFile(false);

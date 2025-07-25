@@ -32,6 +32,6 @@ public class AnnotationProcessor {
 		   			 .filter(annon -> annon.hash() == fieldHash)
 		   			 .findFirst()
 	    			 .map(annon -> Utils.formatSourcePattern(PatternType.FIELD, annon.key()))
-	    			 .orElse(null);
+	    			 .orElseThrow();
     }
 }

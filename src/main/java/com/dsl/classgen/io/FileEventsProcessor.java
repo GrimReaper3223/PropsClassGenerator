@@ -94,12 +94,12 @@ public final class FileEventsProcessor extends SupportProvider {
 			LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
 			
 			try(Stream<Path> files = streamFilterCreator.apply(path)) {
-				list.addAll(files.map(element -> CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(element)))
+				list.addAll(files.map(CacheManager::removeElementFromCacheModelMap)
 								 .toList());
 			}
 		} else if(Utils.isPropertiesFile(path)) {
 			LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
-			list.add(CacheManager.removeElementFromCacheModelMap(Utils.resolveJsonFilePath(path)));
+			list.add(CacheManager.removeElementFromCacheModelMap(path));
 		}
 			
 		syncSource.eraseClassSection(list);
@@ -107,7 +107,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	}
 	
 	private static void modifySection(Path path) {
-		CacheModel currentCacheModel = CacheManager.getElementFromCacheModelMap(Utils.resolveJsonFilePath(path));
+		CacheModel currentCacheModel = CacheManager.getElementFromCacheModelMap(path);
 		if(currentCacheModel == null) {
 			return;
 		}
@@ -146,6 +146,7 @@ public final class FileEventsProcessor extends SupportProvider {
 				// performa atualizacoes de alta precisao em membros da classe interna estatica
 				ModelMapper<Map<String, Integer>> mappedChanges = new ModelMapper<>(currentCacheModel.hashTableMap, newCacheModel.hashTableMap);
 				syncSource.modifySection(mappedChanges, currentCacheModel);
+				syncBin.modifySection(mappedChanges, currentCacheModel);
 			}
 		}
 	}

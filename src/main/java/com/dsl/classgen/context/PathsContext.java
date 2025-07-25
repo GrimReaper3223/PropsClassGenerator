@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
+import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
@@ -56,8 +57,11 @@ public class PathsContext {
 	}
 
 	public void resolvePaths(String packageClass) {
-        outputSourceDirPath = outputSourceDirPath.resolve(Utils.normalizePath(packageClass, ".", "/"));
-        outputSourceFilePath = outputSourceDirPath.resolve(outterClassName + ".java");
+		var flagsCtx = GeneralContext.getInstance().getFlagsContextInstance();
+		if(!flagsCtx.getIsDirStructureAlreadyGenerated()) {
+	        outputSourceDirPath = outputSourceDirPath.resolve(Utils.normalizePath(packageClass, ".", "/"));
+	        outputSourceFilePath = outputSourceDirPath.resolve(outterClassName + ".java");
+		}
     }
 	
 	// fileList
@@ -71,6 +75,7 @@ public class PathsContext {
     }
 	
 	public void queueFile(Path filePath) {
+		Reader.loadPropFile(filePath);
 		checkFileInCache(filePath);
     	fileList.add(filePath);
     	LOGGER.log(SUCCESS,"Properties file added to file list: {}", filePath);
@@ -83,9 +88,9 @@ public class PathsContext {
     }
     
     public void checkFileInCache(Path filePath) {
-		var flagsInstance = GeneralContext.getInstance().getFlagsContextInstance();
-		if(flagsInstance.getIsDirStructureAlreadyGenerated() && flagsInstance.getIsExistsPJavaSource()) {
-			if(!CacheManager.hasValidCacheFile(filePath)) {
+    	var flagsCtx = GeneralContext.getInstance().getFlagsContextInstance();	
+		if(flagsCtx.getIsDirStructureAlreadyGenerated() && flagsCtx.getIsExistsPJavaSource()) {
+			if(CacheManager.isInvalidCacheFile(filePath)) {
 				CacheManager.queueNewCacheFile(filePath);
 			}
 		} else {

@@ -9,6 +9,7 @@ module com.dsl.classgen {
 	exports com.dsl.classgen;
 	exports com.dsl.classgen.annotation;
 	exports com.dsl.classgen.annotation.containers;
+	exports com.dsl.classgen.io.synchronizer to com.dsl.classgen.io.cache_manager;
 	exports com.dsl.classgen.io.cache_manager to com.dsl.classgen.annotation;
 	
 	// for test package

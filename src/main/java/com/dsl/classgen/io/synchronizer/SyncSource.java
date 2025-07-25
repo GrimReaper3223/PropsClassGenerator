@@ -72,9 +72,9 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 							   .forEach(lookupPattern -> deleteSourceContentUsingDelimiters(sb, lookupPattern, 3));
 					break;
 			}
-			invokeWriterCondition(sb);
-			CacheManager.processCache();
 		});
+		invokeWriterCondition(sb);
+		CacheManager.processCache();
 	}
 
 	private void deleteSourceContentUsingDelimiters(StringBuilder sb, List<String> lookupPatternList, int endPatternFullIndexIncrement) {

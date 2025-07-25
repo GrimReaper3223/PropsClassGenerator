@@ -1,5 +1,5 @@
 package com.dsl.classgen.io.synchronizer;
 
-public enum FieldSyncOperation {
+public enum SyncOptions {
 	INSERT, DELETE
 }

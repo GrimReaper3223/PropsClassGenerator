@@ -95,9 +95,9 @@ public final class Writer extends SupportProvider {
     }
 
     // escreve todos os jsons gerados no sistema de arquivos, no caminho definido como o diretorio base para arquivos de cache
-    private static final void jsonWriter(CacheModel cm, Path jsonFilePath) throws InterruptedException, ExecutionException {
+    private static final void jsonWriter(CacheModel cm, Path path) throws InterruptedException, ExecutionException {
         Utils.getExecutor().submit(() -> {
-            try (OutputStream out = Files.newOutputStream(jsonFilePath)){
+            try (OutputStream out = Files.newOutputStream(Utils.resolveJsonFilePath(path))){
                 out.write(new Gson().toJson(cm).getBytes());
             }
             catch (IOException e) {
@@ -117,14 +117,13 @@ public final class Writer extends SupportProvider {
 
     // deve preparar todos os dados necessarios para a escrita do json
     public static void writeJson() {
-    	CacheManager.getQueuedCacheFiles()
+    	CacheManager.getQueuedCacheFiles(true)
 	            	.stream()
 	            	.map(path -> {
 			            Reader.loadPropFile(path);
-			            Path jsonFilePath = Utils.resolveJsonFilePath(pathsCtx.getPropertiesFileName());
 			            CacheModel cm = new CacheModel(path, generalCtx.getProps());
-			            CacheManager.computeElementToCacheModelMap(jsonFilePath, cm);
-			            return Map.entry(jsonFilePath, cm);
+			            CacheManager.computeElementToCacheModelMap(path, cm);
+			            return Map.entry(path, cm);
 	            	}).forEach(Writer::jsonWriter);
     }
 
