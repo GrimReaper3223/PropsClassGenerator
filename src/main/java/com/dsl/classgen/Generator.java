@@ -33,7 +33,7 @@ public final class Generator {
 		new GeneratedStructureChecker().checkFileSystem();
 		
 		flagsCtx.setIsRecursive(isRecursive);
-		pathsCtx.setInputPropertiesPath(inputPath);
+		pathsCtx.setInputPropertiesPath(inputPath);	// TODO: carregar o inputPropertiesPath no modelo de classe
 		pathsCtx.setPackageClass(Utils.normalizePath(packageClass.concat(".generated"), "/", ".").toString());
 		pathsCtx.resolvePaths(pathsCtx.getPackageClass());
 		
