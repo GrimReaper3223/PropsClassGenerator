@@ -45,7 +45,7 @@ public class WatchServiceImpl {
             watcher = FileSystems.getDefault().newWatchService();
         }
         catch (IOException e) {
-        	LOGGER.fatal(e);
+        	Utils.logException(e);
         }
     }
     
@@ -59,23 +59,23 @@ public class WatchServiceImpl {
                 watchServiceThread.start();
             }
             catch (IOException e) {
-            	LOGGER.error(e);
+            	Utils.logException(e);
             }
         }
     }
 
     private static void initialRegistration() throws IOException {
         if (flagsCtx.getIsRecursive() && !flagsCtx.getIsSingleFile()) {
-        	pathsCtx.getDirList().stream().map(path -> {
+        	pathsCtx.getDirList().stream().forEach(path -> {
                 WatchKey key = null;
                 try {
                     key = path.register(watcher, EVENT_KIND_ARR);
                 }
                 catch (IOException e) {
-                	LOGGER.error(e);
+                	Utils.logException(e);
                 }
-                return Map.ofEntries(WatchServiceImpl.verifyKey(key, path));
-            }).forEach(keys::putAll);
+                keys.putAll(Map.ofEntries(WatchServiceImpl.verifyKey(key, path)));
+            });
         } else {
             Path inputPath = Files.isDirectory(pathsCtx.getInputPropertiesPath()) ? pathsCtx.getInputPropertiesPath() : pathsCtx.getInputPropertiesPath().getParent();
             WatchKey key = inputPath.register(watcher, EVENT_KIND_ARR);
@@ -105,7 +105,7 @@ public class WatchServiceImpl {
 				keys.put(pair.getKey(), pair.getValue());
 			}
 		} catch (IOException e) {
-			LOGGER.error(e);
+			Utils.logException(e);
 		}
     }
 
@@ -135,11 +135,8 @@ public class WatchServiceImpl {
 	            		LOGGER.warn("There are no keys remaining for processing. Ending Watcher...");
 	            	}
 	            }
-        	} catch (InterruptedException _) {
-            	if(Thread.currentThread().isInterrupted()) {
-            		LOGGER.error("Watcher thread is interrupted");
-            		Thread.currentThread().interrupt();
-            	}
+        	} catch (InterruptedException e) {
+        		Utils.logException(e);
             }
     	} while (!keys.isEmpty()); 
     }
@@ -163,10 +160,7 @@ public class WatchServiceImpl {
 		  		 		pathsCtx.queueDir(entry.getKey());
 		  		 	}
 	  		 	} catch (InterruptedException e) {
-	  		 		if(watchServiceThread.isInterrupted()) {
-	  		 			LOGGER.error("{} is interrupted. \n{}", watchServiceThread.getName(), e);
-	  		 			watchServiceThread.interrupt();
-	  		 		}
+	  		 		Utils.logException(e);
 	  		 	}
 		   	});
     }

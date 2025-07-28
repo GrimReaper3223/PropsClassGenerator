@@ -1,19 +1,22 @@
 package com.dsl.classgen.io.synchronizer;
 
 import java.io.IOException;
+import java.lang.classfile.Annotation;
+import java.lang.classfile.AnnotationElement;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.lang.classfile.FieldModel;
 import java.lang.classfile.attribute.InnerClassesAttribute;
+import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.file_manager.Writer;
@@ -30,7 +33,7 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 		try {
 			cm = cf.parse(pathsCtx.getOutputClassFilePath());
 		} catch (IOException e) {
-			LOGGER.catching(e);
+			Utils.logException(e);
 		}
 	}
 
@@ -44,14 +47,12 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
 		LOGGER.log(Levels.NOTICE.getLevel(), "Erasing compiled class section...");
 		List<Path> fileNameList = currentCacheModelList.stream()
-													   .map(model -> {
-														   Path convertedPath = null;  
+													   .<Path>mapMulti((model, consumer) -> {
 														   try {
-															   convertedPath = Utils.convertSourcePathToClassPath(model.filePath);
+															   consumer.accept(Utils.convertSourcePathToClassPath(model.filePath));
 														   } catch (ClassNotFoundException e) {
-															   LOGGER.catching(e);
+															   Utils.logException(e);
 														   }
-														   return convertedPath;
 													   })
 													   .toList();
 		
@@ -64,32 +65,31 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 				.filter(elem -> !fileNameList.contains(Path.of(elem.innerClass().name().stringValue())))
 				.forEach(elem -> classBuilder.withSuperclass(elem.innerClass().asSymbol())));
 		
-		Writer.write(newBytes);
+		Writer.write(pathsCtx.getOutputClassFilePath(), newBytes);
 	}
 	
 	@Override
-	public void modifySection(ModelMapper<Map<String, Integer>> mappedChanges, CacheModel currentCacheModel) {
+	public void modifySection(ModelMapper<Map<String, Integer>> mappedChanges, CacheModel cacheModel) {
 		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying binary entries...");
 		mappedChanges.modelMap.entrySet().forEach(entry -> {
 			Supplier<Stream<String>> keys = () -> entry.getValue().keySet().stream();
 			ByteBuffer bb = ByteBuffer.allocate(Short.MAX_VALUE);
 			
 			switch(entry.getKey()) {
-				case INSERT: 
+				case INSERT:
+					
 					break;
 					
 				case DELETE:
-					Arrays.stream(keys.get()
-						.map(key -> {
+					keys.get()
+						.forEach(key -> {
 							ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replace("_", ".").contains(key));
-							return cf.transform(cm, ct);
-						}).toArray(Byte[]::new))
-						.map(Byte::byteValue)
-						.forEach(bb::put);
+							bb.put(cf.transform(cm, ct));
+						});
 					break;
 			}
 			
-			Writer.write(bb.array());
+			Writer.write(pathsCtx.getOutputClassFilePath(), bb.array());
 		});
 	}
 	
@@ -103,5 +103,24 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 	
 	public void eraseClassSection(CacheModel currentCacheModel) {
 		eraseClassSection(List.of(currentCacheModel));
+	}
+	
+	private RuntimeVisibleAnnotationsAttribute buildAnnotation(String key, Integer hash) {
+		String hashFieldName = null;
+		String keyFieldName = null;
+		
+		try {
+			hashFieldName = GeneratedInnerField.class.getDeclaredField("hash").getName();
+			keyFieldName = GeneratedInnerField.class.getDeclaredField("key").getName();
+		} catch (NoSuchFieldException e) {
+			Utils.logException(e);
+		}
+		
+		return RuntimeVisibleAnnotationsAttribute.of(
+				Annotation.of(GeneratedInnerField.class.describeConstable().orElseThrow(), List.of(
+						AnnotationElement.ofInt(hashFieldName, hash),
+							AnnotationElement.ofString(keyFieldName, key)
+						))
+				);
 	}
 }

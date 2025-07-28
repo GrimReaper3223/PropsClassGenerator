@@ -94,7 +94,7 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 
 	private void invokeWriterCondition(StringBuilder sb) {
 		if(!sb.equals(sbSupplier.get())) {
-			Writer.write(sb.toString());
+			Writer.write(pathsCtx.getExistingPJavaGeneratedSourcePath(), sb.toString());
 		}
 	}
 	

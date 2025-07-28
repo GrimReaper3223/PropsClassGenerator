@@ -57,12 +57,12 @@ public final class FileVisitorImpls extends SupportProvider {
                         CacheManager.computeElementToCacheModelMap(file, new Gson().fromJson(br, CacheModel.class));
                     }
                     catch (IOException e) {
-                    	logException(e);
+                    	Utils.logException(e);
                     }
                 }).get();
             }
             catch (InterruptedException | ExecutionException e) {
-            	logException(e);
+            	Utils.logException(e);
             }
             
             return FileVisitResult.CONTINUE;
@@ -71,15 +71,6 @@ public final class FileVisitorImpls extends SupportProvider {
         @Override
         public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
             return FileVisitResult.TERMINATE;
-        }
-        
-        private static void logException(Exception e) {
-        	if(e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
-        		LOGGER.error("Thread is interrupted.", e);
-            	Thread.currentThread().interrupt();
-            } else {
-            	LOGGER.error(e);
-            }
         }
     }
 

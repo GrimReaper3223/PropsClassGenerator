@@ -2,14 +2,22 @@ package com.dsl.test.classgen.classfile;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.classfile.Annotation;
+import java.lang.classfile.AnnotationElement;
+import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.lang.classfile.FieldModel;
+import java.lang.classfile.attribute.ConstantValueAttribute;
 import java.lang.classfile.attribute.InnerClassInfo;
 import java.lang.classfile.attribute.InnerClassesAttribute;
+import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
+import java.lang.constant.ConstantDescs;
+import java.lang.reflect.AccessFlag;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -18,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.test.classgen.HarnessTestTools;
 
 @SuppressWarnings("preview")
@@ -59,13 +68,14 @@ class TestClassFileOperations implements HarnessTestTools {
 								}
 								return model.fields().stream();
 						 })
+						 .flatMap(f -> f.findAttribute(Attributes.runtimeVisibleAnnotations()).get().annotations().stream())
 						 .forEach(LOGGER::debug);
 				return null;
 		  }));
 	}
-	
+
 	@Test
-//	@Disabled("Testes indicaram sucesso na eliminacao de um campo e sua anotacao no bytecode da classe P$FxButton.class. Esta funcionalidade esta pronta para ser implementada.")
+	@Disabled("Testes indicaram sucesso na eliminacao de um campo e sua anotacao no bytecode da classe P$FxButton.class. Esta funcionalidade esta pronta para ser implementada.")
 	void testEraseInnerFieldFromClassFile() throws IOException {
 		String fullClassName = "target/test-classes/com/dsl/test/classgen/generated/P$FxButton.class";
 		ClassFile cf = ClassFile.of();
@@ -80,11 +90,32 @@ class TestClassFileOperations implements HarnessTestTools {
 		}
 	}
 	
+	@Test
+	@Disabled("Pronto para implementacao")
 	void testInsertInnerFieldInClassFile() throws IOException {
 		String fullClassName = "target/test-classes/com/dsl/test/classgen/generated/P$FxButton.class";
 		ClassFile cf = ClassFile.of();
 		ClassModel cm = cf.parse(Path.of(fullClassName));
 		
+		byte[] newBytes = cf.build(cm.thisClass().asSymbol(), classBuilder -> {
+			cm.elementStream()
+			  .forEach(classBuilder::accept);
+			
+			classBuilder.withField("TEST_FIELD", ConstantDescs.CD_String, 
+				fieldBuilder -> 
+							fieldBuilder.with(buildAnnotation())
+										.with(ConstantValueAttribute.of("test value"))
+										.withFlags(AccessFlag.PUBLIC, AccessFlag.STATIC, AccessFlag.FINAL));
+		});
 		
+		Files.write(Path.of(System.getProperty("user.dir"), "test.class"), newBytes);
+	}
+	
+	RuntimeVisibleAnnotationsAttribute buildAnnotation() {
+		return RuntimeVisibleAnnotationsAttribute.of(
+				Annotation.of(GeneratedInnerField.class.describeConstable().get(), List.of(
+							AnnotationElement.ofString("key", "test.field"),
+							AnnotationElement.ofInt("hash", 1234567890)
+						)));
 	}
 }

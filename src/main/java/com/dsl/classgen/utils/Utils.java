@@ -1,9 +1,14 @@
 package com.dsl.classgen.utils;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
@@ -12,12 +17,16 @@ import com.dsl.classgen.io.file_manager.Reader;
 
 public final class Utils {
 	
+	private static final Logger LOGGER = LogManager.getLogger(Utils.class);
+	
 	// executor que inicia uma thread virtual por task
     private static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     
     private static GeneralContext generalCtx = GeneralContext.getInstance();
     private static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
 
+    public static final Predicate<Path> fileFilter = path -> Files.isRegularFile(path) && Utils.isPropertiesFile(path);
+    
     private Utils() {}
     
     public static ExecutorService getExecutor() {
@@ -73,6 +82,15 @@ public final class Utils {
 
     public static <T> Path normalizePath(T path, String toReplace, String replaceWith) {
         return Path.of(path.toString().replaceAll("[" + toReplace + "]", replaceWith));
+    }
+    
+    public static void logException(Exception e) {
+    	if(e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
+    		LOGGER.error("Thread is interrupted.", e);
+        	Thread.currentThread().interrupt();
+        } else {
+        	LOGGER.catching(e);
+        }
     }
 }
 

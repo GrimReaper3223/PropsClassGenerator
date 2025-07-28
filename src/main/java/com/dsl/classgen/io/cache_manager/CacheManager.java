@@ -69,7 +69,7 @@ public final class CacheManager extends SupportProvider {
 		try {
 			Files.delete(jsonKey);
 		} catch (IOException e) {
-			LOGGER.catching(e);
+			Utils.logException(e);
 		}
 		return cacheModelMap.remove(jsonKey);
 	}
@@ -85,7 +85,7 @@ public final class CacheManager extends SupportProvider {
 				CacheModel cm = new CacheModel(propsPath, generalCtx.getProps());
 				isInvalidCacheFile = !cm.equals(new Gson().fromJson(br, CacheModel.class));
 			} catch (IOException e) {
-				LOGGER.catching(e);
+				Utils.logException(e);
 			}
 		}
 		return isInvalidCacheFile;
@@ -117,7 +117,7 @@ public final class CacheManager extends SupportProvider {
             }
         }
         catch (IOException e) {
-        	LOGGER.catching(e);
+        	Utils.logException(e);
         }
     }
 	
@@ -135,7 +135,7 @@ public final class CacheManager extends SupportProvider {
 				case CREATE -> createCache(operationInitMode);
 			}
 		} catch (IOException e) {
-			LOGGER.catching(e);
+			Utils.logException(e);
 		}
 	}
 

@@ -8,6 +8,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import com.dsl.classgen.utils.Utils;
+
 public final class GeneratedStructureChecker extends SupportProvider {
 
 	private Function<String, Predicate<Path>> predicateFactory = str -> p -> p.getFileName().toString().equals(str);
@@ -40,7 +42,7 @@ public final class GeneratedStructureChecker extends SupportProvider {
         	}
         }
         catch (IOException e) {
-            LOGGER.fatal(e);
+        	Utils.logException(e);
         }
     }
     
@@ -54,7 +56,7 @@ public final class GeneratedStructureChecker extends SupportProvider {
         	}
     	}
     	catch (IOException e) {
-            LOGGER.catching(e);
+    		Utils.logException(e);
         }
     }
 
@@ -66,7 +68,7 @@ public final class GeneratedStructureChecker extends SupportProvider {
             flagsCtx.setIsExistsPJavaSource(foundedPath != null);
         }
         catch (IOException e) {
-            LOGGER.fatal(e);
+        	Utils.logException(e);
         }
     }
 }

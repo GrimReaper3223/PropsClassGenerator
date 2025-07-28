@@ -35,10 +35,9 @@ public final class FileEventsProcessor extends SupportProvider {
 		Stream<Path> pathStream = null;
 		try {
 			pathStream = Files.walk(path)
-							  .filter(Files::isRegularFile)
-							  .filter(Utils::isPropertiesFile);
+							  .filter(Utils.fileFilter::test);
 		} catch (IOException e) {
-			LOGGER.error(e);
+			Utils.logException(e);
 		}
 		
 		return pathStream;
@@ -117,6 +116,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	private static void modifySection(Path path) {
 		CacheModel currentCacheModel = CacheManager.getElementFromCacheModelMap(path);
 		if(currentCacheModel == null) {
+			LOGGER.error("Model not found in cache.");
 			return;
 		}
 		
@@ -154,7 +154,7 @@ public final class FileEventsProcessor extends SupportProvider {
 				// performa atualizacoes de alta precisao em membros da classe interna estatica
 				ModelMapper<Map<String, Integer>> mappedChanges = new ModelMapper<>(currentCacheModel.hashTableMap, newCacheModel.hashTableMap);
 				syncSource.modifySection(mappedChanges, currentCacheModel);
-				syncBin.modifySection(mappedChanges, currentCacheModel);
+				syncBin.modifySection(mappedChanges, newCacheModel);
 			}
 		}
 	}

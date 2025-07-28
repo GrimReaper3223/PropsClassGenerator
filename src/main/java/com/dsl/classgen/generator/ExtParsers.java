@@ -18,9 +18,8 @@ public non-sealed interface ExtParsers extends Parsers {
 		return null;
 	}
 	
-	@Override
-	default String parseFieldName(String data) {
-		return null;
+	static String parseFieldNameHelper(String data) {
+		return new ExtParsers() {}.parseFieldName(data);
 	}
 	
 	@Override

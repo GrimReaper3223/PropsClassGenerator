@@ -1,5 +1,6 @@
 package com.dsl.classgen.io.file_manager;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -23,7 +24,7 @@ public final class Reader extends SupportProvider {
     private Reader() {}
 
     public static void read(Path inputPath) {
-        if (Files.isRegularFile(inputPath)) {
+        if (Files.isRegularFile(inputPath) && Utils.isPropertiesFile(inputPath)) {
         	flagsCtx.setIsSingleFile(true);
         	pathsCtx.queueFile(inputPath);
             
@@ -31,16 +32,18 @@ public final class Reader extends SupportProvider {
         	flagsCtx.setIsSingleFile(false);
             processDirectoryFileList(inputPath);
         }
+        
+        LOGGER.error("It is not a properties file.");
     }
 
     public static StringBuilder readSource(Path sourceFile) {
     	StringBuilder sourceBuffer = new StringBuilder();
     	
-    	try(Stream<String> lines = Files.lines(sourceFile)) {
-    		lines.forEach(line -> sourceBuffer.append(line + '\n'));
+    	try(BufferedReader reader = Files.newBufferedReader(sourceFile)) {
+    		sourceBuffer.append(reader.readLine() + '\n');
     	} 
     	catch (IOException e) {
-    		logException(e);
+    		Utils.logException(e);
 		}
     	
     	return sourceBuffer;
@@ -61,8 +64,8 @@ public final class Reader extends SupportProvider {
 			pathsCtx.setPropertiesDataType(readJavaType(inputPath));
             pathsCtx.setPropertiesFileName(inputPath.getFileName());
         }
-        catch (InterruptedException | ExecutionException | IOException e) {
-        	logException(e);
+        catch (IOException | InterruptedException | ExecutionException e) {
+        	Utils.logException(e);
         }
     }
 
@@ -74,7 +77,7 @@ public final class Reader extends SupportProvider {
             generatedClass = Class.forName(fullPackageClass , true, classLoader);
         }
         catch (ClassNotFoundException | MalformedURLException e) {
-        	logException(e);
+        	Utils.logException(e);
         }
         return generatedClass;
     }
@@ -85,34 +88,25 @@ public final class Reader extends SupportProvider {
                 Files.walkFileTree(inputDirPath, new FileVisitorImpls.ReaderFileVisitor());
             } else {
                 try (Stream<Path> pathStream = Files.list(inputDirPath)){
-                    pathStream.filter(Files::isRegularFile)
-	                    	  .filter(Utils::isPropertiesFile)
+                    pathStream.filter(Utils.fileFilter::test)
 	                    	  .forEach(pathsCtx::queueFile);
                 }
                 pathsCtx.queueDir(inputDirPath);
             }
         }
         catch (IOException e) {
-        	logException(e);
+        	Utils.logException(e);
         }
     }
 
     private static String readJavaType(Path path) throws InterruptedException, ExecutionException {
-    	return Utils.getExecutor().submit(() -> {
-	        try (Stream<String> lines = Files.lines(path, StandardCharsets.ISO_8859_1);){
-	            return lines.filter(input -> input.contains("$javatype:"))
-	            				.findFirst().map(input -> input.substring(input.indexOf("@") + 1))
-	            				.orElseThrow(GeneralContext::throwIOException);
-	        }
-    	}).get();
-    }
-    
-    private static void logException(Exception e) {
-    	if(e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
-    		LOGGER.error("Thread is interrupted.", e);
-        	Thread.currentThread().interrupt();
-        } else {
-        	LOGGER.fatal(e);
-        }
+    	return Utils.getExecutor().submit(
+    			() -> Files.readAllLines(path, StandardCharsets.ISO_8859_1)
+        				.stream()
+	        			.filter(input -> input.contains("$javatype:"))
+        				.findFirst()
+        				.map(input -> input.substring(input.indexOf("@") + 1))
+        				.orElseThrow(GeneralContext::throwIOException)
+        ).get();
     }
 }

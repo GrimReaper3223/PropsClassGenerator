@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import com.dsl.classgen.io.SupportProvider;
+import com.dsl.classgen.utils.Utils;
 
 public non-sealed class CacheModel extends SupportProvider implements Serializable {
 	
@@ -19,7 +20,7 @@ public non-sealed class CacheModel extends SupportProvider implements Serializab
     
     private transient Properties props;
     
-    public String filePath;						// String do caminho do arquivo de propriedades
+    public String filePath;								// String do caminho do arquivo de propriedades
     public int fileHash;								// hash do arquivo de propriedades
     public Map<String, Integer> hashTableMap;			// pares chave-valor do arquivo de propriedades deste objeto
 
@@ -66,10 +67,13 @@ public non-sealed class CacheModel extends SupportProvider implements Serializab
             fileSize = attrs.size();
         }
         catch (IOException e) {
-        	LOGGER.error(e);
+        	Utils.logException(e);
         }
         
         return Objects.hash(creationTime.toMillis(), lastModifiedTime.toMillis(), fileSize);
     }
+    
+    public Properties getProps() {
+    	return props;
+    }
 }
-
