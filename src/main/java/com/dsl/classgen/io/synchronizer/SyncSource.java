@@ -75,7 +75,7 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 					
 				case DELETE:
 					streamEntry.get()
-							   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.filePath, currentCacheModel.fileHash, Objects.hash(element.propKey(), currentCacheModel.javaType.cast(element.propValue()))))
+							   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, Objects.hash(element.propKey(), currentCacheModel.javaType.cast(element.propValue()))))
 							   .forEach(lookupPattern -> deleteSourceContentUsingDelimiters(sb, lookupPattern, 3));
 					break;
 			}

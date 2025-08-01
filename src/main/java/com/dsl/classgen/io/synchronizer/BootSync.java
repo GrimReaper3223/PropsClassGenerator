@@ -28,7 +28,6 @@ public final class BootSync extends SupportProvider {
 			List<CacheModel> outdatedCache = filterOutOfSyncCache();
 			
 			if(!outdatedCache.isEmpty()) {
-				outdatedCache.forEach(CacheManager::removeElementFromCacheModelMap);
 				LOGGER.warn("Changes detected. Synchronizing entities...");
 				syncSource.eraseClassSection(outdatedCache);
 				syncBin.eraseClassSection(outdatedCache);
@@ -43,7 +42,7 @@ public final class BootSync extends SupportProvider {
 				.stream()
 				.map(entry -> Path.of(entry.getValue().filePath))
 				.filter(elem -> !OutterClassModel.checkPathInClassModelMap(elem))
-				.map(CacheManager::getModelFromCacheMap)
+				.map(CacheManager::removeElementFromCacheModelMap)
 				.filter(Objects::nonNull)
 				.toList();
 	}
@@ -56,6 +55,7 @@ public final class BootSync extends SupportProvider {
 						.forEach(path -> {
 							WatchEvent.Kind<Path> event = Files.exists(Utils.resolveJsonFilePath(path)) ? StandardWatchEventKinds.ENTRY_MODIFY : StandardWatchEventKinds.ENTRY_CREATE;;
 							FileEventsProcessor.caller(event, path);
+							CacheManager.processCache();
 						});
 		}
 	}

@@ -5,13 +5,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
@@ -23,7 +23,7 @@ import com.google.gson.Gson;
 
 public final class CacheManager extends SupportProvider {
 
-	private static Map<Path, CacheModel> cacheModelMap = new HashMap<>();  					// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache 
+	private static ConcurrentMap<Path, CacheModel> cacheModelMap = new ConcurrentHashMap<>();  					// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache 
 	private static BlockingQueue<Path> cacheFilesToWrite = new ArrayBlockingQueue<>(1024);	// deve armazenar arquivos para processamento de cache. Quando novos arquivos forem fornecidos para a lista de arquivos ou individualmente, uma entrada correspondente deve ser criada aqui
 	private static String operationInitMode;
 	

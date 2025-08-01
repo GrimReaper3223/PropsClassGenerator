@@ -1,6 +1,5 @@
 package com.dsl.classgen.io.file_manager;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -39,8 +38,8 @@ public final class Reader extends SupportProvider {
     public static <T> StringBuilder readSource(T sourceFile) {
     	StringBuilder sourceBuffer = new StringBuilder();
     	
-    	try(BufferedReader reader = Files.newBufferedReader(Path.of(sourceFile.toString()))) {
-    		sourceBuffer.append(reader.readLine() + '\n');
+    	try(Stream<String> lines = Files.lines(Path.of(sourceFile.toString()))) {
+    		lines.forEach(line -> sourceBuffer.append(line + '\n'));
     	} 
     	catch (IOException e) {
     		Utils.logException(e);
