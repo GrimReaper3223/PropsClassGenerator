@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutionException;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.models.CacheModel;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
@@ -53,7 +53,7 @@ public final class FileVisitorImpls extends SupportProvider {
             try {
                 Utils.getExecutor().submit(() -> {
                     try (BufferedReader br = Files.newBufferedReader(file)){
-                    	LOGGER.log(Levels.CACHE.getLevel(), "Loading JSON file: {}", file);
+                    	LOGGER.log(LogLevels.CACHE.getLevel(), "Loading JSON file: {}", file);
                         CacheManager.computeCacheModelToMap(file, new Gson().fromJson(br, CacheModel.class));
                     }
                     catch (IOException e) {

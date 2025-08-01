@@ -12,7 +12,7 @@ import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 
 public final class BootSync extends SupportProvider {
@@ -23,11 +23,12 @@ public final class BootSync extends SupportProvider {
 			SyncBin syncBin = new SyncBin();
 			
 			LOGGER.warn("There is already a generated structure.");
-			LOGGER.log(Levels.NOTICE.getLevel(), "Checking files...");
+			LOGGER.log(LogLevels.NOTICE.getLevel(), "Checking files...");
 			
 			List<CacheModel> outdatedCache = filterOutOfSyncCache();
 			
 			if(!outdatedCache.isEmpty()) {
+				outdatedCache.forEach(CacheManager::removeElementFromCacheModelMap);
 				LOGGER.warn("Changes detected. Synchronizing entities...");
 				syncSource.eraseClassSection(outdatedCache);
 				syncBin.eraseClassSection(outdatedCache);
@@ -42,7 +43,7 @@ public final class BootSync extends SupportProvider {
 				.stream()
 				.map(entry -> Path.of(entry.getValue().filePath))
 				.filter(elem -> !OutterClassModel.checkPathInClassModelMap(elem))
-				.map(CacheManager::removeElementFromCacheModelMap)
+				.map(CacheManager::getModelFromCacheMap)
 				.filter(Objects::nonNull)
 				.toList();
 	}

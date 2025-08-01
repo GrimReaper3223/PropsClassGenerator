@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 
 public final class Reader extends SupportProvider {
@@ -34,8 +34,6 @@ public final class Reader extends SupportProvider {
         	flagsCtx.setIsSingleFile(false);
             processDirectoryFileList(inputPath);
         }
-        
-        LOGGER.error("It is not a properties file: {}.", inputPath);
     }
 
     public static <T> StringBuilder readSource(T sourceFile) {
@@ -57,7 +55,7 @@ public final class Reader extends SupportProvider {
     	
         try (InputStream in = Files.newInputStream(inputPath)) {
             props.load(in);
-            LOGGER.log(Levels.SUCCESS.getLevel(), "Properties file loaded from path: {}", inputPath);
+            LOGGER.log(LogLevels.SUCCESS.getLevel(), "Properties file loaded from path: {}", inputPath);
             
         }  catch (IOException e) {
         	Utils.logException(e);

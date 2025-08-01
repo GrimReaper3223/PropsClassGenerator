@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 import com.dsl.classgen.annotation.GeneratedOutterClass;
 import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 
 public final class OutterClassGenerator extends SupportProvider {
 	
@@ -13,7 +13,7 @@ public final class OutterClassGenerator extends SupportProvider {
 	private String outterClassName = pathsCtx.getOutterClassName();
 	
     public void generateOutterClass() {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Generating classes...\n");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating classes...\n");
     	formatGenerationOutput("Outter Class", outterClassName, "\n");
     	
         pathsCtx.setGeneratedClass(String.format("""

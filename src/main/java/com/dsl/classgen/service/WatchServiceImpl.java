@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 
 public class WatchServiceImpl {
@@ -81,18 +81,18 @@ public class WatchServiceImpl {
             WatchKey key = inputPath.register(watcher, EVENT_KIND_ARR);
             keys.putAll(Map.ofEntries(WatchServiceImpl.verifyKey(key, inputPath)));
         }
-        LOGGER.log(Levels.NOTICE.getLevel(), "Done");
+        LOGGER.log(LogLevels.NOTICE.getLevel(), "Done");
     }
     
     private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path) {
-    	LOGGER.log(Levels.NOTICE.getLevel(), "Checking {}...", path);
+    	LOGGER.log(LogLevels.NOTICE.getLevel(), "Checking {}...", path);
         Path mappedPath = keys.get(key);
         
         if (mappedPath == null) {
-        	LOGGER.log(Levels.NOTICE.getLevel(), "Registering: {}...", path);
+        	LOGGER.log(LogLevels.NOTICE.getLevel(), "Registering: {}...", path);
             
         } else if (!path.equals(mappedPath)) {
-        	LOGGER.log(Levels.NOTICE.getLevel(), "Updating: {} -> {}...", mappedPath, path);
+        	LOGGER.log(LogLevels.NOTICE.getLevel(), "Updating: {} -> {}...", mappedPath, path);
         }
         
         return Map.entry(key, path);
@@ -152,7 +152,7 @@ public class WatchServiceImpl {
 		  	 })
 		  	 .filter(entry -> Utils.isPropertiesFile(entry.getKey()) || Files.isDirectory(entry.getKey()))
 		  	 .forEach(entry -> {
-	  		 	LOGGER.log(Levels.NOTICE.getLevel(), "{}: {}", entry.getValue().name(), entry.getKey());
+	  		 	LOGGER.log(LogLevels.NOTICE.getLevel(), "{}: {}", entry.getValue().name(), entry.getKey());
 	  		 	
 	  		 	try {
 					pathsCtx.queueChangedFileEntry(entry);

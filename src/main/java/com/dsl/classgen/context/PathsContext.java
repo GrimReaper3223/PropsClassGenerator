@@ -74,7 +74,6 @@ public class PathsContext {
     }
 	
 	public void queueFile(Path filePath) {
-		checkFileInCache(filePath);
     	fileList.add(filePath);
     	LOGGER.log(SUCCESS,"Properties file added to file list: {}", filePath);
     }
@@ -85,7 +84,7 @@ public class PathsContext {
     	LOGGER.log(SUCCESS, "Directory added to dir list: {}", dirPath);
     }
     
-    private void checkFileInCache(Path filePath) {
+    public void checkFileInCache(Path filePath) {
     	var flagsCtx = GeneralContext.getInstance().getFlagsContextInstance();	
 		if(flagsCtx.getIsDirStructureAlreadyGenerated() && flagsCtx.getIsExistsPJavaSource()) {
 			if(CacheManager.isInvalidCacheFile(filePath)) {

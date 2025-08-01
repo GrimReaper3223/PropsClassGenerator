@@ -11,7 +11,7 @@ import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
@@ -29,7 +29,7 @@ public final class Writer extends SupportProvider {
         try {
             Files.createDirectories(outputPackagePath);
             Writer.write(outputFilePath, pathsCtx.getGeneratedClass());
-            LOGGER.log(Levels.SUCCESS.getLevel(), "***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
+            LOGGER.log(LogLevels.SUCCESS.getLevel(), "***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
         }
         catch (IOException e) {
             Utils.logException(e);

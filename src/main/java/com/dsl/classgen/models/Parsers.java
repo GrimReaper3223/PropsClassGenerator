@@ -1,13 +1,12 @@
 package com.dsl.classgen.models;
 
 import java.lang.annotation.Annotation;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import com.dsl.classgen.utils.Utils;
 
 public interface Parsers{
 
@@ -27,9 +26,10 @@ public interface Parsers{
 	
 	default <T> String parseClassName(T propertiesFilePath) {
 		final String regex = "[\\s\\Q`!@#$%^&*()_+{}:\"<>?|\\~/.;',[]=-\\E]+";
-		String propertyFileName = Utils.formatFileName(propertiesFilePath).toString();
+		String propertyFileName = Path.of(propertiesFilePath.toString()).getFileName().toString();
+		String formattedPropertyFileName = propertyFileName.substring(0, propertyFileName.lastIndexOf("."));
 		
-		return Arrays.stream(propertyFileName.split(regex))
+		return Arrays.stream(formattedPropertyFileName.split(regex))
 					 .map(token -> token.replaceFirst(Character.toString(token.charAt(0)),
 							Character.toString(Character.toUpperCase(token.charAt(0)))))
 					 .collect(Collectors.joining());

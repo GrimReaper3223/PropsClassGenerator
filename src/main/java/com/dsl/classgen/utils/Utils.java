@@ -51,23 +51,16 @@ public final class Utils {
     
     public static <T> Path resolveJsonFilePath(T path) {
     	Path filePath = Path.of(path.toString());
-    	if (filePath.getFileName().toString().contains("-cache.json")) {
+    	String fileName = filePath.getFileName().toString();
+    	String jsonFileNamePattern = "%s-cache.json";
+    	
+    	if (fileName.contains("-cache.json")) {
     		return filePath;
     	}
-    	String jsonFileNamePattern = "%s-cache.json";
-    	Path jsonFileName = Path.of(String.format(jsonFileNamePattern, filePath.getFileName().toString().contains(".") ? formatFileName(filePath) : filePath));
+    	Path jsonFileName = Path.of(String.format(jsonFileNamePattern, fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf(".")) : filePath));
         return pathsCtx.getCacheDir().resolve(jsonFileName);
     }
 
-    public static <T> Path formatFileName(T filePath) {
-        String fileName = Path.of(filePath.toString()).getFileName().toString();
-        return Path.of(fileName.substring(0, fileName.lastIndexOf(".")));
-    }
-    
-    public static String formatSourcePattern(PatternType type, String path) {
-    	return String.format("// %s HINT ~>> %s@// %1$s HINT <<~ %2$s", type.name(), path);
-    }
-    
     public static <T> Path convertSourcePathToClassPath(T sourcePath) throws ClassNotFoundException {
     	String classFileName = new Parsers() {}.parseClassName(Path.of(sourcePath.toString()).getFileName());
 		return Arrays.stream(Reader.loadGeneratedBinClass().getClasses())

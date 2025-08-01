@@ -38,8 +38,8 @@ public final class Generator {
 		pathsCtx.resolvePaths(pathsCtx.getPackageClass());
 		
 		Reader.read(inputPath);
-		new ChunkLoader().loadChunks();
 		CacheManager.processCache();
+		new ChunkLoader().loadChunks();
 		new BootSync().resync();
 		
 		LOGGER.info("""

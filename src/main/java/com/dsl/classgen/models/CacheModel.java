@@ -3,6 +3,7 @@ package com.dsl.classgen.models;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.utils.Utils;
@@ -17,15 +18,7 @@ public class CacheModel implements Serializable {
 	public String stringJavaType;
 	public Map<Integer, CachePropertiesData> entries;
 	
-	public CacheModel() {
-		if((javaType = Class.forPrimitiveName(stringJavaType)) == null) {
-			try {
-				javaType = Class.forName(stringJavaType);
-			} catch (ClassNotFoundException e) {
-				Utils.logException(e);
-			}
-		}
-	}
+	public CacheModel() {}
 	
 	public CacheModel(InnerStaticClassModel model) {
 		entries = new HashMap<>();
@@ -41,5 +34,21 @@ public class CacheModel implements Serializable {
 	 						new CachePropertiesData(annotation.key(), 
 													instance.fieldValue()));
 			 });
+	}
+	
+	public void parseJavaType() {
+		if((javaType = Class.forPrimitiveName(stringJavaType)) == null) {
+			try {
+				javaType = Class.forName(stringJavaType);
+			} catch (ClassNotFoundException e) {
+				Utils.logException(e);
+			}
+		}
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		CacheModel cm = CacheModel.class.cast(Objects.requireNonNull(obj));
+    	return cm.fileHash == this.fileHash && cm.entries.equals(this.entries);
 	}
 }

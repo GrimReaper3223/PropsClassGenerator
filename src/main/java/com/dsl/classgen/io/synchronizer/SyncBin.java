@@ -1,14 +1,11 @@
 package com.dsl.classgen.io.synchronizer;
 
 import java.io.IOException;
-import java.lang.classfile.Annotation;
-import java.lang.classfile.AnnotationElement;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.lang.classfile.FieldModel;
 import java.lang.classfile.attribute.InnerClassesAttribute;
-import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
@@ -16,12 +13,11 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 
 public final class SyncBin extends SupportProvider implements SyncOperations {
@@ -39,13 +35,13 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 
 	@Override
 	public void insertClassSection(List<Path> pathList) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Generating new compiled data entries...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new compiled data entries...");
 		// document why this method is empty
 	}
 
 	@Override
 	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Erasing compiled class section...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing compiled class section...");
 		List<Path> fileNameList = currentCacheModelList.stream()
 													   .<Path>mapMulti((model, consumer) -> {
 														   try {
@@ -70,7 +66,7 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 	
 	@Override
 	public void modifySection(ModelMapper<Map<Integer, CachePropertiesData>> mappedChanges, CacheModel cacheModel) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying binary entries...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Modifying binary entries...");
 		mappedChanges.modelMap.entrySet().forEach(entry -> {
 			Supplier<Stream<CachePropertiesData>> keys = () -> entry.getValue().values().stream();
 			ByteBuffer bb = ByteBuffer.allocate(Short.MAX_VALUE);
@@ -105,22 +101,22 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 		eraseClassSection(List.of(currentCacheModel));
 	}
 	
-	private RuntimeVisibleAnnotationsAttribute buildAnnotation(String key, Integer hash) {
-		String hashFieldName = null;
-		String keyFieldName = null;
-		
-		try {
-			hashFieldName = GeneratedInnerField.class.getDeclaredField("hash").getName();
-			keyFieldName = GeneratedInnerField.class.getDeclaredField("key").getName();
-		} catch (NoSuchFieldException e) {
-			Utils.logException(e);
-		}
-		
-		return RuntimeVisibleAnnotationsAttribute.of(
-				Annotation.of(GeneratedInnerField.class.describeConstable().orElseThrow(), List.of(
-						AnnotationElement.ofInt(hashFieldName, hash),
-							AnnotationElement.ofString(keyFieldName, key)
-						))
-				);
-	}
+//	private RuntimeVisibleAnnotationsAttribute buildAnnotation(String key, Integer hash) {
+//		String hashFieldName = null;
+//		String keyFieldName = null;
+//		
+//		try {
+//			hashFieldName = GeneratedInnerField.class.getDeclaredField("hash").getName();
+//			keyFieldName = GeneratedInnerField.class.getDeclaredField("key").getName();
+//		} catch (NoSuchFieldException e) {
+//			Utils.logException(e);
+//		}
+//		
+//		return RuntimeVisibleAnnotationsAttribute.of(
+//				Annotation.of(GeneratedInnerField.class.describeConstable().orElseThrow(), List.of(
+//						AnnotationElement.ofInt(hashFieldName, hash),
+//							AnnotationElement.ofString(keyFieldName, key)
+//						))
+//				);
+//	}
 }

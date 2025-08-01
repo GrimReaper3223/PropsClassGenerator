@@ -1,5 +1,7 @@
 package com.dsl.classgen.models;
 
+import org.apache.logging.log4j.LogManager;
+
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
@@ -11,9 +13,11 @@ public class ChunkLoader {
 	private final PathsContext pathsCtx = generalCtx.getPathsContextInstance();
 	
 	public void loadChunks() {
+		LogManager.getLogger(ChunkLoader.class).info("Loading model hierarchy...");
 		pathsCtx.getFileList()
-				.forEach(path -> OutterClassModel.computeClassModelToMap(InnerStaticClassModel.initInstance(path)));
-		
-		pathsCtx.getFileList().clear();
+				.forEach(path -> {
+					OutterClassModel.computeClassModelToMap(InnerStaticClassModel.initInstance(path));
+					pathsCtx.checkFileInCache(path);
+				});
 	}
 }

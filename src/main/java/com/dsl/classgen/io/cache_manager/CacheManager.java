@@ -17,7 +17,7 @@ import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.models.CacheModel;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
@@ -77,7 +77,6 @@ public final class CacheManager extends SupportProvider {
 	
 	// retorna true se o cache ja existe e se e identico ao arquivo atualmente lido
 	// false se uma das condicionais falharem
-	// TODO: atualizar invalidacao de cache
 	public static <T> boolean isInvalidCacheFile(T propsPath) {
 		Path jsonFilePath = Utils.resolveJsonFilePath(propsPath);
 		boolean isInvalidCacheFile = true;
@@ -111,11 +110,12 @@ public final class CacheManager extends SupportProvider {
                 loadCache(operationInitMode);
                 
             } else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
-            	LOGGER.log(Levels.CACHE.getLevel(), "Invalid cache detected. Revalidating cache...");
+            	LOGGER.log(LogLevels.CACHE.getLevel(), "Invalid cache detected. Revalidating cache...");
                 eraseCache();
                 createCache(null);
                 
             } else if(!isCacheDirValid) {
+            	pathsCtx.getFileList().forEach(CacheManager::queueNewCacheFile);
                 createCache(operationInitMode);
             }
         }
@@ -143,7 +143,7 @@ public final class CacheManager extends SupportProvider {
 	}
 
 	private static void loadCache(String appendMessage) throws IOException {
-		LOGGER.log(Levels.CACHE.getLevel(), "Loading cache... ({})", appendMessage);
+		LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache... ({})", appendMessage);
 		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheLoaderFileVisitor());
 	}
 
@@ -153,14 +153,14 @@ public final class CacheManager extends SupportProvider {
 
 	private static void createCache(String appendMessage) throws IOException {
 		if(appendMessage != null) {
-			LOGGER.log(Levels.CACHE.getLevel(), "Cache does not exist. Generating new cache... ({})", appendMessage);
+			LOGGER.log(LogLevels.CACHE.getLevel(), "Cache does not exist. Generating new cache... ({})", appendMessage);
 		}
 		Files.createDirectories(pathsCtx.getCacheDir());
 		Writer.writeJson();
 	}
 
 	private static void updateCache(String appendMessage) {
-		LOGGER.log(Levels.CACHE.getLevel(), "Updating cache... ({})", appendMessage);
+		LOGGER.log(LogLevels.CACHE.getLevel(), "Updating cache... ({})", appendMessage);
 		Writer.writeJson();
 	}
 }

@@ -16,7 +16,7 @@ import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
-import com.dsl.classgen.utils.Levels;
+import com.dsl.classgen.utils.LogLevels;
 
 public final class SyncSource extends SupportProvider implements SyncOperations {
 
@@ -24,7 +24,7 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 	
 	@Override
 	public void insertClassSection(List<Path> pathList) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Generating new data entries...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new data entries...");
 		StringBuilder sb = sbSupplier.get();
 		String pattern = "// CLASS-FILE-START";
 		int propsFileStartIndex = sb.indexOf(pattern) + pattern.length() + 1;
@@ -43,7 +43,7 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 	
 	@Override
 	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Erasing class section...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing class section...");
 		List<String> lookupPatternList = AnnotationProcessor.processClassAnnotations(currentCacheModelList);
 		StringBuilder sb = sbSupplier.get();
 		
@@ -53,7 +53,7 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 	
 	@Override
 	public void modifySection(ModelMapper<Map<Integer, CachePropertiesData>> mappedChanges, CacheModel currentCacheModel) {
-		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying source entries...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Modifying source entries...");
 		
 		StringBuilder sb = sbSupplier.get();
 		
@@ -75,7 +75,7 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 					
 				case DELETE:
 					streamEntry.get()
-							   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, Objects.hash(element.propKey(), currentCacheModel.javaType.cast(element.propValue()))))
+							   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.filePath, currentCacheModel.fileHash, Objects.hash(element.propKey(), currentCacheModel.javaType.cast(element.propValue()))))
 							   .forEach(lookupPattern -> deleteSourceContentUsingDelimiters(sb, lookupPattern, 3));
 					break;
 			}

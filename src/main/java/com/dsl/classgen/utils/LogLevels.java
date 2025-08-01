@@ -2,7 +2,7 @@ package com.dsl.classgen.utils;
 
 import org.apache.logging.log4j.Level;
 
-public enum Levels {
+public enum LogLevels {
 
 	CACHE("CACHE"),
 	NOTICE("NOTICE"),
@@ -10,7 +10,7 @@ public enum Levels {
 	
 	private final Level level;
 	
-	private Levels(String level) {
+	private LogLevels(String level) {
 		this.level = Level.getLevel(level);
 	}
 	
