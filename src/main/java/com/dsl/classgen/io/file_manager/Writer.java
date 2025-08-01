@@ -8,7 +8,9 @@ import java.util.concurrent.ExecutionException;
 
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.cache_manager.CacheModel;
+import com.dsl.classgen.models.CacheModel;
+import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
+import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
@@ -25,10 +27,7 @@ public final class Writer extends SupportProvider {
         // se o pacote e saida existir, mas nao existir o arquivo de saida, entao somente ele sera gerado
         // caso contrario, o arquivo sera marcado como existente e o metodo retorna sua execucao
         try {
-            if (Files.notExists(outputPackagePath)) {
-                Files.createDirectories(outputPackagePath);
-            }
-            
+            Files.createDirectories(outputPackagePath);
             Writer.write(outputFilePath, pathsCtx.getGeneratedClass());
             LOGGER.log(Levels.SUCCESS.getLevel(), "***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
         }
@@ -41,24 +40,12 @@ public final class Writer extends SupportProvider {
         }
     }
     
-    // deve preparar todos os dados necessarios para a escrita do json
-    public static void writeJson() {
-    	CacheManager.getQueuedCacheFiles(true)
-	            	.stream()
-	            	.forEach(path -> {
-			            Reader.loadPropFile(path);
-			            CacheModel cm = new CacheModel(path, generalCtx.getProps());
-			            CacheManager.computeElementToCacheModelMap(path, cm);
-			            write(Utils.resolveJsonFilePath(path), new Gson().toJson(cm));
-	            	});
-    }
-
     public static <T> void write(Path pathToWrite, T content) {
     	 try {
     		StandardOpenOption[] options = {
     				StandardOpenOption.CREATE, 
     				StandardOpenOption.WRITE, 
-    				StandardOpenOption.TRUNCATE_EXISTING
+    				StandardOpenOption.SYNC
     		};
     		
 			Utils.getExecutor().submit(() -> {
@@ -82,5 +69,22 @@ public final class Writer extends SupportProvider {
 		 } catch (InterruptedException | ExecutionException e) {
 			Utils.logException(e);
 		 }
+    }
+    
+    // deve preparar todos os dados necessarios para a escrita do json
+    public static void writeJson() {
+    	Gson gson = new Gson();
+    	
+    	CacheManager.getQueuedCacheFiles(true)
+	            	.stream()
+	            	.forEach(path -> {
+	            		var model = InnerStaticClassModel.initInstance(path);
+	            		var cacheModel = new CacheModel(model);
+	            		
+	            		OutterClassModel.computeClassModelToMap(model);
+			            CacheManager.computeCacheModelToMap(path, cacheModel);
+			            
+			            write(Utils.resolveJsonFilePath(path), gson.toJson(cacheModel));
+	            	});
     }
 }

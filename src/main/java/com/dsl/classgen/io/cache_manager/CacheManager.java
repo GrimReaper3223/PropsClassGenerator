@@ -16,6 +16,7 @@ import java.util.concurrent.BlockingQueue;
 import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.file_manager.Writer;
+import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
@@ -52,19 +53,19 @@ public final class CacheManager extends SupportProvider {
 		return !cacheFilesToWrite.isEmpty();
 	}
 	
-	public static void computeElementToCacheModelMap(Path key, CacheModel value) {
+	public static <T> void computeCacheModelToMap(T key, CacheModel value) {
 		Path jsonKey = Utils.resolveJsonFilePath(key);
         if(cacheModelMap.computeIfPresent(jsonKey, (_, _) -> value) == null) {
         	cacheModelMap.put(jsonKey, value);
         }
     }
 	
-	public static CacheModel getElementFromCacheModelMap(Path key) {
+	public static <T> CacheModel getModelFromCacheMap(T key) {
 		Path jsonKey = Utils.resolveJsonFilePath(key);
         return cacheModelMap.get(jsonKey);
     }
 	
-	public static CacheModel removeElementFromCacheModelMap(Path key) {
+	public static <T> CacheModel removeElementFromCacheModelMap(T key) {
 		Path jsonKey = Utils.resolveJsonFilePath(key);
 		try {
 			Files.delete(jsonKey);
@@ -76,13 +77,14 @@ public final class CacheManager extends SupportProvider {
 	
 	// retorna true se o cache ja existe e se e identico ao arquivo atualmente lido
 	// false se uma das condicionais falharem
-	public static boolean isInvalidCacheFile(Path propsPath) {
+	// TODO: atualizar invalidacao de cache
+	public static <T> boolean isInvalidCacheFile(T propsPath) {
 		Path jsonFilePath = Utils.resolveJsonFilePath(propsPath);
 		boolean isInvalidCacheFile = true;
 		
 		if(Files.exists(jsonFilePath)) {
 			try(BufferedReader br = Files.newBufferedReader(jsonFilePath)) {
-				CacheModel cm = new CacheModel(propsPath, generalCtx.getProps());
+				CacheModel cm = CacheManager.getModelFromCacheMap(jsonFilePath);
 				isInvalidCacheFile = !cm.equals(new Gson().fromJson(br, CacheModel.class));
 			} catch (IOException e) {
 				Utils.logException(e);
@@ -109,6 +111,7 @@ public final class CacheManager extends SupportProvider {
                 loadCache(operationInitMode);
                 
             } else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
+            	LOGGER.log(Levels.CACHE.getLevel(), "Invalid cache detected. Revalidating cache...");
                 eraseCache();
                 createCache(null);
                 
@@ -150,7 +153,7 @@ public final class CacheManager extends SupportProvider {
 
 	private static void createCache(String appendMessage) throws IOException {
 		if(appendMessage != null) {
-			LOGGER.log(Levels.CACHE.getLevel(), "Cache does not exist. Generating new cache... (AUTOMATIC)");
+			LOGGER.log(Levels.CACHE.getLevel(), "Cache does not exist. Generating new cache... ({})", appendMessage);
 		}
 		Files.createDirectories(pathsCtx.getCacheDir());
 		Writer.writeJson();

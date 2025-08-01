@@ -23,7 +23,9 @@ public final class Reader extends SupportProvider {
 	
     private Reader() {}
 
-    public static void read(Path inputPath) {
+    public static <T> void read(T path) {
+    	Path inputPath = Path.of(path.toString());
+    	
         if (Files.isRegularFile(inputPath) && Utils.isPropertiesFile(inputPath)) {
         	flagsCtx.setIsSingleFile(true);
         	pathsCtx.queueFile(inputPath);
@@ -33,13 +35,13 @@ public final class Reader extends SupportProvider {
             processDirectoryFileList(inputPath);
         }
         
-        LOGGER.error("It is not a properties file.");
+        LOGGER.error("It is not a properties file: {}.", inputPath);
     }
 
-    public static StringBuilder readSource(Path sourceFile) {
+    public static <T> StringBuilder readSource(T sourceFile) {
     	StringBuilder sourceBuffer = new StringBuilder();
     	
-    	try(BufferedReader reader = Files.newBufferedReader(sourceFile)) {
+    	try(BufferedReader reader = Files.newBufferedReader(Path.of(sourceFile.toString()))) {
     		sourceBuffer.append(reader.readLine() + '\n');
     	} 
     	catch (IOException e) {
@@ -49,24 +51,19 @@ public final class Reader extends SupportProvider {
     	return sourceBuffer;
     }
     
-    public static void loadPropFile(Path inputPath) {
-        try {
-            Properties props = generalCtx.getProps();
-            try (InputStream in = Files.newInputStream(inputPath)) {
-                if (!props.isEmpty()) {
-                    props.clear();
-                }
-                props.load(in);
-            }
-            
+    public static <T> Properties loadProp(T path) {
+    	Path inputPath = Path.of(path.toString());
+    	Properties props = new Properties();
+    	
+        try (InputStream in = Files.newInputStream(inputPath)) {
+            props.load(in);
             LOGGER.log(Levels.SUCCESS.getLevel(), "Properties file loaded from path: {}", inputPath);
-                
-			pathsCtx.setPropertiesDataType(readJavaType(inputPath));
-            pathsCtx.setPropertiesFileName(inputPath.getFileName());
-        }
-        catch (IOException | InterruptedException | ExecutionException e) {
+            
+        }  catch (IOException e) {
         	Utils.logException(e);
         }
+        
+        return props;
     }
 
     public static Class<?> loadGeneratedBinClass() {
@@ -80,6 +77,17 @@ public final class Reader extends SupportProvider {
         	Utils.logException(e);
         }
         return generatedClass;
+    }
+    
+    public static <T> String readJavaType(T path) throws InterruptedException, ExecutionException {
+    	return Utils.getExecutor().submit(
+    			() -> Files.readAllLines(Path.of(path.toString()), StandardCharsets.ISO_8859_1)
+        				.stream()
+	        			.filter(input -> input.contains("$javatype:"))
+        				.findFirst()
+        				.map(input -> input.substring(input.indexOf("@") + 1))
+        				.orElseThrow(GeneralContext::throwIOException)
+        ).get();
     }
     
     private static void processDirectoryFileList(Path inputDirPath) {
@@ -97,16 +105,5 @@ public final class Reader extends SupportProvider {
         catch (IOException e) {
         	Utils.logException(e);
         }
-    }
-
-    private static String readJavaType(Path path) throws InterruptedException, ExecutionException {
-    	return Utils.getExecutor().submit(
-    			() -> Files.readAllLines(path, StandardCharsets.ISO_8859_1)
-        				.stream()
-	        			.filter(input -> input.contains("$javatype:"))
-        				.findFirst()
-        				.map(input -> input.substring(input.indexOf("@") + 1))
-        				.orElseThrow(GeneralContext::throwIOException)
-        ).get();
     }
 }

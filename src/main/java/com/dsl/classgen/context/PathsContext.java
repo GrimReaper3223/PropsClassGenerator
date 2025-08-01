@@ -13,7 +13,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
@@ -75,7 +74,6 @@ public class PathsContext {
     }
 	
 	public void queueFile(Path filePath) {
-		Reader.loadPropFile(filePath);
 		checkFileInCache(filePath);
     	fileList.add(filePath);
     	LOGGER.log(SUCCESS,"Properties file added to file list: {}", filePath);
@@ -87,7 +85,7 @@ public class PathsContext {
     	LOGGER.log(SUCCESS, "Directory added to dir list: {}", dirPath);
     }
     
-    public void checkFileInCache(Path filePath) {
+    private void checkFileInCache(Path filePath) {
     	var flagsCtx = GeneralContext.getInstance().getFlagsContextInstance();	
 		if(flagsCtx.getIsDirStructureAlreadyGenerated() && flagsCtx.getIsExistsPJavaSource()) {
 			if(CacheManager.isInvalidCacheFile(filePath)) {

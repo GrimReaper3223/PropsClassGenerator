@@ -6,7 +6,8 @@ import java.util.Map;
 
 import com.dsl.classgen.generator.InnerFieldGenerator;
 import com.dsl.classgen.generator.InnerStaticClassGenerator;
-import com.dsl.classgen.io.cache_manager.CacheModel;
+import com.dsl.classgen.models.CacheModel;
+import com.dsl.classgen.models.CachePropertiesData;
 
 sealed interface SyncOperations permits SyncBin, SyncSource {
 
@@ -15,5 +16,5 @@ sealed interface SyncOperations permits SyncBin, SyncSource {
 	
 	void insertClassSection(List<Path> pathList);
 	void eraseClassSection(List<CacheModel> currentCacheModelList);
-	void modifySection(ModelMapper<Map<String, Integer>> mappedChanges, CacheModel currentCacheModel);
+	void modifySection(ModelMapper<Map<Integer, CachePropertiesData>> mappedChanges, CacheModel currentCacheModel);
 }

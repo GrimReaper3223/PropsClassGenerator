@@ -3,7 +3,7 @@ module com.dsl.classgen {
 	
 	requires transitive org.apache.logging.log4j.core;
 	requires transitive org.apache.logging.log4j;
-	requires com.google.gson;
+	requires transitive com.google.gson;
 	requires java.compiler;
 
 	exports com.dsl.classgen;
@@ -11,6 +11,8 @@ module com.dsl.classgen {
 	exports com.dsl.classgen.annotation.containers;
 	exports com.dsl.classgen.io.synchronizer to com.dsl.classgen.io.cache_manager;
 	exports com.dsl.classgen.io.cache_manager to com.dsl.classgen.annotation;
+	exports com.dsl.classgen.models;
+	exports com.dsl.classgen.models.model_mapper;
 	
 	// for test package
 	exports com.dsl.classgen.io.file_manager to com.dsl.test.classgen;

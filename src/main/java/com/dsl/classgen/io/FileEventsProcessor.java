@@ -12,16 +12,17 @@ import java.nio.file.WatchEvent.Kind;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.synchronizer.ModelMapper;
 import com.dsl.classgen.io.synchronizer.SyncBin;
 import com.dsl.classgen.io.synchronizer.SyncSource;
+import com.dsl.classgen.models.CacheModel;
+import com.dsl.classgen.models.CachePropertiesData;
+import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
@@ -114,7 +115,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	}
 	
 	private static void modifySection(Path path) {
-		CacheModel currentCacheModel = CacheManager.getElementFromCacheModelMap(path);
+		CacheModel currentCacheModel = CacheManager.getModelFromCacheMap(path);
 		if(currentCacheModel == null) {
 			LOGGER.error("Model not found in cache.");
 			return;
@@ -124,25 +125,25 @@ public final class FileEventsProcessor extends SupportProvider {
 
 			private static final long serialVersionUID = 1L;
 
-			public ExtendedCacheModel(Path filePath, Properties props) {
-				super(filePath, props);
+			public ExtendedCacheModel(InnerStaticClassModel model) {
+				super(model);
 			}
 			
-			public boolean checkHash(CacheModel currentCacheModel) {
+			public boolean checkHash() {
 				return this.fileHash == currentCacheModel.fileHash;
 			}
 			
-			public boolean checkPropertyMap(CacheModel currentCacheModel) {
-				return this.hashTableMap.entrySet().equals(currentCacheModel.hashTableMap.entrySet());
+			public boolean checkPropertyMap() {
+				return this.entries.equals(currentCacheModel.entries);
 			}
 		}
 		
 		Path filePath = Path.of(currentCacheModel.filePath);
 		Reader.read(filePath);
-		ExtendedCacheModel newCacheModel = new ExtendedCacheModel(filePath, generalCtx.getProps());
+		ExtendedCacheModel newCacheModel = new ExtendedCacheModel(InnerStaticClassModel.initInstance(filePath));
 		
-		boolean isHashEquals = newCacheModel.checkHash(currentCacheModel);
-		boolean isPropertyMapEntriesEquals = newCacheModel.checkPropertyMap(currentCacheModel);
+		boolean isHashEquals = newCacheModel.checkHash();
+		boolean isPropertyMapEntriesEquals = newCacheModel.checkPropertyMap();
 		
 		if(!isHashEquals) {
 			if(isPropertyMapEntriesEquals) {
@@ -152,7 +153,10 @@ public final class FileEventsProcessor extends SupportProvider {
 				
 			} else {
 				// performa atualizacoes de alta precisao em membros da classe interna estatica
-				ModelMapper<Map<String, Integer>> mappedChanges = new ModelMapper<>(currentCacheModel.hashTableMap, newCacheModel.hashTableMap);
+				// TODO: devemos retornar as entries dos modelos de cache
+				// cada entrada do mapa corresponde a uma chave inteira, cujo valor e o hash da chave + propriedade
+				// e cada valor corresponde a um tipo CachePropertiesData, contendo a chave e o valor da propriedade
+				ModelMapper<Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>(currentCacheModel.entries, newCacheModel.entries);
 				syncSource.modifySection(mappedChanges, currentCacheModel);
 				syncBin.modifySection(mappedChanges, newCacheModel);
 			}

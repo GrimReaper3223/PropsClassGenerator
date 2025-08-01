@@ -42,6 +42,6 @@ class SimpleGeneratorTest implements HarnessTestTools {
 	}
 	
 	String createSource(String fieldKey, String fieldValue, int hash) {
-		return "\t\t" + new InnerFieldGenerator().generateInnerField(fieldKey, fieldValue, hash) + "\n";
+		return "\t\t" + new InnerFieldGenerator().generateInnerField(null) + "\n";
 	}
 }

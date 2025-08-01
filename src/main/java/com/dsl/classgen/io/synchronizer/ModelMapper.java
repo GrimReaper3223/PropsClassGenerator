@@ -9,24 +9,26 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ModelMapper <T extends Map<String, Integer>> {
+import com.dsl.classgen.models.CachePropertiesData;
 
-	final Map<SyncOptions, Map<String, Integer>> modelMap;
+public class ModelMapper <T extends Map<Integer, CachePropertiesData>> {
+
+	final Map<SyncOptions, Map<Integer, CachePropertiesData>> modelMap;
 	
 	public ModelMapper(T oldMap, T newMap) {
 		modelMap = mapper(oldMap, newMap);
 	}
 	
 	// inicia o fluxo de processamento de um mapa
-	private final BiFunction<T, T, Stream<Map.Entry<String, Integer>>> streamMapCreator = 
+	private final BiFunction<T, T, Stream<Map.Entry<Integer, CachePropertiesData>>> streamMapCreator = 
 							 			(map1, map2) -> map1.entrySet()
 							 							    .stream()
-															.filter(entry -> !map2.containsValue(entry.getValue()));
+															.filter(entry -> !map2.containsKey(entry.getKey()));
 							 			
 	// finaliza o fluxo de processamento e mapa retornando um resultado
-	private final BiFunction<Stream<Map.Entry<String, Integer>>, 
+	private final BiFunction<Stream<Map.Entry<Integer, CachePropertiesData>>, 
     								SyncOptions,
-    								Map<SyncOptions, Map<String, Integer>>> streamMapFinisher = 
+    								Map<SyncOptions, Map<Integer, CachePropertiesData>>> streamMapFinisher = 
     									(stream, op) -> stream.flatMap(entry -> Map.of(op, entry)
     																			   .entrySet()
     																			   .stream())
@@ -34,8 +36,8 @@ public class ModelMapper <T extends Map<String, Integer>> {
     																  	Collectors.toMap(entry -> entry.getValue().getKey(), 
     																  					 entry -> entry.getValue().getValue())));
 	
-	public Map<SyncOptions, Map<String, Integer>> mapper(T oldMap, T newMap) {
-		Map<SyncOptions, Map<String, Integer>> map = new EnumMap<>(SyncOptions.class);
+	public Map<SyncOptions, Map<Integer, CachePropertiesData>> mapper(T oldMap, T newMap) {
+		Map<SyncOptions, Map<Integer, CachePropertiesData>> map = new EnumMap<>(SyncOptions.class);
 
 		map.putAll(streamMapFinisher.apply(streamMapCreator.apply(oldMap, newMap), DELETE));
 		map.putAll(streamMapFinisher.apply(streamMapCreator.apply(newMap, oldMap), INSERT));

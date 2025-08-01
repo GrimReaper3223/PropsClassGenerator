@@ -12,8 +12,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
-import com.dsl.classgen.generator.ExtParsers;
 import com.dsl.classgen.io.file_manager.Reader;
+import com.dsl.classgen.models.Parsers;
 
 public final class Utils {
 	
@@ -49,12 +49,13 @@ public final class Utils {
     	return filePath.getFileName().toString().endsWith(".properties");
     }
     
-    public static Path resolveJsonFilePath(Path path) {
-    	if (path.getFileName().toString().contains("-cache.json")) {
-    		return path;
+    public static <T> Path resolveJsonFilePath(T path) {
+    	Path filePath = Path.of(path.toString());
+    	if (filePath.getFileName().toString().contains("-cache.json")) {
+    		return filePath;
     	}
     	String jsonFileNamePattern = "%s-cache.json";
-    	Path jsonFileName = Path.of(String.format(jsonFileNamePattern, path.getFileName().toString().contains(".") ? formatFileName(path) : path));
+    	Path jsonFileName = Path.of(String.format(jsonFileNamePattern, filePath.getFileName().toString().contains(".") ? formatFileName(filePath) : filePath));
         return pathsCtx.getCacheDir().resolve(jsonFileName);
     }
 
@@ -68,7 +69,7 @@ public final class Utils {
     }
     
     public static <T> Path convertSourcePathToClassPath(T sourcePath) throws ClassNotFoundException {
-    	String classFileName = ExtParsers.parseClassNameHelper(Path.of(sourcePath.toString()).getFileName(), null);
+    	String classFileName = new Parsers() {}.parseClassName(Path.of(sourcePath.toString()).getFileName());
 		return Arrays.stream(Reader.loadGeneratedBinClass().getClasses())
 			  .filter(cls -> cls.getName().contains(classFileName))
 			  .map(cls -> Path.of(pathsCtx.getOutputClassFilePath()

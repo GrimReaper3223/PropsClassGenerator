@@ -7,7 +7,6 @@ import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.file_manager.Compiler;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
@@ -15,7 +14,7 @@ import com.dsl.classgen.io.synchronizer.BootSync;
 import com.dsl.classgen.io.synchronizer.SyncBin;
 import com.dsl.classgen.io.synchronizer.SyncSource;
 
-public abstract sealed class SupportProvider permits CacheManager, Compiler, Reader, Writer, SyncSource, FileEventsProcessor, SyncBin, FileVisitorImpls, GeneratedStructureChecker, CacheModel, BootSync {
+public abstract sealed class SupportProvider permits CacheManager, Compiler, Reader, Writer, SyncSource, FileEventsProcessor, SyncBin, FileVisitorImpls, GeneratedStructureChecker, BootSync {
 
 	protected static final Logger LOGGER = LogManager.getLogger(SupportProvider.class);
 	

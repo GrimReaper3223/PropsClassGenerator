@@ -10,7 +10,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.ExecutionException;
 
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.cache_manager.CacheModel;
+import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
@@ -54,7 +54,7 @@ public final class FileVisitorImpls extends SupportProvider {
                 Utils.getExecutor().submit(() -> {
                     try (BufferedReader br = Files.newBufferedReader(file)){
                     	LOGGER.log(Levels.CACHE.getLevel(), "Loading JSON file: {}", file);
-                        CacheManager.computeElementToCacheModelMap(file, new Gson().fromJson(br, CacheModel.class));
+                        CacheManager.computeCacheModelToMap(file, new Gson().fromJson(br, CacheModel.class));
                     }
                     catch (IOException e) {
                     	Utils.logException(e);
@@ -70,6 +70,7 @@ public final class FileVisitorImpls extends SupportProvider {
 
         @Override
         public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        	Utils.logException(exc);
             return FileVisitResult.TERMINATE;
         }
     }

@@ -1,41 +1,21 @@
 package com.dsl.classgen.generator;
 
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
 import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
-import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.cache_manager.CacheModel;
+import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 
-public final class InnerStaticClassGenerator extends SupportProvider implements Parsers, Initializer {
+public final class InnerStaticClassGenerator extends SupportProvider {
 	
-	private String formattedClassName;
-	private CacheModel cm;
-	private Path propertyPath;
-	private Map<String, ?> map;
-	
-	@Override
-	public void initClass() {
-		Path propertiesFileName = pathsCtx.getPropertiesFileName();
-		
-		propertyPath = flagsCtx.getIsSingleFile() ? pathsCtx.getInputPropertiesPath() : pathsCtx.getInputPropertiesPath().resolve(propertiesFileName);
-		formattedClassName = parseClassName(propertiesFileName);
-		cm = CacheManager.getElementFromCacheModelMap(propertiesFileName);
-		
-		formatGenerationOutput("Static Inner Class", formattedClassName, null);
-		
-		map = Map.of("filePath", propertyPath.toString(), 
-				 "javaType", pathsCtx.getPropertiesDataType() + ".class",
-				 "hash", cm.fileHash);
-	}
-	
-    public String generateInnerStaticClass() {
-    	initClass();
+    public String generateInnerStaticClass(InnerStaticClassModel model) {
+    	InnerFieldGenerator fieldGenerator = new InnerFieldGenerator();
+    	Path propertyPath = model.annotationMetadata().filePath();
+    	
+    	formatGenerationOutput("Static Inner Class", model.className(), null);
     	
         return String.format("""
-        		// CLASS HINT ~>> %1$s
+        		%1$s
         		\t%2$s
         		\tpublic static final class %3$s {
         		
@@ -46,22 +26,18 @@ public final class InnerStaticClassGenerator extends SupportProvider implements 
 	        		\t%6$s
 	        		\t// PROPS-CONTENT-END: %5$s
         		\t}
-        		\t// CLASS HINT <<~ %1$s
+        		\t%7$s
         		""",
-				propertyPath,
-        		createAnnotation(GeneratedInnerStaticClass.class, map),
-        		formattedClassName, 
+				model.startHint(),
+				model.annotationMetadata().getAnnotationString(),
+        		model.className(), 
 				GeneratedPrivateConstructor.class.getSimpleName(),
 				propertyPath.getFileName(),
-				generalCtx.getProps()
-					  .entrySet()
+				model.fieldModelList()
 					  .stream()
-					  .map(entry -> {
-				          String key = entry.getKey().toString();
-				          String value = entry.getValue().toString();
-				          Integer hash = cm.hashTableMap.get(key);
-				          return new InnerFieldGenerator().generateInnerField(key, value, hash);
-					  }).collect(Collectors.joining("\n\t\t")));
+					  .map(fieldGenerator::generateInnerField)
+					  .collect(Collectors.joining("\n\t\t")),
+        		model.endHint());
     }
 }
 

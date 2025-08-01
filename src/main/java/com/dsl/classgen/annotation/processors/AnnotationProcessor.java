@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
-import com.dsl.classgen.io.cache_manager.CacheModel;
+import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.utils.PatternType;
 import com.dsl.classgen.utils.Utils;

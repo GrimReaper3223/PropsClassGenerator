@@ -10,8 +10,8 @@ import java.util.Objects;
 import com.dsl.classgen.io.FileEventsProcessor;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.cache_manager.CacheModel;
-import com.dsl.classgen.io.cache_manager.CacheProcessorOption;
+import com.dsl.classgen.models.CacheModel;
+import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 
@@ -25,34 +25,26 @@ public final class BootSync extends SupportProvider {
 			LOGGER.warn("There is already a generated structure.");
 			LOGGER.log(Levels.NOTICE.getLevel(), "Checking files...");
 			
-			CacheManager.processCache(CacheProcessorOption.LOAD);
+			List<CacheModel> outdatedCache = filterOutOfSyncCache();
 			
-			List<CacheModel> removedModels = removedModels(filterOutOfSyncCache());
-			
-			if(!removedModels.isEmpty()) {
+			if(!outdatedCache.isEmpty()) {
 				LOGGER.warn("Changes detected. Synchronizing entities...");
-				syncSource.eraseClassSection(removedModels);
-				syncBin.eraseClassSection(removedModels);
+				syncSource.eraseClassSection(outdatedCache);
+				syncBin.eraseClassSection(outdatedCache);
 			}
 			
 			writeNewCacheIfExists();
 		}
 	}
 	
-	private List<Path> filterOutOfSyncCache() {
+	private List<CacheModel> filterOutOfSyncCache() {
 		return CacheManager.getCacheModelMapEntries()
 				.stream()
 				.map(entry -> Path.of(entry.getValue().filePath))
-				.filter(elem -> !pathsCtx.getFileList().contains(elem))
+				.filter(elem -> !OutterClassModel.checkPathInClassModelMap(elem))
+				.map(CacheManager::removeElementFromCacheModelMap)
 				.filter(Objects::nonNull)
 				.toList();
-	}
-	
-	private List<CacheModel> removedModels(List<Path> filteredModelList) {
-		return filteredModelList.stream()
-				 .map(CacheManager::removeElementFromCacheModelMap)
-				 .filter(Objects::nonNull)
-				 .toList();
 	}
 	
 	private void writeNewCacheIfExists() {

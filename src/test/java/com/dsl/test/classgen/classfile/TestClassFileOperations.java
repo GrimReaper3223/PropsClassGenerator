@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.test.classgen.HarnessTestTools;
 
-@SuppressWarnings("preview")
 class TestClassFileOperations implements HarnessTestTools {
 
 	private static final Logger LOGGER = LogManager.getLogger(TestClassFileOperations.class);
@@ -83,7 +82,7 @@ class TestClassFileOperations implements HarnessTestTools {
 		String fieldNameToCompare = "fx.button.close";
 		
 		ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replaceAll("_", ".").contains(fieldNameToCompare));
-		byte[] newBytes = cf.transform(cm, ct);
+		byte[] newBytes = cf.transformClass(cm, ct);
 		
 		try(OutputStream out = Files.newOutputStream(Path.of(System.getProperty("user.dir"), "test.class"))) {
 			out.write(newBytes);

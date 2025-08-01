@@ -18,12 +18,12 @@ import java.util.stream.Stream;
 
 import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.io.SupportProvider;
-import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.file_manager.Writer;
+import com.dsl.classgen.models.CacheModel;
+import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.utils.Levels;
 import com.dsl.classgen.utils.Utils;
 
-@SuppressWarnings("preview")
 public final class SyncBin extends SupportProvider implements SyncOperations {
 
 	private final ClassFile cf = ClassFile.of();
@@ -69,10 +69,10 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 	}
 	
 	@Override
-	public void modifySection(ModelMapper<Map<String, Integer>> mappedChanges, CacheModel cacheModel) {
+	public void modifySection(ModelMapper<Map<Integer, CachePropertiesData>> mappedChanges, CacheModel cacheModel) {
 		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying binary entries...");
 		mappedChanges.modelMap.entrySet().forEach(entry -> {
-			Supplier<Stream<String>> keys = () -> entry.getValue().keySet().stream();
+			Supplier<Stream<CachePropertiesData>> keys = () -> entry.getValue().values().stream();
 			ByteBuffer bb = ByteBuffer.allocate(Short.MAX_VALUE);
 			
 			switch(entry.getKey()) {
@@ -83,8 +83,8 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 				case DELETE:
 					keys.get()
 						.forEach(key -> {
-							ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replace("_", ".").contains(key));
-							bb.put(cf.transform(cm, ct));
+							ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm && fm.fieldName().stringValue().toLowerCase().replace("_", ".").contains(key.propKey()));
+							bb.put(cf.transformClass(cm, ct));
 						});
 					break;
 			}

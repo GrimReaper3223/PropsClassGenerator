@@ -16,6 +16,7 @@ import com.dsl.classgen.io.file_manager.Compiler;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.io.synchronizer.BootSync;
+import com.dsl.classgen.models.ChunkLoader;
 import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
@@ -33,13 +34,13 @@ public final class Generator {
 		new GeneratedStructureChecker().checkFileSystem();
 		
 		flagsCtx.setIsRecursive(isRecursive);
-		pathsCtx.setInputPropertiesPath(inputPath);	// TODO: carregar o inputPropertiesPath no modelo de classe
 		pathsCtx.setPackageClass(Utils.normalizePath(packageClass.concat(".generated"), "/", ".").toString());
 		pathsCtx.resolvePaths(pathsCtx.getPackageClass());
 		
 		Reader.read(inputPath);
-		new BootSync().resync();
+		new ChunkLoader().loadChunks();
 		CacheManager.processCache();
+		new BootSync().resync();
 		
 		LOGGER.info("""
 				

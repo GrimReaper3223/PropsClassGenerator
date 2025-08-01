@@ -1,46 +1,27 @@
 package com.dsl.classgen.generator;
 
 import java.text.MessageFormat;
-import java.util.Map;
 
-import com.dsl.classgen.annotation.GeneratedInnerField;
+import com.dsl.classgen.models.model_mapper.InnerFieldModel;
 
-public final class InnerFieldGenerator extends SupportProvider implements Parsers {
+public final class InnerFieldGenerator extends SupportProvider {
 	
     private final String fieldPattern1 = """
-    		// FIELD HINT ~>> {0}
+    		{0}
     		\t\t{1}
     		\t\tpublic static final {2} {3} = {4};
-        	\t// FIELD HINT <<~ {0}
+        	\t{5}
     		""";
     
-    private final String fieldPattern2 = """
-        	// FIELD HINT ~>> {0}
-    		\t\t{1}
-    		\t\tpublic static final {2} {3};
-    		\t// FIELD HINT <<~ {0}
-    		""";
-    
-    public String generateInnerField(String fieldKey, String fieldValue, Integer hash) {
-    	var map = Map.of("key", fieldKey, "hash", hash);
-    	String propertiesDataType = pathsCtx.getPropertiesDataType();
-    	
-        if (!fieldValue.isEmpty()) {
-            formatGenerationOutput("Inner Field", fieldKey, null);
-            return MessageFormat.format(fieldPattern1,
-            		fieldKey, 
-            		createAnnotation(GeneratedInnerField.class, map),
-            		propertiesDataType,
-            		parseFieldName(fieldKey), 
-            		parseFieldValue(fieldValue, propertiesDataType));
-        }
-        
-        formatGenerationOutput("Inner Field", fieldKey, "UNINITIALIZED FIELD");
-        return MessageFormat.format(fieldPattern2, 
-        		fieldKey,
-        		createAnnotation(GeneratedInnerField.class, map),
-        		propertiesDataType, 
-        		parseFieldName(fieldKey));
+    public String generateInnerField(InnerFieldModel fieldModel) {
+        formatGenerationOutput("Inner Field", fieldModel.annotationMetadata().key(), null);
+        return MessageFormat.format(fieldPattern1,
+        		fieldModel.startHint(), 
+        		fieldModel.annotationMetadata().getAnnotationString(),
+        		fieldModel.fieldType().getSimpleName(),
+        		fieldModel.fieldName(), 
+        		fieldModel.fieldValue(),
+        		fieldModel.endHint());
     }
 }
 

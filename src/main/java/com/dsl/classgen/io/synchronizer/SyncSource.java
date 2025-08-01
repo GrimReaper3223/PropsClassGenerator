@@ -3,15 +3,19 @@ package com.dsl.classgen.io.synchronizer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.annotation.processors.AnnotationProcessor;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.cache_manager.CacheManager;
-import com.dsl.classgen.io.cache_manager.CacheModel;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
+import com.dsl.classgen.models.CacheModel;
+import com.dsl.classgen.models.CachePropertiesData;
+import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
+import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.Levels;
 
 public final class SyncSource extends SupportProvider implements SyncOperations {
@@ -22,14 +26,14 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 	public void insertClassSection(List<Path> pathList) {
 		LOGGER.log(Levels.NOTICE.getLevel(), "Generating new data entries...");
 		StringBuilder sb = sbSupplier.get();
-		String pattern = "// PROPS-FILE-START";
+		String pattern = "// CLASS-FILE-START";
 		int propsFileStartIndex = sb.indexOf(pattern) + pattern.length() + 1;
 		
 		pathList.forEach(path -> {
-			Reader.read(path);
-			pathsCtx.setInputPropertiesPath(path);
-			CacheManager.processCache();
-			String generatedClass = '\t' + innerClassGen.generateInnerStaticClass() + '\n';
+			InnerStaticClassModel model = InnerStaticClassModel.initInstance(path);
+			OutterClassModel.computeClassModelToMap(model);
+			CacheManager.computeCacheModelToMap(path, new CacheModel(model));
+			String generatedClass = '\t' + innerClassGen.generateInnerStaticClass(model) + '\n';
 			
 			sb.insert(propsFileStartIndex, generatedClass);
 		});
@@ -48,18 +52,21 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 	}
 	
 	@Override
-	public void modifySection(ModelMapper<Map<String, Integer>> mappedChanges, CacheModel currentCacheModel) {
+	public void modifySection(ModelMapper<Map<Integer, CachePropertiesData>> mappedChanges, CacheModel currentCacheModel) {
 		LOGGER.log(Levels.NOTICE.getLevel(), "Modifying source entries...");
 		
 		StringBuilder sb = sbSupplier.get();
 		
 		mappedChanges.modelMap.entrySet().forEach(entry -> {
-			Supplier<Stream<Map.Entry<String, Integer>>> streamEntry = () -> entry.getValue().entrySet().stream();
+			Supplier<Stream<CachePropertiesData>> streamEntry = () -> entry.getValue().values().stream();
 			
 			switch(entry.getKey()) {
 				case INSERT: 
 					streamEntry.get()
-							   .map(element -> "\t\t" + innerFieldGen.generateInnerField(element.getKey(), generalCtx.getProps().getProperty(element.getKey()), element.getValue()) + "\n")
+							   .map(cachePropData -> {
+								   var model = OutterClassModel.getModel(currentCacheModel.filePath).insertNewModel(cachePropData.propKey(), cachePropData.propValue(), currentCacheModel.javaType);
+								   return "\t\t" + innerFieldGen.generateInnerField(model) + "\n";
+							   })
 						   	   .forEach(val -> {
 						   		   String pattern = String.format("// PROPS-CONTENT-START: %s", pathsCtx.getPropertiesFileName());
 						   		   sb.insert(sb.indexOf(pattern) + pattern.length() + 1, val);
@@ -68,7 +75,7 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 					
 				case DELETE:
 					streamEntry.get()
-							   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, element.getValue()))
+							   .map(element -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, Objects.hash(element.propKey(), currentCacheModel.javaType.cast(element.propValue()))))
 							   .forEach(lookupPattern -> deleteSourceContentUsingDelimiters(sb, lookupPattern, 3));
 					break;
 			}
