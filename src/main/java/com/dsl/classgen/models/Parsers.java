@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 public interface Parsers{
 
+	@Deprecated
 	default String createAnnotation(Class<? extends Annotation> annotationClass, Map<String, ?> annotationModelMap) {
 		return String.format("@%s(%s)", annotationClass.getSimpleName(),
 				annotationModelMap.entrySet()
@@ -18,6 +19,7 @@ public interface Parsers{
 								  .collect(Collectors.joining(", ")));
 	}
 	
+	@Deprecated
 	static String createImports(List<Class<? extends Annotation>> annotationClassList) {
 		return annotationClassList.stream()
 								  .map(cls -> "import " + cls.getName() + ";")

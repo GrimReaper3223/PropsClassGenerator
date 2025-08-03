@@ -6,8 +6,10 @@ import java.util.stream.Collectors;
 import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 
+@Deprecated
 public final class InnerStaticClassGenerator extends SupportProvider {
 	
+	@Deprecated
     public String generateInnerStaticClass(InnerStaticClassModel model) {
     	InnerFieldGenerator fieldGenerator = new InnerFieldGenerator();
     	Path propertyPath = model.annotationMetadata().filePath();
@@ -29,7 +31,8 @@ public final class InnerStaticClassGenerator extends SupportProvider {
         		\t%7$s
         		""",
 				model.startHint(),
-				model.annotationMetadata().getAnnotationString(),
+				null,
+//				model.annotationMetadata().getAnnotationString(),
         		model.className(), 
 				GeneratedPrivateConstructor.class.getSimpleName(),
 				propertyPath.getFileName(),

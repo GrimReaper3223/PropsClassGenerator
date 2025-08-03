@@ -4,23 +4,22 @@ import java.lang.reflect.AccessFlag;
 
 import com.dsl.classgen.models.Hints;
 import com.dsl.classgen.models.Parsers;
+import com.github.javaparser.ast.Modifier.Keyword;
 
 public record InnerFieldModel (FieldAnnotationModel annotationMetadata, 
 		Class<?> fieldType,
 		String fieldName,
 		Object fieldValue,
-		AccessFlag[] modifiers) implements Hints {
+		Keyword[] sourceModifiers,
+		AccessFlag[] byteCodeModifiers) implements Hints {
 	
 	public InnerFieldModel (FieldAnnotationModel annotationMetadata, Class<?> fieldType, String fieldName, Object fieldValue) {
 		this(annotationMetadata, 
 				fieldType,
 				new Parsers() {}.parseFieldName(fieldName),
 				new Parsers() {}.parseFieldValue(fieldValue.toString(), fieldType.toString()), 
-				new AccessFlag[] {
-						AccessFlag.PUBLIC,
-						AccessFlag.STATIC,
-						AccessFlag.FINAL
-				});
+				new Keyword[] { Keyword.PUBLIC, Keyword.STATIC, Keyword.FINAL },
+				new AccessFlag[] { AccessFlag.PUBLIC, AccessFlag.STATIC, AccessFlag.FINAL });
 	}
 	
 	@Override

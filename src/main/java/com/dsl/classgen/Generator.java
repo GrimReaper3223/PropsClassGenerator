@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
-import com.dsl.classgen.generator.OutterClassGenerator;
+import com.dsl.classgen.generator.NewOutterClassGenerator;
 import com.dsl.classgen.io.FileEventsProcessor;
 import com.dsl.classgen.io.GeneratedStructureChecker;
 import com.dsl.classgen.io.cache_manager.CacheManager;
@@ -36,6 +36,7 @@ public final class Generator {
 		flagsCtx.setIsRecursive(isRecursive);
 		pathsCtx.setPackageClass(Utils.normalizePath(packageClass.concat(".generated"), "/", ".").toString());
 		pathsCtx.resolvePaths(pathsCtx.getPackageClass());
+		pathsCtx.setInputPropertiesPath(inputPath);
 		
 		Reader.read(inputPath);
 		CacheManager.processCache();
@@ -81,12 +82,12 @@ public final class Generator {
 	public static void generate() {
 		if (!flagsCtx.getIsDirStructureAlreadyGenerated() || !flagsCtx.getIsExistsPJavaSource()) {
 			Utils.calculateElapsedTime();
-			new OutterClassGenerator().generateOutterClass();
+			new NewOutterClassGenerator().generateData();
 			
 			if(flagsCtx.getIsDebugMode()) {
 				LOGGER.debug(pathsCtx.getGeneratedClass());
 			} 
-			Writer.write();
+			Writer.writeFirstGeneration();
 		}
 		
 		Compiler.compile();

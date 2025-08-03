@@ -4,6 +4,7 @@ module com.dsl.classgen {
 	requires transitive org.apache.logging.log4j.core;
 	requires transitive org.apache.logging.log4j;
 	requires transitive com.google.gson;
+	requires transitive com.github.javaparser.core;
 	requires java.compiler;
 
 	exports com.dsl.classgen;

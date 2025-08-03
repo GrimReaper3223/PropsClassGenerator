@@ -13,7 +13,7 @@ class SimpleGeneratorTest implements HarnessTestTools {
 	
 	@Test
 	void generationTest() {
-		Generator.init(inPropsPath, PACKAGE_CLASS, true);
+		Generator.init(inPropsPath, PACKAGE_CLASS, false);
 		Generator.generate();
 		
 		// ignore os testes de assercao

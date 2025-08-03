@@ -124,24 +124,6 @@ public final class CacheManager extends SupportProvider {
         }
     }
 	
-	public static void processCache(CacheProcessorOption option) {
-		try {
-			operationInitMode = "MANUAL";
-			
-			switch(option) {
-				case UPDATE -> updateCache(operationInitMode); 
-				case LOAD -> loadCache(operationInitMode);
-				case REVALIDATE -> {
-					eraseCache();
-					createCache(null);
-				}
-				case CREATE -> createCache(operationInitMode);
-			}
-		} catch (IOException e) {
-			Utils.logException(e);
-		}
-	}
-
 	private static void loadCache(String appendMessage) throws IOException {
 		LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache... ({})", appendMessage);
 		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheLoaderFileVisitor());

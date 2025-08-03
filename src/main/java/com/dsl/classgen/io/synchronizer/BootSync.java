@@ -23,7 +23,7 @@ public final class BootSync extends SupportProvider {
 			SyncBin syncBin = new SyncBin();
 			
 			LOGGER.warn("There is already a generated structure.");
-			LOGGER.log(LogLevels.NOTICE.getLevel(), "Checking files...");
+			LOGGER.log(LogLevels.NOTICE.getLevel(), "Looking for changes...");
 			
 			List<CacheModel> outdatedCache = filterOutOfSyncCache();
 			
@@ -31,6 +31,9 @@ public final class BootSync extends SupportProvider {
 				LOGGER.warn("Changes detected. Synchronizing entities...");
 				syncSource.eraseClassSection(outdatedCache);
 				syncBin.eraseClassSection(outdatedCache);
+				
+			} else {
+				LOGGER.warn("All is up to date.");
 			}
 			
 			writeNewCacheIfExists();

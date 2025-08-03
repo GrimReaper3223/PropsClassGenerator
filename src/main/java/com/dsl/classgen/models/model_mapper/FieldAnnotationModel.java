@@ -7,6 +7,7 @@ import com.dsl.classgen.models.Parsers;
 
 public record FieldAnnotationModel(String key, int hash) implements Parsers {
 	
+	@Deprecated
 	public String getAnnotationString() {
 		return createAnnotation(GeneratedInnerField.class, 
 								Map.of("key", "\""+ key + "\"", 

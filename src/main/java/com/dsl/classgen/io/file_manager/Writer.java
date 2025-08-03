@@ -19,13 +19,10 @@ public final class Writer extends SupportProvider {
 	
     private Writer() {}
 
-    public static void write() {
+    public static void writeFirstGeneration() {
         Path outputPackagePath = pathsCtx.getOutputSourceDirPath();
         Path outputFilePath = pathsCtx.getOutputSourceFilePath();
         
-        // se nao existir o pacote de saida, entao os diretorios e o arquivo gerado serao criados
-        // se o pacote e saida existir, mas nao existir o arquivo de saida, entao somente ele sera gerado
-        // caso contrario, o arquivo sera marcado como existente e o metodo retorna sua execucao
         try {
             Files.createDirectories(outputPackagePath);
             Writer.write(outputFilePath, pathsCtx.getGeneratedClass());
@@ -35,7 +32,6 @@ public final class Writer extends SupportProvider {
             Utils.logException(e);
         }
         finally {
-        	// apos toda a etapa de processamento acima, podemos garantir que o caminho do arquivo de saida sera atribuido a variavel de caminho do arquivo fonte existente 
         	pathsCtx.setExistingPJavaGeneratedSourcePath(outputFilePath);
         }
     }

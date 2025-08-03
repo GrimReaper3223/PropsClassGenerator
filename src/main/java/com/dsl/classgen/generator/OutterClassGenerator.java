@@ -7,11 +7,13 @@ import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.LogLevels;
 
+@Deprecated
 public final class OutterClassGenerator extends SupportProvider {
 	
 	private final InnerStaticClassGenerator innerStaticClassGenerator = new InnerStaticClassGenerator();
 	private String outterClassName = pathsCtx.getOutterClassName();
 	
+	@Deprecated
     public void generateOutterClass() {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating classes...\n");
     	formatGenerationOutput("Outter Class", outterClassName, "\n");
@@ -40,7 +42,8 @@ public final class OutterClassGenerator extends SupportProvider {
                 }
                 """, 
                 pathsCtx.getPackageClass(),
-                OutterClassModel.getImports(),
+                null,
+//                OutterClassModel.getImports(),
 	        	GeneratedOutterClass.class.getSimpleName(),
 	        	outterClassName, 
 	        	GeneratedPrivateConstructor.class.getSimpleName(), 

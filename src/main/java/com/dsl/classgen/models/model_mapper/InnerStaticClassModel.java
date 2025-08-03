@@ -14,23 +14,29 @@ import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.models.Hints;
 import com.dsl.classgen.models.Parsers;
 import com.dsl.classgen.utils.Utils;
+import com.github.javaparser.ast.Modifier.Keyword;
 
-public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata, List<InnerFieldModel> fieldModelList, String className, AccessFlag[] modifiers) implements Hints, Parsers {
+public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata, 
+		List<InnerFieldModel> fieldModelList, 
+		String className, 
+		Keyword[] sourceModifiers,
+		AccessFlag[] byteCodeModifiers) implements Hints, Parsers {
 	
 	public static <T> InnerStaticClassModel initInstance(T filePath) {
 		Path path = Path.of(filePath.toString());
 		String formattedClassName = new Parsers() {}.parseClassName(filePath);
-		AccessFlag[] flags = new AccessFlag[] {
-				AccessFlag.PUBLIC,
-				AccessFlag.STATIC,
-				AccessFlag.FINAL
-		};
+		Keyword[] sourceFlags = new Keyword[] { Keyword.PUBLIC, Keyword.STATIC, Keyword.FINAL };
+		AccessFlag[] byteCodeFlags = new AccessFlag[] { AccessFlag.PUBLIC, AccessFlag.STATIC, AccessFlag.FINAL };
 		
 		InnerStaticClassModel model = null;
 		
 		try {
 			var annotation = initAnnotation(path);
-			model = new InnerStaticClassModel(annotation, initFieldList(path, annotation.javaType()), formattedClassName, flags);
+			model = new InnerStaticClassModel(annotation, 
+					initFieldList(path, annotation.javaType()), 
+					formattedClassName, 
+					sourceFlags, 
+					byteCodeFlags);
 		} catch (InterruptedException | ExecutionException e) {
 			Utils.logException(e);
 		}
@@ -78,7 +84,7 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata, Li
 				  String key = entry.getKey().toString();
 				  Object value = entry.getValue();
 				  
-				  FieldAnnotationModel annotation = new FieldAnnotationModel(key, Objects.hash(key, fieldType.cast(value)));
+				  FieldAnnotationModel annotation = new FieldAnnotationModel(key, Objects.hash(key, value));
 				  String formattedFieldName = parser.parseFieldName(key);
 				  return new InnerFieldModel(annotation, fieldType, formattedFieldName, value);
 			  }).toList();
