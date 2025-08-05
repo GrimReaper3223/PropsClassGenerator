@@ -19,6 +19,7 @@ import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.synchronizer.ModelMapper;
 import com.dsl.classgen.io.synchronizer.SyncBin;
+import com.dsl.classgen.io.synchronizer.SyncOptions;
 import com.dsl.classgen.io.synchronizer.SyncSource;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
@@ -147,16 +148,11 @@ public final class FileEventsProcessor extends SupportProvider {
 		
 		if(!isHashEquals) {
 			if(isPropertyMapEntriesEquals) {
-				// atualiza somente o arquivo de classe interna estatica quando nao ha atualizacoes de campos.
 				deleteSection(filePath);
 				createSection(filePath);
 				
 			} else {
-				// performa atualizacoes de alta precisao em membros da classe interna estatica
-				// TODO: devemos retornar as entries dos modelos de cache
-				// cada entrada do mapa corresponde a uma chave inteira, cujo valor e o hash da chave + propriedade
-				// e cada valor corresponde a um tipo CachePropertiesData, contendo a chave e o valor da propriedade
-				ModelMapper<Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>(currentCacheModel.entries, newCacheModel.entries);
+				Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>().mapper(currentCacheModel.entries, newCacheModel.entries);
 				syncSource.modifySection(mappedChanges, currentCacheModel);
 				syncBin.modifySection(mappedChanges, newCacheModel);
 			}

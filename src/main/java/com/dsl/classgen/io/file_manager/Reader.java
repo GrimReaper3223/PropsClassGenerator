@@ -35,7 +35,7 @@ public final class Reader extends SupportProvider {
         }
     }
 
-    public static <T> StringBuilder readSource(T sourceFile) {
+    public static <T> String readSource(T sourceFile) {
     	StringBuilder sourceBuffer = new StringBuilder();
     	
     	try(Stream<String> lines = Files.lines(Path.of(sourceFile.toString()))) {
@@ -45,7 +45,7 @@ public final class Reader extends SupportProvider {
     		Utils.logException(e);
 		}
     	
-    	return sourceBuffer;
+    	return sourceBuffer.toString();
     }
     
     public static <T> Properties loadProp(T path) {

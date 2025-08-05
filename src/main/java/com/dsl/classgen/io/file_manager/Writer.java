@@ -40,8 +40,8 @@ public final class Writer extends SupportProvider {
     	 try {
     		StandardOpenOption[] options = {
     				StandardOpenOption.CREATE, 
-    				StandardOpenOption.WRITE, 
-    				StandardOpenOption.SYNC
+    				StandardOpenOption.WRITE,
+    				StandardOpenOption.TRUNCATE_EXISTING
     		};
     		
 			Utils.getExecutor().submit(() -> {

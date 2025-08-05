@@ -11,11 +11,10 @@ import com.dsl.classgen.utils.Utils;
 public class CacheModel implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	public transient Class<?> javaType;
 	
 	public String filePath;
 	public int fileHash;
-	public String stringJavaType;
+	public String javaType;
 	public Map<Integer, CachePropertiesData> entries;
 	
 	public CacheModel() {}
@@ -24,8 +23,7 @@ public class CacheModel implements Serializable {
 		entries = new HashMap<>();
 		filePath = model.annotationMetadata().filePath().toString();
 		fileHash = model.annotationMetadata().hash();
-		javaType = model.annotationMetadata().javaType();
-		stringJavaType = javaType.getName();
+		javaType = model.annotationMetadata().javaType().getName();
 		model.fieldModelList()
 			 .stream()
 			 .forEach(instance -> {
@@ -36,14 +34,16 @@ public class CacheModel implements Serializable {
 			 });
 	}
 	
-	public void parseJavaType() {
-		if((javaType = Class.forPrimitiveName(stringJavaType)) == null) {
+	public Class<?> parseJavaType() {
+		Class<?> cls = Class.forPrimitiveName(javaType);
+		if(cls == null) {
 			try {
-				javaType = Class.forName(stringJavaType);
+				cls = Class.forName(javaType);
 			} catch (ClassNotFoundException e) {
 				Utils.logException(e);
 			}
 		}
+		return cls;
 	}
 	
 	@Override

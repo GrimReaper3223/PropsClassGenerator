@@ -6,9 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.models.Hints;
@@ -45,7 +47,7 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 	}
 	
 	public InnerFieldModel insertNewModel(String propertiesKey, Object propertiesValue, Class<?> fieldType) {
-		FieldAnnotationModel annotation = new FieldAnnotationModel(propertiesKey, Objects.hash(propertiesKey, fieldType.cast(propertiesValue)));
+		FieldAnnotationModel annotation = new FieldAnnotationModel(propertiesKey, Objects.hash(propertiesKey, propertiesValue));
 		String formattedFieldName = parseFieldName(propertiesKey);
 		InnerFieldModel model = new InnerFieldModel(annotation, fieldType, formattedFieldName, propertiesValue);
 		this.fieldModelList.add(model);
@@ -87,7 +89,7 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 				  FieldAnnotationModel annotation = new FieldAnnotationModel(key, Objects.hash(key, value));
 				  String formattedFieldName = parser.parseFieldName(key);
 				  return new InnerFieldModel(annotation, fieldType, formattedFieldName, value);
-			  }).toList();
+			  }).collect(Collectors.toCollection(ArrayList::new));
 	}
 	
 	private static int staticHashCode(Path filePath) {

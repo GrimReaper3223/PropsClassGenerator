@@ -65,9 +65,9 @@ public final class SyncBin extends SupportProvider implements SyncOperations {
 	}
 	
 	@Override
-	public void modifySection(ModelMapper<Map<Integer, CachePropertiesData>> mappedChanges, CacheModel cacheModel) {
+	public void modifySection(Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges, CacheModel cacheModel) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Modifying binary entries...");
-		mappedChanges.modelMap.entrySet().forEach(entry -> {
+		mappedChanges.entrySet().forEach(entry -> {
 			Supplier<Stream<CachePropertiesData>> keys = () -> entry.getValue().values().stream();
 			ByteBuffer bb = ByteBuffer.allocate(Short.MAX_VALUE);
 			

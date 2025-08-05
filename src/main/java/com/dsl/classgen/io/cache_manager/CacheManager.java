@@ -25,7 +25,6 @@ public final class CacheManager extends SupportProvider {
 
 	private static ConcurrentMap<Path, CacheModel> cacheModelMap = new ConcurrentHashMap<>();  					// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache 
 	private static BlockingQueue<Path> cacheFilesToWrite = new ArrayBlockingQueue<>(1024);	// deve armazenar arquivos para processamento de cache. Quando novos arquivos forem fornecidos para a lista de arquivos ou individualmente, uma entrada correspondente deve ser criada aqui
-	private static String operationInitMode;
 	
 	private CacheManager() {}
 	
@@ -75,8 +74,11 @@ public final class CacheManager extends SupportProvider {
 		return cacheModelMap.remove(jsonKey);
 	}
 	
-	// retorna true se o cache ja existe e se e identico ao arquivo atualmente lido
-	// false se uma das condicionais falharem
+	/*
+	 * este metodo analisa se o arquivo de cache e invalido e, por este motivo, retorna false 
+	 * se o arquivo de cache for valido, ou seja, se o conteudo do cache estiver de acordo com o modelo de cache.
+	 * true se o arquivo de cache for invalido, ou seja, se o conteudo do cache estiver diferente do modelo de cache
+	 */
 	public static <T> boolean isInvalidCacheFile(T propsPath) {
 		Path jsonFilePath = Utils.resolveJsonFilePath(propsPath);
 		boolean isInvalidCacheFile = true;
@@ -97,7 +99,7 @@ public final class CacheManager extends SupportProvider {
         	Path cacheDir = pathsCtx.getCacheDir();
             boolean isCacheDirValid = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
             
-            operationInitMode = "AUTOMATIC";
+            String operationInitMode = "AUTOMATIC";
             
             if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && hasCacheToWrite()) {
             	updateCache(operationInitMode);
@@ -115,7 +117,6 @@ public final class CacheManager extends SupportProvider {
                 createCache(null);
                 
             } else if(!isCacheDirValid) {
-            	pathsCtx.getFileList().forEach(CacheManager::queueNewCacheFile);
                 createCache(operationInitMode);
             }
         }
@@ -137,6 +138,7 @@ public final class CacheManager extends SupportProvider {
 		if(appendMessage != null) {
 			LOGGER.log(LogLevels.CACHE.getLevel(), "Cache does not exist. Generating new cache... ({})", appendMessage);
 		}
+		pathsCtx.getFileList().forEach(CacheManager::queueNewCacheFile);
 		Files.createDirectories(pathsCtx.getCacheDir());
 		Writer.writeJson();
 	}

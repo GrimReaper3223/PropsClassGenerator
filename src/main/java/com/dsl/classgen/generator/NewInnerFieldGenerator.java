@@ -31,7 +31,6 @@ public final class NewInnerFieldGenerator extends SupportProvider {
 						 model.fieldName()));
 		
 		fieldDecl.getVariable(0).setInitializer(model.fieldValue().toString());
-				 
 		return fieldDecl;
 	}
 }

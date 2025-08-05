@@ -13,11 +13,7 @@ import com.dsl.classgen.models.CachePropertiesData;
 
 public class ModelMapper <T extends Map<Integer, CachePropertiesData>> {
 
-	final Map<SyncOptions, Map<Integer, CachePropertiesData>> modelMap;
-	
-	public ModelMapper(T oldMap, T newMap) {
-		modelMap = mapper(oldMap, newMap);
-	}
+	public ModelMapper() {}
 	
 	// inicia o fluxo de processamento de um mapa
 	private final BiFunction<T, T, Stream<Map.Entry<Integer, CachePropertiesData>>> streamMapCreator = 

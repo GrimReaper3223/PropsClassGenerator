@@ -13,7 +13,7 @@ public class ChunkLoader {
 	private final PathsContext pathsCtx = generalCtx.getPathsContextInstance();
 	
 	public void loadChunks() {
-		LogManager.getLogger(ChunkLoader.class).info("Loading model hierarchy...");
+		LogManager.getLogger(ChunkLoader.class).info("Loading chunks...");
 		pathsCtx.getFileList()
 				.forEach(path -> {
 					OutterClassModel.computeClassModelToMap(InnerStaticClassModel.initInstance(path));
