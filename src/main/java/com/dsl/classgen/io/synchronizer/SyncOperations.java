@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.dsl.classgen.generator.NewInnerFieldGenerator;
-import com.dsl.classgen.generator.NewInnerStaticClassGenerator;
+import com.dsl.classgen.generator.InnerFieldGenerator;
+import com.dsl.classgen.generator.InnerStaticClassGenerator;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.utils.Utils;
@@ -16,8 +16,8 @@ import com.github.javaparser.ast.CompilationUnit;
 
 sealed interface SyncOperations permits SyncBin, SyncSource {
 
-	final NewInnerStaticClassGenerator innerClassGen = new NewInnerStaticClassGenerator();
-	final NewInnerFieldGenerator innerFieldGen = new NewInnerFieldGenerator();
+	final InnerStaticClassGenerator innerClassGen = new InnerStaticClassGenerator();
+	final InnerFieldGenerator innerFieldGen = new InnerFieldGenerator();
 	
 	void insertClassSection(List<Path> pathList);
 	void eraseClassSection(List<CacheModel> currentCacheModelList);

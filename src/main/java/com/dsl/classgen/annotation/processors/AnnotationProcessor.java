@@ -27,6 +27,6 @@ public class AnnotationProcessor {
 		   			 .flatMap(cl -> Arrays.stream(cl.getDeclaredFields()))
 		   			 .filter(field -> Arrays.stream(field.getDeclaredAnnotationsByType(GeneratedInnerField.class)).anyMatch(annon -> annon.hash() == fieldHash))
 	    			 .findFirst()
-	    			 .orElseThrow(() -> new IllegalArgumentException("No field found with the specified hash"));
+	    			 .orElseThrow(() -> new IllegalArgumentException("No field found with the specified hash: " + fieldHash));
     }
 }

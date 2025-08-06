@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import com.dsl.classgen.io.CacheManager;
+import com.dsl.classgen.models.model_mapper.InnerFieldModel;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.utils.Utils;
 
@@ -30,7 +32,8 @@ public class CacheModel implements Serializable {
 				 var annotation = instance.annotationMetadata(); 
 				 entries.put(annotation.hash(),
 	 						new CachePropertiesData(annotation.key(), 
-													instance.fieldValue()));
+													instance.rawFieldValue(), 
+													instance.parsedFieldValue()));
 			 });
 	}
 	
@@ -44,6 +47,17 @@ public class CacheModel implements Serializable {
 			}
 		}
 		return cls;
+	}
+	
+	public void computeFieldInEntryMap(InnerFieldModel model) {
+		CachePropertiesData cachePropData = new CachePropertiesData(model.annotationMetadata().key(),
+				model.rawFieldValue(), model.parsedFieldValue());
+
+		if (entries.computeIfPresent(model.annotationMetadata().hash(), (_, _) -> cachePropData) == null) {
+			entries.put(model.annotationMetadata().hash(), cachePropData);
+		}
+		
+		CacheManager.queueNewCacheFile(this.filePath);
 	}
 	
 	@Override

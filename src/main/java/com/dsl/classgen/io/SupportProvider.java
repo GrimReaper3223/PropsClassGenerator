@@ -6,7 +6,6 @@ import org.apache.logging.log4j.Logger;
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
-import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.file_manager.Compiler;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;

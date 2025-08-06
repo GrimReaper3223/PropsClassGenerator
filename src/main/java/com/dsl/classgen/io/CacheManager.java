@@ -1,4 +1,4 @@
-package com.dsl.classgen.io.cache_manager;
+package com.dsl.classgen.io;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,8 +13,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.dsl.classgen.io.FileVisitorImpls;
-import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.utils.LogLevels;
@@ -23,15 +21,16 @@ import com.google.gson.Gson;
 
 public final class CacheManager extends SupportProvider {
 
-	private static ConcurrentMap<Path, CacheModel> cacheModelMap = new ConcurrentHashMap<>();  					// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache 
-	private static BlockingQueue<Path> cacheFilesToWrite = new ArrayBlockingQueue<>(1024);	// deve armazenar arquivos para processamento de cache. Quando novos arquivos forem fornecidos para a lista de arquivos ou individualmente, uma entrada correspondente deve ser criada aqui
+	private static ConcurrentMap<Path, CacheModel> cacheModelMap = new ConcurrentHashMap<>();  	// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache 
+	private static BlockingQueue<Path> cacheFilesToWrite = new ArrayBlockingQueue<>(1024);		// deve armazenar arquivos para processamento de cache. Quando novos arquivos forem fornecidos para a lista de arquivos ou individualmente, uma entrada correspondente deve ser criada aqui
 	
 	private CacheManager() {}
 	
-	public static void queueNewCacheFile(Path filePath) {
-		if(!cacheFilesToWrite.offer(filePath)) {
+	public static <T> void queueNewCacheFile(T filePath) {
+		Path path = Path.of(filePath.toString());
+		if(!cacheFilesToWrite.offer(path)) {
 			Writer.writeJson();
-			queueNewCacheFile(filePath);
+			queueNewCacheFile(path);
 		}
 	}
 	

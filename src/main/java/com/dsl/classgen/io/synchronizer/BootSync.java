@@ -7,9 +7,9 @@ import java.nio.file.WatchEvent;
 import java.util.List;
 import java.util.Objects;
 
+import com.dsl.classgen.io.CacheManager;
 import com.dsl.classgen.io.FileEventsProcessor;
 import com.dsl.classgen.io.SupportProvider;
-import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.LogLevels;

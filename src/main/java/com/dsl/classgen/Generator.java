@@ -8,10 +8,10 @@ import org.apache.logging.log4j.Logger;
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
-import com.dsl.classgen.generator.NewOutterClassGenerator;
+import com.dsl.classgen.generator.OutterClassGenerator;
+import com.dsl.classgen.io.CacheManager;
 import com.dsl.classgen.io.FileEventsProcessor;
 import com.dsl.classgen.io.GeneratedStructureChecker;
-import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.io.file_manager.Compiler;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
@@ -82,7 +82,7 @@ public final class Generator {
 	public static void generate() {
 		if (!flagsCtx.getIsDirStructureAlreadyGenerated() || !flagsCtx.getIsExistsPJavaSource()) {
 			Utils.calculateElapsedTime();
-			new NewOutterClassGenerator().generateData();
+			new OutterClassGenerator().generateData();
 			
 			if(flagsCtx.getIsDebugMode()) {
 				LOGGER.debug(pathsCtx.getGeneratedClass());

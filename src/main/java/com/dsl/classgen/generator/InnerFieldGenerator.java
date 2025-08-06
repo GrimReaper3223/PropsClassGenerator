@@ -11,7 +11,7 @@ import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.expr.TypeExpr;
 
-public final class NewInnerFieldGenerator extends SupportProvider {
+public final class InnerFieldGenerator extends SupportProvider {
 
 	public List<FieldDeclaration> generateData(List<InnerFieldModel> models) {
 		return models.stream()
@@ -30,7 +30,7 @@ public final class NewInnerFieldGenerator extends SupportProvider {
 				 .addVariable(new VariableDeclarator(new TypeExpr().setType(model.fieldType()).getType(), 
 						 model.fieldName()));
 		
-		fieldDecl.getVariable(0).setInitializer(model.fieldValue().toString());
+		fieldDecl.getVariable(0).setInitializer(model.parsedFieldValue().toString());
 		return fieldDecl;
 	}
 }

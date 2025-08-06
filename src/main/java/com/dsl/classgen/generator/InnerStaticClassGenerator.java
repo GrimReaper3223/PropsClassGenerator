@@ -12,7 +12,7 @@ import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.type.TypeParameter;
 
-public final class NewInnerStaticClassGenerator extends SupportProvider {
+public final class InnerStaticClassGenerator extends SupportProvider {
 
 	public ClassOrInterfaceDeclaration generateData(InnerStaticClassModel model) {
         LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new inner static class...\n");
@@ -21,7 +21,7 @@ public final class NewInnerStaticClassGenerator extends SupportProvider {
 	}
 	
 	private ClassOrInterfaceDeclaration generateInnerStaticClass(InnerStaticClassModel model) {
-		NewInnerFieldGenerator fieldGenerator = new NewInnerFieldGenerator();
+		InnerFieldGenerator fieldGenerator = new InnerFieldGenerator();
 		
 		ClassOrInterfaceDeclaration classDecl = new ClassOrInterfaceDeclaration();
 		classDecl.addModifier(model.sourceModifiers())

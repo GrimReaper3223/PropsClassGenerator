@@ -6,8 +6,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ExecutionException;
 
+import com.dsl.classgen.io.CacheManager;
 import com.dsl.classgen.io.SupportProvider;
-import com.dsl.classgen.io.cache_manager.CacheManager;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;

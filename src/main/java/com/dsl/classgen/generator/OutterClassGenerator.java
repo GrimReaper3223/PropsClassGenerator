@@ -12,7 +12,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier.Keyword;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 
-public final class NewOutterClassGenerator extends SupportProvider {
+public final class OutterClassGenerator extends SupportProvider {
 
 	public void generateData() {
         LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new outter class...\n");
@@ -40,7 +40,7 @@ public final class NewOutterClassGenerator extends SupportProvider {
 	}
 	
 	private List<ClassOrInterfaceDeclaration> generateInnerClasses() {
-		var innerClassGenerator = new NewInnerStaticClassGenerator();
+		var innerClassGenerator = new InnerStaticClassGenerator();
 		
         return OutterClassModel.getMapModelStream()
         						.map(innerClassGenerator::generateData)

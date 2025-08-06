@@ -12,8 +12,8 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import com.dsl.classgen.io.CacheManager;
 import com.dsl.classgen.io.file_manager.Reader;
-import com.dsl.classgen.models.Hints;
 import com.dsl.classgen.models.Parsers;
 import com.dsl.classgen.utils.Utils;
 import com.github.javaparser.ast.Modifier.Keyword;
@@ -22,7 +22,7 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 		List<InnerFieldModel> fieldModelList, 
 		String className, 
 		Keyword[] sourceModifiers,
-		AccessFlag[] byteCodeModifiers) implements Hints, Parsers {
+		AccessFlag[] byteCodeModifiers) implements Parsers {
 	
 	public static <T> InnerStaticClassModel initInstance(T filePath) {
 		Path path = Path.of(filePath.toString());
@@ -51,6 +51,7 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 		String formattedFieldName = parseFieldName(propertiesKey);
 		InnerFieldModel model = new InnerFieldModel(annotation, fieldType, formattedFieldName, propertiesValue);
 		this.fieldModelList.add(model);
+		CacheManager.getModelFromCacheMap(this.annotationMetadata.filePath()).computeFieldInEntryMap(model);
 		return model;
 	}
 	
@@ -78,7 +79,6 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 	}
 	
 	private static List<InnerFieldModel> initFieldList(Path filePath, Class<?> fieldType) {
-		Parsers parser = new Parsers() {};
 		return Reader.loadProp(filePath)
 			  .entrySet()
 			  .stream()
@@ -87,7 +87,7 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 				  Object value = entry.getValue();
 				  
 				  FieldAnnotationModel annotation = new FieldAnnotationModel(key, Objects.hash(key, value));
-				  String formattedFieldName = parser.parseFieldName(key);
+				  String formattedFieldName =  new Parsers() {}.parseFieldName(key);
 				  return new InnerFieldModel(annotation, fieldType, formattedFieldName, value);
 			  }).collect(Collectors.toCollection(ArrayList::new));
 	}
@@ -108,16 +108,6 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
         }
         
         return Objects.hash(creationTime.toMillis(), lastModifiedTime.toMillis(), fileSize);
-	}
-	
-	@Override
-	public String startHint() {
-		return String.format("// INNER CLASS HINT ~>> %s", annotationMetadata.filePath());
-	}
-
-	@Override
-	public String endHint() {
-		return String.format("// INNER CLASS HINT <<~ %s", annotationMetadata.filePath());
 	}
 	
 	@Override

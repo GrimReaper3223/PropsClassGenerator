@@ -9,7 +9,7 @@ import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
 
-public abstract sealed class SupportProvider permits NewInnerStaticClassGenerator, NewInnerFieldGenerator, NewOutterClassGenerator {
+public abstract sealed class SupportProvider permits InnerStaticClassGenerator, InnerFieldGenerator, OutterClassGenerator {
 
 	protected static final Logger LOGGER = LogManager.getLogger(SupportProvider.class);
 	

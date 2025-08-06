@@ -13,8 +13,6 @@ import com.dsl.classgen.models.CachePropertiesData;
 
 public class ModelMapper <T extends Map<Integer, CachePropertiesData>> {
 
-	public ModelMapper() {}
-	
 	// inicia o fluxo de processamento de um mapa
 	private final BiFunction<T, T, Stream<Map.Entry<Integer, CachePropertiesData>>> streamMapCreator = 
 							 			(map1, map2) -> map1.entrySet()

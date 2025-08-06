@@ -11,7 +11,6 @@ module com.dsl.classgen {
 	exports com.dsl.classgen.annotation;
 	exports com.dsl.classgen.annotation.containers;
 	exports com.dsl.classgen.io.synchronizer to com.dsl.classgen.io.cache_manager;
-	exports com.dsl.classgen.io.cache_manager to com.dsl.classgen.annotation;
 	exports com.dsl.classgen.models;
 	exports com.dsl.classgen.models.model_mapper;
 	
@@ -22,5 +21,5 @@ module com.dsl.classgen {
 	exports com.dsl.classgen.annotation.processors to com.dsl.test.classgen;
 	exports com.dsl.classgen.utils to com.dsl.test.classgen;
 	
-	opens com.dsl.classgen.io.cache_manager to com.google.gson;
+	opens com.dsl.classgen.io to com.google.gson;
 }
