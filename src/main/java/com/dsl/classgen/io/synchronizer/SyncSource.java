@@ -31,6 +31,9 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 	public void insertClassSection(List<Path> pathList) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new data entries...");
 		
+		/*
+		 * BUG: ao inserir uma nova classe, o cache nao e atualizado
+		 */
 		pathList.forEach(path -> {
 			InnerStaticClassModel model = InnerStaticClassModel.initInstance(path);
 			OutterClassModel.computeClassModelToMap(model);

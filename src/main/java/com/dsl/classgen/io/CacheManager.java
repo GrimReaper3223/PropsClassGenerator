@@ -51,6 +51,7 @@ public final class CacheManager extends SupportProvider {
 		return !cacheFilesToWrite.isEmpty();
 	}
 	
+	// TODO: analisar a viabilidade de adicionar o arquivo de cache diretamente na pilha de caches pendentes para escrita
 	public static <T> void computeCacheModelToMap(T key, CacheModel value) {
 		Path jsonKey = Utils.resolveJsonFilePath(key);
         if(cacheModelMap.computeIfPresent(jsonKey, (_, _) -> value) == null) {

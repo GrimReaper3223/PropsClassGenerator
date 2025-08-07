@@ -1,7 +1,7 @@
 package com.dsl.classgen.models.model_mapper;
 
 import java.io.IOException;
-import java.lang.reflect.AccessFlag;
+import java.lang.classfile.ClassFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -22,13 +22,13 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 		List<InnerFieldModel> fieldModelList, 
 		String className, 
 		Keyword[] sourceModifiers,
-		AccessFlag[] byteCodeModifiers) implements Parsers {
+		int byteCodeModifiers) implements Parsers {
 	
 	public static <T> InnerStaticClassModel initInstance(T filePath) {
 		Path path = Path.of(filePath.toString());
 		String formattedClassName = new Parsers() {}.parseClassName(filePath);
 		Keyword[] sourceFlags = new Keyword[] { Keyword.PUBLIC, Keyword.STATIC, Keyword.FINAL };
-		AccessFlag[] byteCodeFlags = new AccessFlag[] { AccessFlag.PUBLIC, AccessFlag.STATIC, AccessFlag.FINAL };
+		int byteCodeFlags = ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC | ClassFile.ACC_FINAL | ClassFile.ACC_SUPER ;
 		
 		InnerStaticClassModel model = null;
 		

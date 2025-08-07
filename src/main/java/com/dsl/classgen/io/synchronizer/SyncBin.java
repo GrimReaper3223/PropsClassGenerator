@@ -10,6 +10,8 @@ import java.lang.classfile.FieldModel;
 import java.lang.classfile.attribute.ConstantValueAttribute;
 import java.lang.classfile.attribute.InnerClassesAttribute;
 import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
@@ -20,11 +22,14 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.annotation.GeneratedInnerField;
+import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
+import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.models.Parsers;
+import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
@@ -47,7 +52,35 @@ public final class SyncBin extends SupportProvider implements SyncOperations, Pa
 	@Override
 	public void insertClassSection(List<Path> pathList) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new compiled data entries...");
-		// document why this method is empty
+		List<InnerStaticClassModel> classModelList = pathList.stream().map(OutterClassModel::getModel).toList();
+		
+		classModelList.forEach(classModel -> {
+			
+			byte[] bytes = cf.build(ClassDesc.of(classModel.className()), classBuilder -> classBuilder
+					.withSuperclass(cm.thisClass().asSymbol())
+					.withFlags(classModel.byteCodeModifiers())
+					.with(buildInnerClassAnnotation(classModel.annotationMetadata().filePath(),
+							classModel.annotationMetadata().javaType(), classModel.annotationMetadata().hash()))
+					.withMethod(ConstantDescs.INIT_NAME, ConstantDescs.MTD_void, ClassFile.ACC_PRIVATE,
+							mtdBuilder -> mtdBuilder.with(RuntimeVisibleAnnotationsAttribute.of(Annotation
+									.of(GeneratedPrivateConstructor.class.describeConstable().orElseThrow())))));
+			
+			ClassModel innerClassFileModel = cf.parse(bytes);
+			
+			// gera os campos internos
+			ByteBuffer bb = ByteBuffer.wrap(cf.build(innerClassFileModel.thisClass().asSymbol(), classBuilder -> {
+				innerClassFileModel.elementStream().forEach(classBuilder::with);
+				
+				classModel.fieldModelList().forEach(fieldModel -> 
+					classBuilder.withField(fieldModel.fieldName(), fieldModel.fieldType().describeConstable().orElseThrow(), fieldBuilder -> 
+						fieldBuilder.with(buildInnerFieldAnnotation(fieldModel.annotationMetadata().key(), fieldModel.annotationMetadata().hash()))
+								.with(ConstantValueAttribute.of(fieldModel.rawFieldValue().toString()))
+								.withFlags(fieldModel.byteCodeModifiers())));
+			}));
+			
+			// escreve os novos dados da classe interna na outter class
+			consumeWriter.accept(bb.array());
+		});
 	}
 
 	@Override
@@ -97,10 +130,11 @@ public final class SyncBin extends SupportProvider implements SyncOperations, Pa
 										cf.build(clsModel.thisClass().asSymbol(), classBuilder -> {
 											clsModel.elementStream().forEach(classBuilder::with);
 
+											// TODO: verificar referencias ao parseFieldName
 											classBuilder.withField(parseFieldName(cachedFieldValues.propKey()),
 													cacheModel.parseJavaType().describeConstable().get(),
 													fieldBuilder -> fieldBuilder
-															.with(buildAnnotation(cachedFieldValues.propKey(),
+															.with(buildInnerFieldAnnotation(cachedFieldValues.propKey(),
 																	hashCode))
 															.with(ConstantValueAttribute
 																	.of(cachedFieldValues.rawPropValue().toString()))
@@ -138,22 +172,48 @@ public final class SyncBin extends SupportProvider implements SyncOperations, Pa
 		eraseClassSection(List.of(currentCacheModel));
 	}
 	
-	private RuntimeVisibleAnnotationsAttribute buildAnnotation(String key, Integer hash) {
+	private RuntimeVisibleAnnotationsAttribute buildInnerFieldAnnotation(String key, Integer hash) {
+		final Class<?> annotationClass = GeneratedInnerField.class;
 		String keyMethodName = null;
 		String hashMethodName = null;
 		
+		// devemos obter o nome do metodo declarado em cada interface de anotacao
+		// isso garante o lancamento de um erro caso o metodo nao exista
 		try {
-			keyMethodName = GeneratedInnerField.class.getDeclaredMethod("key").getName();
-			hashMethodName = GeneratedInnerField.class.getDeclaredMethod("hash").getName();
+			keyMethodName = annotationClass.getDeclaredMethod("key").getName();
+			hashMethodName = annotationClass.getDeclaredMethod("hash").getName();
 		} catch (NoSuchMethodException e) {
 			Utils.logException(e);
 		}
 		
 		return RuntimeVisibleAnnotationsAttribute.of(
-				Annotation.of(GeneratedInnerField.class.describeConstable().orElseThrow(), List.of(
+				Annotation.of(annotationClass.describeConstable().orElseThrow(), List.of(
 							AnnotationElement.ofString(keyMethodName, key),
-							AnnotationElement.ofInt(hashMethodName, hash)
-						))
+							AnnotationElement.ofInt(hashMethodName, hash)))
+				);
+	}
+	
+	private <T> RuntimeVisibleAnnotationsAttribute buildInnerClassAnnotation(T filePath, Class<?> javaType, Integer hash) {
+		final Class<?> annotationClass = GeneratedInnerStaticClass.class;
+		String filePathMethodName = null;
+		String javaTypeMethodName = null;
+		String hashMethodName = null;
+		
+		// devemos obter o nome do metodo declarado em cada interface de anotacao
+		// isso garante o lancamento de uma excecao caso o metodo nao exista
+		try {
+			filePathMethodName = annotationClass.getDeclaredMethod("filePath").getName();
+			javaTypeMethodName = annotationClass.getDeclaredMethod("javaType").getName();
+			hashMethodName = annotationClass.getDeclaredMethod("hash").getName();
+		} catch (NoSuchMethodException e) {
+			Utils.logException(e);
+		}
+		
+		return RuntimeVisibleAnnotationsAttribute.of(
+				Annotation.of(annotationClass.describeConstable().orElseThrow(), List.of(
+						AnnotationElement.ofString(filePathMethodName, filePath.toString()),
+						AnnotationElement.ofClass(javaTypeMethodName, javaType.describeConstable().orElseThrow()),
+						AnnotationElement.ofInt(hashMethodName, hash)))
 				);
 	}
 }
