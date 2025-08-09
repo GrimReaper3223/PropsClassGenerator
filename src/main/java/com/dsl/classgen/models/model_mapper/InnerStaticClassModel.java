@@ -43,6 +43,8 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 			Utils.logException(e);
 		}
 		
+		OutterClassModel.computeClassModelToMap(model);
+		
 		return model;
 	}
 	
@@ -50,6 +52,7 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 		FieldAnnotationModel annotation = new FieldAnnotationModel(propertiesKey, Objects.hash(propertiesKey, propertiesValue));
 		String formattedFieldName = parseFieldName(propertiesKey);
 		InnerFieldModel model = new InnerFieldModel(annotation, fieldType, formattedFieldName, propertiesValue);
+		
 		this.fieldModelList.add(model);
 		CacheManager.getModelFromCacheMap(this.annotationMetadata.filePath()).computeFieldInEntryMap(model);
 		return model;

@@ -93,8 +93,7 @@ public final class Reader extends SupportProvider {
                 Files.walkFileTree(inputDirPath, new FileVisitorImpls.ReaderFileVisitor());
             } else {
                 try (Stream<Path> pathStream = Files.list(inputDirPath)){
-                    pathStream.filter(Utils.fileFilter::test)
-	                    	  .forEach(pathsCtx::queueFile);
+                    pathStream.filter(Utils.fileFilter::test).forEach(pathsCtx::queueFile);
                 }
                 pathsCtx.queueDir(inputDirPath);
             }

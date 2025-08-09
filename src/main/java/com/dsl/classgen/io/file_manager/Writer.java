@@ -10,12 +10,17 @@ import com.dsl.classgen.io.CacheManager;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
-import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
 public final class Writer extends SupportProvider {
+	
+	private static final StandardOpenOption[] OPTS = { 
+			StandardOpenOption.CREATE, 
+			StandardOpenOption.WRITE,
+			StandardOpenOption.TRUNCATE_EXISTING 
+	};
 	
     private Writer() {}
 
@@ -36,51 +41,50 @@ public final class Writer extends SupportProvider {
         }
     }
     
-    public static <T> void write(Path pathToWrite, T content) {
-    	 try {
-    		StandardOpenOption[] options = {
-    				StandardOpenOption.CREATE, 
-    				StandardOpenOption.WRITE,
-    				StandardOpenOption.TRUNCATE_EXISTING
-    		};
-    		
+	public static <T, U> void write(T pathToWrite, U content) {
+		Path path = Path.of(pathToWrite.toString());
+		
+		try {
+			StandardOpenOption[] options = { 
+					StandardOpenOption.CREATE, 
+					StandardOpenOption.WRITE,
+					StandardOpenOption.TRUNCATE_EXISTING 
+			};
+
 			Utils.getExecutor().submit(() -> {
-				 try {
-					 switch(content) {
-					 	case String s -> {
-					 		LOGGER.info( "Writing data...\n");
-					 		Files.writeString(pathToWrite, s, options);
-					 	}
-					 	case byte[] b -> {
-					 		LOGGER.info( "Writing byte data...\n");
-					 		Files.write(pathToWrite, b);
-					 	}
-					 	default -> throw new IllegalArgumentException("Unexpected value: " + content);
-					 }
-			     }
-				 catch (IOException | IllegalArgumentException e) {
-					 Utils.logException(e);
-				 }
-			 }).get();
-		 } catch (InterruptedException | ExecutionException e) {
+				try {
+					switch (content) {
+					case String s -> {
+						LOGGER.info("Writing data...\n");
+						Files.writeString(path, s, options);
+					}
+					case byte[] b -> {
+						LOGGER.info("Writing byte data...\n");
+						Files.write(path, b);
+					}
+					default -> throw new IllegalArgumentException("Unexpected value: " + content);
+					}
+				} catch (IOException | IllegalArgumentException e) {
+					Utils.logException(e);
+				}
+			}).get();
+		} catch (InterruptedException | ExecutionException e) {
 			Utils.logException(e);
-		 }
-    }
+		}
+	}
     
-    // deve preparar todos os dados necessarios para a escrita do json
-    public static void writeJson() {
-    	Gson gson = new Gson();
-    	
-    	CacheManager.getQueuedCacheFiles(true)
-	            	.stream()
-	            	.forEach(path -> {
-	            		var model = InnerStaticClassModel.initInstance(path);
-	            		var cacheModel = new CacheModel(model);
-	            		
-	            		OutterClassModel.computeClassModelToMap(model);
-			            CacheManager.computeCacheModelToMap(path, cacheModel);
-			            
-			            write(Utils.resolveJsonFilePath(path), gson.toJson(cacheModel));
-	            	});
-    }
+	// deve preparar todos os dados necessarios para a escrita do json
+	public static void writeJson() {
+		LOGGER.log(LogLevels.CACHE.getLevel(), "Writing cache...\n");
+		Gson gson = new Gson();
+
+		CacheManager.getQueuedCacheFiles(true).stream().map(InnerStaticClassModel::initInstance).forEach(model -> {
+			try {
+				Files.writeString(Utils.resolveJsonFilePath(model.annotationMetadata().filePath()),
+						gson.toJson(new CacheModel(model)), OPTS);
+			} catch (IOException e) {
+				Utils.logException(e);
+			}
+		});
+	}
 }

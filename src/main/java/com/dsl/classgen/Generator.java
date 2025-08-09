@@ -1,6 +1,11 @@
 package com.dsl.classgen;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.util.List;
+import java.util.Objects;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,9 +20,13 @@ import com.dsl.classgen.io.GeneratedStructureChecker;
 import com.dsl.classgen.io.file_manager.Compiler;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.file_manager.Writer;
-import com.dsl.classgen.io.synchronizer.BootSync;
-import com.dsl.classgen.models.ChunkLoader;
+import com.dsl.classgen.io.synchronizer.SyncBin;
+import com.dsl.classgen.io.synchronizer.SyncSource;
+import com.dsl.classgen.models.CacheModel;
+import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
+import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.service.WatchServiceImpl;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 
 public final class Generator {
@@ -31,7 +40,7 @@ public final class Generator {
 	private Generator() {}
 
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
-		new GeneratedStructureChecker().checkFileSystem();
+  		new GeneratedStructureChecker().checkFileSystem();
 		
 		flagsCtx.setIsRecursive(isRecursive);
 		pathsCtx.setPackageClass(Utils.normalizePath(packageClass.concat(".generated"), "/", ".").toString());
@@ -40,8 +49,8 @@ public final class Generator {
 		
 		Reader.read(inputPath);
 		CacheManager.processCache();
-		new ChunkLoader().loadChunks();
-		new BootSync().resync();
+		loadChunks();
+		resync();
 		
 		LOGGER.info("""
 				
@@ -64,7 +73,6 @@ public final class Generator {
 				-----------------------------
 				
 				Call 'Generator.generate()' to generate java classes or parse existing classes.
-				
 				""", inputPath, 
 					 pathsCtx.getOutputSourceDirPath(), 
 					 pathsCtx.getPackageClass(),
@@ -93,5 +101,54 @@ public final class Generator {
 		Compiler.compile();
 		WatchServiceImpl.initialize();
 		FileEventsProcessor.initialize();
+	}
+	
+	private static void loadChunks() {
+		LOGGER.info("Loading chunks...");
+		pathsCtx.getFileList().forEach(path -> {
+			InnerStaticClassModel.initInstance(path);
+			pathsCtx.checkFileInCache(path);
+		});
+	}
+	
+	private static void resync() {
+		if(flagsCtx.getIsDirStructureAlreadyGenerated() && flagsCtx.getIsExistsPJavaSource() && flagsCtx.getIsExistsCompiledPJavaClass()) {
+			LOGGER.warn("There is already a generated structure.");
+			LOGGER.log(LogLevels.NOTICE.getLevel(), "Looking for changes...");
+			
+			List<CacheModel> outdatedCache = filterDeletedFiles();
+			
+			if(!outdatedCache.isEmpty()) {
+				LOGGER.warn("Changes detected. Synchronizing entities...");
+				new SyncSource().eraseClassSection(outdatedCache);
+				new SyncBin().eraseClassSection(outdatedCache);
+				
+			} else {
+				LOGGER.warn("All is up to date.");
+			}
+			
+			writeNewCacheIfExists();
+		}
+	}
+	
+	private static List<CacheModel> filterDeletedFiles() {
+		return CacheManager.getCacheModelMapEntries()
+				.stream()
+				.filter(entry -> !OutterClassModel.checkPathInClassModelMap(entry.getValue().filePath))
+				.map(CacheManager::removeElementFromCacheModelMap)
+				.filter(Objects::nonNull)
+				.toList();
+	}
+	
+	private static void writeNewCacheIfExists() {
+		if(CacheManager.hasCacheToWrite()) {
+			LOGGER.warn("New cache to write. Synchronizing entities...");
+			CacheManager.getQueuedCacheFiles(false)
+						.stream()
+						.forEach(path -> {
+							WatchEvent.Kind<Path> event = Files.exists(Utils.resolveJsonFilePath(path)) ? StandardWatchEventKinds.ENTRY_MODIFY : StandardWatchEventKinds.ENTRY_CREATE;
+							FileEventsProcessor.caller(event, path);
+						});
+		}
 	}
 }

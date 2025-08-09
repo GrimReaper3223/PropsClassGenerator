@@ -10,7 +10,6 @@ import java.util.stream.Stream;
 
 import com.dsl.classgen.annotation.processors.AnnotationProcessor;
 import com.dsl.classgen.io.CacheManager;
-import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
@@ -22,33 +21,29 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 
-public final class SyncSource extends SupportProvider implements SyncOperations {
+public final class SyncSource implements SyncOperations {
 
 	private CompilationUnit cUnit = getNewCompilationUnit(pathsCtx.getExistingPJavaGeneratedSourcePath());
 	private Consumer<Void> consumeWriter = _ -> Writer.write(pathsCtx.getExistingPJavaGeneratedSourcePath(), cUnit.toString());
 	
 	@Override
 	public void insertClassSection(List<Path> pathList) {
-		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new data entries...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new class entries...");
 		
-		/*
-		 * BUG: ao inserir uma nova classe, o cache nao e atualizado
-		 */
 		pathList.forEach(path -> {
 			InnerStaticClassModel model = InnerStaticClassModel.initInstance(path);
-			OutterClassModel.computeClassModelToMap(model);
-			CacheManager.computeCacheModelToMap(path, new CacheModel(model));
+			new CacheModel(model);
 			
 			ClassOrInterfaceDeclaration classDecl = innerClassGen.generateData(model);
 			cUnit.getClassByName(pathsCtx.getOutterClassName()).ifPresent(c -> c.addMember(classDecl));
 		});
-		
 		consumeWriter.accept(null);
+		CacheManager.processCache();
 	}
 	
 	@Override
 	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
-		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing class section...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing class entries...");
 		List<Class<?>> filteredClassList = AnnotationProcessor.processClassAnnotations(currentCacheModelList);
 
 		cUnit.findAll(ClassOrInterfaceDeclaration.class)
@@ -68,37 +63,21 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 			
 			// TODO: implementar a lógica de modificação de campos com o enum 'MODIFY'
 			switch(entry.getKey()) {
-				case INSERT: 
-					List<FieldDeclaration> fieldDeclList = innerFieldGen.generateData(streamEntry.get()
-							   			.map(entries -> OutterClassModel.getModel(currentCacheModel.filePath)
-									   						.insertNewModel(entries.getValue().propKey(), 
-									   										entries.getValue().rawPropValue(), 
-											   								currentCacheModel.parseJavaType()))
-							   			.toList());
-					cUnit.findAll(ClassOrInterfaceDeclaration.class)
-							.stream()
-							.filter(classDecl -> classDecl.getNameAsString().equals(OutterClassModel.getModel(currentCacheModel.filePath).className()))
-							.forEach(cls -> fieldDeclList.forEach(cls::addMember));
-					break;
-					
-				case DELETE:
-					/*
-					 *  BUG: regeneracao precoce de todo o código fonte da classe ao invés de apenas os campos.
-					 *  Isso pode levar a duplicacoes de classes no código fonte.
-					 */
-					List<Field> fieldList = streamEntry.get()
-							   .map(entries -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, entries.getKey()))
-							   .toList();
-					
-					cUnit.findAll(ClassOrInterfaceDeclaration.class)
-							.stream()
-							.filter(classDecl -> classDecl.getNameAsString().equals(OutterClassModel.getModel(currentCacheModel.filePath).className()))
+			case INSERT -> cUnit.findAll(ClassOrInterfaceDeclaration.class).stream()
+							.filter(classDecl -> classDecl.getNameAsString()
+									.equals(OutterClassModel.getModel(currentCacheModel.filePath).className()))
+							.forEach(cls -> generateFieldsDeclarations(streamEntry.get(), currentCacheModel)
+									.forEach(cls::addMember));
+
+				case DELETE ->
+					cUnit.findAll(ClassOrInterfaceDeclaration.class).stream()
+							.filter(classDecl -> classDecl.getNameAsString()
+									.equals(OutterClassModel.getModel(currentCacheModel.filePath).className()))
 							.flatMap(classDecl -> classDecl.findAll(FieldDeclaration.class).stream())
 							.filter(fieldDecl -> fieldDecl.getVariables().stream()
-								.anyMatch(f -> fieldList.stream()
-										.anyMatch(field -> field.getName().equals(f.getNameAsString()))))
+									.anyMatch(f -> getGeneratedFields(streamEntry.get(), currentCacheModel).stream()
+											.anyMatch(field -> field.getName().equals(f.getNameAsString()))))
 							.forEach(Node::remove);
-					break;
 			}
 		});
 		consumeWriter.accept(null);
@@ -113,4 +92,16 @@ public final class SyncSource extends SupportProvider implements SyncOperations 
 		eraseClassSection(List.of(currentCacheModel));
 	}
 	
+	private List<FieldDeclaration> generateFieldsDeclarations(Stream<Map.Entry<Integer, CachePropertiesData>> entries, CacheModel currentCacheModel) {
+		return innerFieldGen.generateData(entries
+				.map(entry -> OutterClassModel.getModel(currentCacheModel.filePath).insertNewModel(
+						entry.getValue().propKey(), entry.getValue().rawPropValue(), currentCacheModel.parseJavaType()))
+				.toList());
+	}
+	
+	private List<Field> getGeneratedFields(Stream<Map.Entry<Integer, CachePropertiesData>> entries, CacheModel currentCacheModel) {
+		return entries
+				.map(entry -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, entry.getKey()))
+				.toList();
+	}
 }

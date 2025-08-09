@@ -16,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -24,7 +25,6 @@ import java.util.stream.Stream;
 import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
 import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
-import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
@@ -34,7 +34,7 @@ import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 
-public final class SyncBin extends SupportProvider implements SyncOperations, Parsers {
+public final class SyncBin implements SyncOperations, Parsers {
 
 	private final ClassFile cf = ClassFile.of();
 	private ClassModel cm;
@@ -113,49 +113,14 @@ public final class SyncBin extends SupportProvider implements SyncOperations, Pa
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Modifying binary entries...");
 		mappedChanges.entrySet().forEach(entry -> {
 			Supplier<Stream<Map.Entry<Integer,CachePropertiesData>>> keys = () -> entry.getValue().entrySet().stream();
-			ByteBuffer bb = ByteBuffer.allocate(Short.MAX_VALUE);
 			
 			switch(entry.getKey()) {
-				case INSERT:
-					keys.get()
-						.forEach(entries -> {
-							Integer hashCode = entries.getKey();
-							CachePropertiesData cachedFieldValues = entries.getValue();
-							
-							try {
-								Path classPath = Utils.convertSourcePathToClassPath(cacheModel.filePath);
-								ClassModel clsModel = cf.parse(classPath);
-
-								biConsumeWriter.accept(classPath,
-										cf.build(clsModel.thisClass().asSymbol(), classBuilder -> {
-											clsModel.elementStream().forEach(classBuilder::with);
-
-											// TODO: verificar referencias ao parseFieldName
-											classBuilder.withField(parseFieldName(cachedFieldValues.propKey()),
-													cacheModel.parseJavaType().describeConstable().get(),
-													fieldBuilder -> fieldBuilder
-															.with(buildInnerFieldAnnotation(cachedFieldValues.propKey(),
-																	hashCode))
-															.with(ConstantValueAttribute
-																	.of(cachedFieldValues.rawPropValue().toString()))
-															.withFlags(OutterClassModel.getModel(cacheModel.filePath)
-																	.byteCodeModifiers()));
-										}));
-							} catch (IOException | ClassNotFoundException e) {
-								Utils.logException(e);
-							}
-						});
-					break;
-					
-				case DELETE:
-					keys.get()
-						.map(Map.Entry::getValue)
-						.forEach(key -> {
-							ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm && fm.fieldName().stringValue().equals(parseFieldName(key.propKey())));
-							bb.put(cf.transformClass(cm, ct));
-						});
-					consumeWriter.accept(bb.array());
-					break;
+				case INSERT -> insertFieldSection(keys.get().toList(), cacheModel);
+				case DELETE -> keys.get().map(entries -> {
+					ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm
+							&& fm.fieldName().stringValue().equals(parseFieldName(entries.getValue().propKey())));
+					return cf.transformClass(cm, ct);
+				}).reduce((_, arr) -> arr).ifPresent(arr -> consumeWriter.accept(arr));
 			}
 		});
 	}
@@ -215,5 +180,31 @@ public final class SyncBin extends SupportProvider implements SyncOperations, Pa
 						AnnotationElement.ofClass(javaTypeMethodName, javaType.describeConstable().orElseThrow()),
 						AnnotationElement.ofInt(hashMethodName, hash)))
 				);
+	}
+	
+	// recebe um unico modelo com sua lista de entradas associadas
+	private void insertFieldSection(List<Entry<Integer, CachePropertiesData>> entryList, CacheModel model) { 
+		try {
+			Path classPath = Utils.convertSourcePathToClassPath(model.filePath);
+			ClassModel clsModel = cf.parse(classPath);
+
+			biConsumeWriter.accept(classPath, cf.build(clsModel.thisClass().asSymbol(), classBuilder -> {
+				clsModel.elementStream().forEach(classBuilder::with);
+
+				entryList.forEach(entry -> {
+					Integer hash = entry.getKey();
+					CachePropertiesData cachedFieldValues = entry.getValue();
+
+					classBuilder.withField(parseFieldName(cachedFieldValues.propKey()),
+							model.parseJavaType().describeConstable().get(),
+							fieldBuilder -> fieldBuilder
+									.with(buildInnerFieldAnnotation(cachedFieldValues.propKey(), hash))
+									.with(ConstantValueAttribute.of(cachedFieldValues.rawPropValue().toString()))
+									.withFlags(OutterClassModel.getModel(model.filePath).byteCodeModifiers()));
+				});
+			}));
+		} catch (IOException | ClassNotFoundException e) {
+			Utils.logException(e);
+		}
 	}
 }

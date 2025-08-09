@@ -29,14 +29,13 @@ import com.dsl.classgen.utils.Utils;
 public final class FileEventsProcessor extends SupportProvider {
 
 	private static final Thread eventProcessorThread = new Thread(FileEventsProcessor::processChanges);
-	private static SyncSource syncSource = new SyncSource();
-	private static SyncBin syncBin = new SyncBin();
+	private static SyncSource staticSyncSource = new SyncSource();
+	private static SyncBin staticSyncBin = new SyncBin();
 
 	private static Function<Path, Stream<Path>> streamFilterCreator = path -> {
 		Stream<Path> pathStream = null;
 		try {
-			pathStream = Files.walk(path)
-							  .filter(Utils.fileFilter::test);
+			pathStream = Files.walk(path).filter(Utils.fileFilter::test);
 		} catch (IOException e) {
 			Utils.logException(e);
 		}
@@ -69,7 +68,7 @@ public final class FileEventsProcessor extends SupportProvider {
   		 		}
 			}
 		}
-		LOGGER.error("{} was interrupted. Finishing {}...", WatchServiceImpl.getThreadName(), eventProcessorThread.getName());
+		LOGGER.error("'{}' was interrupted. Finishing '{}'...", WatchServiceImpl.getThreadName(), eventProcessorThread.getName());
 		eventProcessorThread.interrupt();
 	}
 	
@@ -86,12 +85,12 @@ public final class FileEventsProcessor extends SupportProvider {
 		if(Files.isDirectory(path)) {
 			try(Stream<Path> files = streamFilterCreator.apply(path)) {
 				var fileList = files.toList();
-				syncSource.insertClassSection(fileList);
-				syncBin.insertClassSection(fileList);
+				staticSyncSource.insertClassSection(fileList);
+				staticSyncBin.insertClassSection(fileList);
 			} 
 		} else {
-			syncSource.insertClassSection(path);
-			syncBin.insertClassSection(path);
+			staticSyncSource.insertClassSection(path);
+			staticSyncBin.insertClassSection(path);
 		}
 	}
 	
@@ -102,22 +101,21 @@ public final class FileEventsProcessor extends SupportProvider {
 			LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
 			
 			try(Stream<Path> files = streamFilterCreator.apply(path)) {
-				list.addAll(files.map(CacheManager::removeElementFromCacheModelMap)
-								 .toList());
+				list.addAll(files.map(CacheManager::removeElementFromCacheModelMap).toList());
 			}
 		} else if(Utils.isPropertiesFile(path)) {
 			LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
 			list.add(CacheManager.removeElementFromCacheModelMap(path));
 		}
 			
-		syncSource.eraseClassSection(list);
-		syncBin.eraseClassSection(list);
+		staticSyncSource.eraseClassSection(list);
+		staticSyncBin.eraseClassSection(list);
 	}
 	
 	private static void modifySection(Path path) {
 		CacheModel currentCacheModel = CacheManager.getModelFromCacheMap(path);
 		if(currentCacheModel == null) {
-			LOGGER.error("Model not found in cache.");
+			LOGGER.error("Model (File: {}) not found in cache.", path.getFileName());
 			return;
 		}
 		
@@ -152,8 +150,8 @@ public final class FileEventsProcessor extends SupportProvider {
 				
 			} else {
 				Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>().mapper(currentCacheModel.entries, newCacheModel.entries);
-				syncSource.modifySection(mappedChanges, currentCacheModel);
-				syncBin.modifySection(mappedChanges, newCacheModel);
+				staticSyncSource.modifySection(mappedChanges, currentCacheModel);
+				staticSyncBin.modifySection(mappedChanges, newCacheModel);
 			}
 		}
 	}

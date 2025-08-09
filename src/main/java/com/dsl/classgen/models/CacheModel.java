@@ -35,6 +35,8 @@ public class CacheModel implements Serializable {
 													instance.rawFieldValue(), 
 													instance.parsedFieldValue()));
 			 });
+		
+		CacheManager.computeCacheModelToMap(model.annotationMetadata().filePath(), this);
 	}
 	
 	public Class<?> parseJavaType() {
@@ -64,5 +66,11 @@ public class CacheModel implements Serializable {
 	public boolean equals(Object obj) {
 		CacheModel cm = CacheModel.class.cast(Objects.requireNonNull(obj));
     	return cm.fileHash == this.fileHash && cm.entries.equals(this.entries);
+	}
+	
+	// NOTE: este metodo nao deve ser usado
+	@Override
+	public int hashCode() {
+		return super.hashCode();
 	}
 }

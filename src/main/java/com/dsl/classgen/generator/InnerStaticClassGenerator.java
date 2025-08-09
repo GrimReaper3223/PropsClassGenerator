@@ -16,7 +16,7 @@ public final class InnerStaticClassGenerator extends SupportProvider {
 
 	public ClassOrInterfaceDeclaration generateData(InnerStaticClassModel model) {
         LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new inner static class...\n");
-        formatGenerationOutput("Static Inner Class", model.className(), null);
+        formatGenerationOutput("Static Inner Class", model.className(), "\n");
         return generateInnerStaticClass(model);
 	}
 	

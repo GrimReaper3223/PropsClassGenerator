@@ -30,7 +30,7 @@ public final class CacheManager extends SupportProvider {
 		Path path = Path.of(filePath.toString());
 		if(!cacheFilesToWrite.offer(path)) {
 			Writer.writeJson();
-			queueNewCacheFile(path);
+			queueNewCacheFile(filePath);
 		}
 	}
 	
@@ -51,7 +51,6 @@ public final class CacheManager extends SupportProvider {
 		return !cacheFilesToWrite.isEmpty();
 	}
 	
-	// TODO: analisar a viabilidade de adicionar o arquivo de cache diretamente na pilha de caches pendentes para escrita
 	public static <T> void computeCacheModelToMap(T key, CacheModel value) {
 		Path jsonKey = Utils.resolveJsonFilePath(key);
         if(cacheModelMap.computeIfPresent(jsonKey, (_, _) -> value) == null) {
@@ -99,25 +98,27 @@ public final class CacheManager extends SupportProvider {
         	Path cacheDir = pathsCtx.getCacheDir();
             boolean isCacheDirValid = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
             
-            String operationInitMode = "AUTOMATIC";
-            
             if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && hasCacheToWrite()) {
-            	updateCache(operationInitMode);
+            	LOGGER.log(LogLevels.CACHE.getLevel(), "Updating cache...");
+            	updateCache();
             	
             	if(cacheModelMap.isEmpty()) {
-            		loadCache(operationInitMode);
+            		LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache...");
+            		loadCache();
             	}
             	
             } else if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && cacheModelMap.isEmpty()) {
-                loadCache(operationInitMode);
+            	LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache...");
+                loadCache();
                 
             } else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
             	LOGGER.log(LogLevels.CACHE.getLevel(), "Invalid cache detected. Revalidating cache...");
                 eraseCache();
-                createCache(null);
+                createCache();
                 
             } else if(!isCacheDirValid) {
-                createCache(operationInitMode);
+            	LOGGER.log(LogLevels.CACHE.getLevel(), "Cache does not exist. Generating new cache...");
+                createCache();
             }
         }
         catch (IOException e) {
@@ -125,8 +126,7 @@ public final class CacheManager extends SupportProvider {
         }
     }
 	
-	private static void loadCache(String appendMessage) throws IOException {
-		LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache... ({})", appendMessage);
+	private static void loadCache() throws IOException {
 		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheLoaderFileVisitor());
 	}
 
@@ -134,17 +134,13 @@ public final class CacheManager extends SupportProvider {
 		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheEraserVisitor());
 	}
 
-	private static void createCache(String appendMessage) throws IOException {
-		if(appendMessage != null) {
-			LOGGER.log(LogLevels.CACHE.getLevel(), "Cache does not exist. Generating new cache... ({})", appendMessage);
-		}
+	private static void createCache() throws IOException {
 		pathsCtx.getFileList().forEach(CacheManager::queueNewCacheFile);
 		Files.createDirectories(pathsCtx.getCacheDir());
 		Writer.writeJson();
 	}
 
-	private static void updateCache(String appendMessage) {
-		LOGGER.log(LogLevels.CACHE.getLevel(), "Updating cache... ({})", appendMessage);
+	private static void updateCache() {
 		Writer.writeJson();
 	}
 }
