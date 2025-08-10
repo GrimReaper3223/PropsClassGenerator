@@ -21,7 +21,7 @@ class TestGeneratorWithCacheErasure implements HarnessTestTools {
 	void setup() {
 		eraseCache();
 	}
-	
+
 	@Test
 	@Order(1)
 	@DisplayName("Generate single file with cache erasure and without recursion")
@@ -31,7 +31,7 @@ class TestGeneratorWithCacheErasure implements HarnessTestTools {
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
-	
+
 	@Test
 	@Order(2)
 	@DisplayName("Generate many files with cache erasure and without recursion")
@@ -41,7 +41,7 @@ class TestGeneratorWithCacheErasure implements HarnessTestTools {
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
-	
+
 	@Test
 	@Order(3)
 	@Disabled("Teste bem-sucedido")

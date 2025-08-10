@@ -8,9 +8,7 @@ import java.lang.annotation.Target;
 
 import com.dsl.classgen.annotation.containers.PrivateConstructorAnnotationContainer;
 
-@Target(value={ElementType.CONSTRUCTOR})
-@Retention(value=RetentionPolicy.RUNTIME)
-@Repeatable(value=PrivateConstructorAnnotationContainer.class)
-public @interface GeneratedPrivateConstructor {
-}
-
+@Target(value = { ElementType.CONSTRUCTOR })
+@Retention(value = RetentionPolicy.RUNTIME)
+@Repeatable(value = PrivateConstructorAnnotationContainer.class)
+public @interface GeneratedPrivateConstructor {}

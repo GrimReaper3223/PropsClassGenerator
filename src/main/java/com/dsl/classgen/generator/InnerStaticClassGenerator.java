@@ -12,27 +12,43 @@ import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.ast.type.TypeParameter;
 
+/**
+ * The Class InnerStaticClassGenerator.
+ */
 public final class InnerStaticClassGenerator extends SupportProvider {
 
+	/**
+	 * Public method for calling, without exposing the internal implementation
+	 *
+	 * @param model the model for generating inner static class
+	 * @return the class or interface declaration
+	 */
 	public ClassOrInterfaceDeclaration generateData(InnerStaticClassModel model) {
-        LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new inner static class...\n");
-        formatGenerationOutput("Static Inner Class", model.className(), "\n");
-        return generateInnerStaticClass(model);
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new inner static class...\n");
+		formatGenerationOutput("Static Inner Class", model.className(), "\n");
+		return generateInnerStaticClass(model);
 	}
-	
+
+	/**
+	 * Generate inner static class.
+	 *
+	 * @param model the model for generating inner static class
+	 * @return the class or interface declaration
+	 */
 	private ClassOrInterfaceDeclaration generateInnerStaticClass(InnerStaticClassModel model) {
 		InnerFieldGenerator fieldGenerator = new InnerFieldGenerator();
-		
+
 		ClassOrInterfaceDeclaration classDecl = new ClassOrInterfaceDeclaration();
 		classDecl.addModifier(model.sourceModifiers())
-				 .setName(model.className())
-				 .addAnnotation(new NormalAnnotationExpr().addPair("filePath", new StringLiteralExpr(model.annotationMetadata().filePath().toString()))
-						 .addPair("hash", new IntegerLiteralExpr(String.valueOf(model.annotationMetadata().hash())))
-						 .addPair("javaType", new ClassExpr(new TypeParameter(model.annotationMetadata().javaType().getSimpleName())))
-						 .setName(GeneratedInnerStaticClass.class.getSimpleName()))
-				 .addConstructor(Keyword.PRIVATE)
-				 .addAnnotation(GeneratedPrivateConstructor.class);
-		
+				.setName(model.className())
+				.addAnnotation(new NormalAnnotationExpr()
+						.addPair("filePath", new StringLiteralExpr(model.annotationMetadata().filePath().toString()))
+						.addPair("hash", new IntegerLiteralExpr(String.valueOf(model.annotationMetadata().hash())))
+						.addPair("javaType",
+								new ClassExpr(new TypeParameter(model.annotationMetadata().javaType().getSimpleName())))
+						.setName(GeneratedInnerStaticClass.class.getSimpleName()))
+				.addConstructor(Keyword.PRIVATE).addAnnotation(GeneratedPrivateConstructor.class);
+
 		fieldGenerator.generateData(model.fieldModelList()).forEach(classDecl::addMember);
 		return classDecl;
 	}

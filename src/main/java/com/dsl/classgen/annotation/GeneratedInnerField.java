@@ -8,12 +8,11 @@ import java.lang.annotation.Target;
 
 import com.dsl.classgen.annotation.containers.InnerFieldAnnotationContainer;
 
-@Target(value={ElementType.FIELD})
-@Retention(value=RetentionPolicy.RUNTIME)
-@Repeatable(value=InnerFieldAnnotationContainer.class)
+@Target(value = { ElementType.FIELD })
+@Retention(value = RetentionPolicy.RUNTIME)
+@Repeatable(value = InnerFieldAnnotationContainer.class)
 public @interface GeneratedInnerField {
-    public String key();
+	public String key();
 
-    public int hash() default 0;
+	public int hash() default 0;
 }
-

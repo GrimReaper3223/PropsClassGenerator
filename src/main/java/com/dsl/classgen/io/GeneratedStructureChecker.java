@@ -10,66 +10,67 @@ import java.util.stream.Stream;
 
 import com.dsl.classgen.utils.Utils;
 
+/**
+ * The Class GeneratedStructureChecker.
+ */
 public final class GeneratedStructureChecker extends SupportProvider {
 
 	private Function<String, Predicate<Path>> predicateFactory = str -> p -> p.getFileName().toString().equals(str);
-	private BiFunction<Stream<Path>, Predicate<Path>, Path> genFilter = 
-						(pathStream, predicate) -> pathStream.filter(predicate::test)
-															 .findFirst()
-															 .orElse(null);
-	
-	/*
-	 * Verifica se existe a estrutura de diretorios e arquivos utilizaveis 
-	 * por este framework.
-	 * 
-	 * A verificacao comeca buscando um pacote contendo "generated" no nome
-	 * Se o pacote for encontrado, sera buscado a classe principal gerada anteriormente pelo framework
+	private BiFunction<Stream<Path>, Predicate<Path>, Path> genFilter = (pathStream, predicate) -> pathStream
+			.filter(predicate::test).findFirst().orElse(null);
+
+	/**
+	 * Check file system.
 	 */
-	
 	public void checkFileSystem() {
 		LOGGER.info("Analyzing the file system...");
 		checkDirGeneratedStructure();
 		checkIfExistsCompiledClass();
 		checkIfIsExistsSourceFile();
 	}
-	
-    private void checkDirGeneratedStructure() {
-        try (Stream<Path> dirs = Files.find(pathsCtx.getOutputSourceDirPath(), Integer.MAX_VALUE, (path, _) -> Files.isDirectory(path))){
-        	Path foundedPath = genFilter.apply(dirs, predicateFactory.apply("generated"));
-        	if(foundedPath != null) {
-        		pathsCtx.setOutputSourceDirPath(foundedPath);
-        		flagsCtx.setIsDirStructureAlreadyGenerated(true);
-        	}
-        }
-        catch (IOException e) {
-        	Utils.logException(e);
-        }
-    }
-    
-    // verifica se a classe compilada existe
-    private void checkIfExistsCompiledClass() {
-    	try(Stream<Path> files = Files.find(pathsCtx.getOutputClassFilePath(), Integer.MAX_VALUE, (path, _) -> Files.isRegularFile(path))) {
+
+	/**
+	 * Check dir generated structure.
+	 */
+	private void checkDirGeneratedStructure() {
+		try (Stream<Path> dirs = Files.find(pathsCtx.getOutputSourceDirPath(), Integer.MAX_VALUE,
+				(path, _) -> Files.isDirectory(path))) {
+			Path foundedPath = genFilter.apply(dirs, predicateFactory.apply("generated"));
+			if (foundedPath != null) {
+				pathsCtx.setOutputSourceDirPath(foundedPath);
+				flagsCtx.setIsDirStructureAlreadyGenerated(true);
+			}
+		} catch (IOException e) {
+			Utils.logException(e);
+		}
+	}
+
+	/**
+	 * Check if exists compiled class.
+	 */
+	private void checkIfExistsCompiledClass() {
+		try (Stream<Path> files = Files.find(pathsCtx.getOutputClassFilePath(), Integer.MAX_VALUE,
+				(path, _) -> Files.isRegularFile(path))) {
 			Path foundedPath = genFilter.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".class"));
-			if(foundedPath != null) {
-        		pathsCtx.setOutputClassFilePath(foundedPath);
-        		flagsCtx.setIsExistsCompiledPJavaClass(true);
-        	}
-    	}
-    	catch (IOException e) {
-    		Utils.logException(e);
-        }
-    }
+			if (foundedPath != null) {
+				pathsCtx.setOutputClassFilePath(foundedPath);
+				flagsCtx.setIsExistsCompiledPJavaClass(true);
+			}
+		} catch (IOException e) {
+			Utils.logException(e);
+		}
+	}
 
-    // verifica se o arquivo P.java existe
-    private void checkIfIsExistsSourceFile() {
-        try (Stream<Path> files = Files.list(pathsCtx.getOutputSourceDirPath())) {
-            Path foundedPath = genFilter.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".java"));
-            pathsCtx.setExistingPJavaGeneratedSourcePath(foundedPath);
-            flagsCtx.setIsExistsPJavaSource(foundedPath != null);
-        }
-        catch (IOException e) {
-        	Utils.logException(e);
-        }
-    }
+	/**
+	 * Check if is exists source file.
+	 */
+	private void checkIfIsExistsSourceFile() {
+		try (Stream<Path> files = Files.list(pathsCtx.getOutputSourceDirPath())) {
+			Path foundedPath = genFilter.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".java"));
+			pathsCtx.setExistingPJavaGeneratedSourcePath(foundedPath);
+			flagsCtx.setIsExistsPJavaSource(foundedPath != null);
+		} catch (IOException e) {
+			Utils.logException(e);
+		}
+	}
 }
-

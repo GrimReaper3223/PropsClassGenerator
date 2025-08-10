@@ -19,52 +19,103 @@ import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
+/**
+ * The Class CacheManager.
+ */
 public final class CacheManager extends SupportProvider {
 
-	private static ConcurrentMap<Path, CacheModel> cacheModelMap = new ConcurrentHashMap<>();  	// mapa cuja chave e o caminho para o arquivo de cache criado/lido. O valor e um objeto que encapsula todos os dados contidos no cache 
-	private static BlockingQueue<Path> cacheFilesToWrite = new ArrayBlockingQueue<>(1024);		// deve armazenar arquivos para processamento de cache. Quando novos arquivos forem fornecidos para a lista de arquivos ou individualmente, uma entrada correspondente deve ser criada aqui
-	
+	private static ConcurrentMap<Path, CacheModel> cacheModelMap = new ConcurrentHashMap<>();
+	private static BlockingQueue<Path> cacheFilesToWrite = new ArrayBlockingQueue<>(1024);
+
 	private CacheManager() {}
-	
+
+	/**
+	 * Queue new cache file.
+	 *
+	 * @param <T>      the generic type to be associated with the argument (String
+	 *                 or Path)
+	 * @param filePath the properties file path
+	 */
 	public static <T> void queueNewCacheFile(T filePath) {
 		Path path = Path.of(filePath.toString());
-		if(!cacheFilesToWrite.offer(path)) {
+		if (!cacheFilesToWrite.offer(path)) {
 			Writer.writeJson();
 			queueNewCacheFile(filePath);
 		}
 	}
-	
+
+	/**
+	 * Gets the cache model map entries.
+	 *
+	 * @return the cache model map entries
+	 */
 	public static Set<Entry<Path, CacheModel>> getCacheModelMapEntries() {
 		return cacheModelMap.entrySet();
 	}
-	
+
+	/**
+	 * Gets the queued cache files.
+	 *
+	 * @param drain if true, drains the queue and returns the files, otherwise
+	 *              returns the current queue without draining
+	 * @return the queued cache files
+	 */
 	public static List<Path> getQueuedCacheFiles(boolean drain) {
-		if(!drain) {
+		if (!drain) {
 			return cacheFilesToWrite.stream().toList();
 		}
-    	List<Path> cacheList = new ArrayList<>();
-    	cacheFilesToWrite.drainTo(cacheList);
-    	return cacheList;
-    }
-	
+		List<Path> cacheList = new ArrayList<>();
+		cacheFilesToWrite.drainTo(cacheList);
+		return cacheList;
+	}
+
+	/**
+	 * Checks for cache to write.
+	 *
+	 * @return true, if exists cache to write
+	 */
 	public static boolean hasCacheToWrite() {
 		return !cacheFilesToWrite.isEmpty();
 	}
-	
-	public static <T> void computeCacheModelToMap(T key, CacheModel value) {
-		Path jsonKey = Utils.resolveJsonFilePath(key);
-        if(cacheModelMap.computeIfPresent(jsonKey, (_, _) -> value) == null) {
-        	cacheModelMap.put(jsonKey, value);
-        }
-    }
-	
-	public static <T> CacheModel getModelFromCacheMap(T key) {
-		Path jsonKey = Utils.resolveJsonFilePath(key);
-        return cacheModelMap.get(jsonKey);
-    }
-	
-	public static <T> CacheModel removeElementFromCacheModelMap(T key) {
-		Path jsonKey = Utils.resolveJsonFilePath(key);
+
+	/**
+	 * Compute cache model to map.
+	 *
+	 * @param <T>     the generic type to be associated with the argument (String or
+	 *                Path)
+	 * @param keyPath the properties path
+	 * @param value   the new cache model value
+	 */
+	public static <T> void computeCacheModelToMap(T keyPath, CacheModel value) {
+		Path jsonKey = Utils.resolveJsonFilePath(keyPath);
+		if (cacheModelMap.computeIfPresent(jsonKey, (_, _) -> value) == null) {
+			cacheModelMap.put(jsonKey, value);
+		}
+	}
+
+	/**
+	 * Gets the model from cache map.
+	 *
+	 * @param <T>     the generic type to be associated with the argument (String or
+	 *                Path)
+	 * @param keyPath the properties path
+	 * @return the existing model from cache map
+	 */
+	public static <T> CacheModel getModelFromCacheMap(T keyPath) {
+		Path jsonKey = Utils.resolveJsonFilePath(keyPath);
+		return cacheModelMap.get(jsonKey);
+	}
+
+	/**
+	 * Removes the element from cache model map.
+	 *
+	 * @param <T>     the generic type to be associated with the argument (String or
+	 *                Path)
+	 * @param keyPath the properties path
+	 * @return the removed cache model element
+	 */
+	public static <T> CacheModel removeElementFromCacheModelMap(T keyPath) {
+		Path jsonKey = Utils.resolveJsonFilePath(keyPath);
 		try {
 			Files.delete(jsonKey);
 		} catch (IOException e) {
@@ -72,18 +123,21 @@ public final class CacheManager extends SupportProvider {
 		}
 		return cacheModelMap.remove(jsonKey);
 	}
-	
-	/*
-	 * este metodo analisa se o arquivo de cache e invalido e, por este motivo, retorna false 
-	 * se o arquivo de cache for valido, ou seja, se o conteudo do cache estiver de acordo com o modelo de cache.
-	 * true se o arquivo de cache for invalido, ou seja, se o conteudo do cache estiver diferente do modelo de cache
+
+	/**
+	 * Checks if is invalid cache file.
+	 *
+	 * @param <T>       the generic type to be associated with the argument (String
+	 *                  or Path)
+	 * @param propsPath the properties file path
+	 * @return true, if is invalid cache file
 	 */
 	public static <T> boolean isInvalidCacheFile(T propsPath) {
 		Path jsonFilePath = Utils.resolveJsonFilePath(propsPath);
 		boolean isInvalidCacheFile = true;
-		
-		if(Files.exists(jsonFilePath)) {
-			try(BufferedReader br = Files.newBufferedReader(jsonFilePath)) {
+
+		if (Files.exists(jsonFilePath)) {
+			try (BufferedReader br = Files.newBufferedReader(jsonFilePath)) {
 				CacheModel cm = CacheManager.getModelFromCacheMap(jsonFilePath);
 				isInvalidCacheFile = !cm.equals(new Gson().fromJson(br, CacheModel.class));
 			} catch (IOException e) {
@@ -92,54 +146,74 @@ public final class CacheManager extends SupportProvider {
 		}
 		return isInvalidCacheFile;
 	}
-	
+
+	/**
+	 * Process cache.
+	 */
 	public static void processCache() {
-        try {
-        	Path cacheDir = pathsCtx.getCacheDir();
-            boolean isCacheDirValid = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
-            
-            if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && hasCacheToWrite()) {
-            	LOGGER.log(LogLevels.CACHE.getLevel(), "Updating cache...");
-            	updateCache();
-            	
-            	if(cacheModelMap.isEmpty()) {
-            		LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache...");
-            		loadCache();
-            	}
-            	
-            } else if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && cacheModelMap.isEmpty()) {
-            	LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache...");
-                loadCache();
-                
-            } else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
-            	LOGGER.log(LogLevels.CACHE.getLevel(), "Invalid cache detected. Revalidating cache...");
-                eraseCache();
-                createCache();
-                
-            } else if(!isCacheDirValid) {
-            	LOGGER.log(LogLevels.CACHE.getLevel(), "Cache does not exist. Generating new cache...");
-                createCache();
-            }
-        }
-        catch (IOException e) {
-        	Utils.logException(e);
-        }
-    }
-	
+		try {
+			Path cacheDir = pathsCtx.getCacheDir();
+			boolean isCacheDirValid = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
+
+			if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && hasCacheToWrite()) {
+				LOGGER.log(LogLevels.CACHE.getLevel(), "Updating cache...");
+				updateCache();
+
+				if (cacheModelMap.isEmpty()) {
+					LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache...");
+					loadCache();
+				}
+
+			} else if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && cacheModelMap.isEmpty()) {
+				LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache...");
+				loadCache();
+
+			} else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
+				LOGGER.log(LogLevels.CACHE.getLevel(), "Invalid cache detected. Revalidating cache...");
+				eraseCache();
+				createCache();
+
+			} else if (!isCacheDirValid) {
+				LOGGER.log(LogLevels.CACHE.getLevel(), "Cache does not exist. Generating new cache...");
+				createCache();
+			}
+		} catch (IOException e) {
+			Utils.logException(e);
+		}
+	}
+
+	/**
+	 * Load cache.
+	 *
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
 	private static void loadCache() throws IOException {
 		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheLoaderFileVisitor());
 	}
 
+	/**
+	 * Erase cache.
+	 *
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
 	private static void eraseCache() throws IOException {
 		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheEraserVisitor());
 	}
 
+	/**
+	 * Creates the cache.
+	 *
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
 	private static void createCache() throws IOException {
 		pathsCtx.getFileList().forEach(CacheManager::queueNewCacheFile);
 		Files.createDirectories(pathsCtx.getCacheDir());
 		Writer.writeJson();
 	}
 
+	/**
+	 * Update cache.
+	 */
 	private static void updateCache() {
 		Writer.writeJson();
 	}

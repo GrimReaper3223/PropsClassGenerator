@@ -20,21 +20,48 @@ import com.dsl.classgen.utils.Utils;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
+/**
+ * The Interface SyncOperations.
+ */
 sealed interface SyncOperations permits SyncBin, SyncSource {
 
-	final InnerStaticClassGenerator innerClassGen = new InnerStaticClassGenerator();
-	final InnerFieldGenerator innerFieldGen = new InnerFieldGenerator();
-	
-	final Logger LOGGER = LogManager.getLogger(SyncOperations.class);
-	
-	final GeneralContext generalCtx = GeneralContext.getInstance();
-	final FlagsContext flagsCtx = generalCtx.getFlagsContextInstance();
-	final PathsContext pathsCtx = generalCtx.getPathsContextInstance();
-	
+	Logger LOGGER = LogManager.getLogger(SyncOperations.class);
+
+	GeneralContext generalCtx = GeneralContext.getInstance();
+	FlagsContext flagsCtx = generalCtx.getFlagsContextInstance();
+	PathsContext pathsCtx = generalCtx.getPathsContextInstance();
+
+	InnerStaticClassGenerator innerClassGen = new InnerStaticClassGenerator();
+	InnerFieldGenerator innerFieldGen = new InnerFieldGenerator();
+
+	/**
+	 * Insert class section.
+	 *
+	 * @param pathList the path list to process
+	 */
 	void insertClassSection(List<Path> pathList);
+
+	/**
+	 * Erase class section.
+	 *
+	 * @param currentCacheModelList the current cache model list to process
+	 */
 	void eraseClassSection(List<CacheModel> currentCacheModelList);
+
+	/**
+	 * Modify section.
+	 *
+	 * @param mappedChanges     the mapped changes to apply
+	 * @param currentCacheModel the current cache model representing the state
+	 */
 	void modifySection(Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges, CacheModel currentCacheModel);
-	
+
+	/**
+	 * Gets the new compilation unit.
+	 *
+	 * @param path the path to the class file
+	 * @return the new compilation unit or null if an error occurs
+	 */
 	default CompilationUnit getNewCompilationUnit(Path path) {
 		Objects.requireNonNull(path, "Path cannot be null");
 		CompilationUnit cUnit = null;

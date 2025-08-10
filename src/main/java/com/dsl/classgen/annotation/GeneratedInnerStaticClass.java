@@ -8,14 +8,13 @@ import java.lang.annotation.Target;
 
 import com.dsl.classgen.annotation.containers.InnerClassAnnotationContainer;
 
-@Target(value={ElementType.TYPE})
-@Retention(value=RetentionPolicy.RUNTIME)
-@Repeatable(value=InnerClassAnnotationContainer.class)
+@Target(value = { ElementType.TYPE })
+@Retention(value = RetentionPolicy.RUNTIME)
+@Repeatable(value = InnerClassAnnotationContainer.class)
 public @interface GeneratedInnerStaticClass {
-    public String filePath();
+	public String filePath();
 
-    public Class<?> javaType() default Object.class;
+	public Class<?> javaType() default Object.class;
 
-    public int hash() default 0;
+	public int hash() default 0;
 }
-

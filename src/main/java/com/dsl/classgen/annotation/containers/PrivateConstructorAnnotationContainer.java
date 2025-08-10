@@ -7,9 +7,8 @@ import java.lang.annotation.Target;
 
 import com.dsl.classgen.annotation.GeneratedPrivateConstructor;
 
-@Target(value={ElementType.CONSTRUCTOR})
-@Retention(value=RetentionPolicy.RUNTIME)
+@Target(value = { ElementType.CONSTRUCTOR })
+@Retention(value = RetentionPolicy.RUNTIME)
 public @interface PrivateConstructorAnnotationContainer {
-    public GeneratedPrivateConstructor[] value();
+	public GeneratedPrivateConstructor[] value();
 }
-

@@ -14,55 +14,68 @@ import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
 
+/**
+ * The Class Writer.
+ */
 public final class Writer extends SupportProvider {
-	
-	private static final StandardOpenOption[] OPTS = { 
-			StandardOpenOption.CREATE, 
-			StandardOpenOption.WRITE,
-			StandardOpenOption.TRUNCATE_EXISTING 
-	};
-	
-    private Writer() {}
 
-    public static void writeFirstGeneration() {
-        Path outputPackagePath = pathsCtx.getOutputSourceDirPath();
-        Path outputFilePath = pathsCtx.getOutputSourceFilePath();
-        
-        try {
-            Files.createDirectories(outputPackagePath);
-            Writer.write(outputFilePath, pathsCtx.getGeneratedClass());
-            LOGGER.log(LogLevels.SUCCESS.getLevel(), "***File created in: {} [Elapsed Time: {}ms]***\n", outputPackagePath, Utils.calculateElapsedTime());
-        }
-        catch (IOException e) {
-            Utils.logException(e);
-        }
-        finally {
-        	pathsCtx.setExistingPJavaGeneratedSourcePath(outputFilePath);
-        }
-    }
-    
+	/** The Constant StandardOpenOptions. */
+	private static final StandardOpenOption[] OPTS = {
+			StandardOpenOption.CREATE,
+			StandardOpenOption.WRITE,
+			StandardOpenOption.TRUNCATE_EXISTING
+	};
+
+	private Writer() {}
+
+	/**
+	 * Write first generation.
+	 */
+	public static void writeFirstGeneration() {
+		Path outputPackagePath = pathsCtx.getOutputSourceDirPath();
+		Path outputFilePath = pathsCtx.getOutputSourceFilePath();
+
+		try {
+			Files.createDirectories(outputPackagePath);
+			Writer.write(outputFilePath, pathsCtx.getGeneratedClass());
+			LOGGER.log(LogLevels.SUCCESS.getLevel(), "***File created in: {} [Elapsed Time: {}ms]***\n",
+					outputPackagePath, Utils.calculateElapsedTime());
+		} catch (IOException e) {
+			Utils.logException(e);
+		} finally {
+			pathsCtx.setExistingPJavaGeneratedSourcePath(outputFilePath);
+		}
+	}
+
+	/**
+	 * Provides means to write Strings or byte arrays to a specified path.
+	 *
+	 * @param <T>         the generic type to be associated with the parameter
+	 *                    pathToWrite (String or Path)
+	 * @param <U>         the generic type to be associated with the parameter
+	 *                    content (String or byte[])
+	 * @param pathToWrite the path to write the content
+	 * @param content     the content to be written to the specified path
+	 */
 	public static <T, U> void write(T pathToWrite, U content) {
 		Path path = Path.of(pathToWrite.toString());
-		
+
 		try {
-			StandardOpenOption[] options = { 
-					StandardOpenOption.CREATE, 
-					StandardOpenOption.WRITE,
-					StandardOpenOption.TRUNCATE_EXISTING 
-			};
+			StandardOpenOption[] options = { StandardOpenOption.CREATE, StandardOpenOption.WRITE,
+					StandardOpenOption.TRUNCATE_EXISTING };
 
 			Utils.getExecutor().submit(() -> {
 				try {
 					switch (content) {
-					case String s -> {
-						LOGGER.info("Writing data...\n");
-						Files.writeString(path, s, options);
-					}
-					case byte[] b -> {
-						LOGGER.info("Writing byte data...\n");
-						Files.write(path, b);
-					}
-					default -> throw new IllegalArgumentException("Unexpected value: " + content);
+						case String s -> {
+							LOGGER.info("Writing data...\n");
+							Files.writeString(path, s, options);
+						}
+						case byte[] b -> {
+							LOGGER.info("Writing byte data...\n");
+							Files.write(path, b);
+						}
+						default -> throw new IllegalArgumentException("Unexpected value: " + content);
 					}
 				} catch (IOException | IllegalArgumentException e) {
 					Utils.logException(e);
@@ -72,8 +85,10 @@ public final class Writer extends SupportProvider {
 			Utils.logException(e);
 		}
 	}
-    
-	// deve preparar todos os dados necessarios para a escrita do json
+
+	/**
+	 * Write json cache.
+	 */
 	public static void writeJson() {
 		LOGGER.log(LogLevels.CACHE.getLevel(), "Writing cache...\n");
 		Gson gson = new Gson();

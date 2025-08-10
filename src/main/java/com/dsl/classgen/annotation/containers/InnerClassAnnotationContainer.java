@@ -7,9 +7,8 @@ import java.lang.annotation.Target;
 
 import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
 
-@Target(value={ElementType.TYPE})
-@Retention(value=RetentionPolicy.RUNTIME)
+@Target(value = { ElementType.TYPE })
+@Retention(value = RetentionPolicy.RUNTIME)
 public @interface InnerClassAnnotationContainer {
-    public GeneratedInnerStaticClass[] value();
+	public GeneratedInnerStaticClass[] value();
 }
-

@@ -7,9 +7,8 @@ import java.lang.annotation.Target;
 
 import com.dsl.classgen.annotation.GeneratedInnerField;
 
-@Target(value={ElementType.FIELD})
-@Retention(value=RetentionPolicy.RUNTIME)
+@Target(value = { ElementType.FIELD })
+@Retention(value = RetentionPolicy.RUNTIME)
 public @interface InnerFieldAnnotationContainer {
-    public GeneratedInnerField[] value();
+	public GeneratedInnerField[] value();
 }
-

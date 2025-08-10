@@ -16,12 +16,12 @@ import com.dsl.classgen.Generator;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Tests with erasure of generated data")
 class TestGeneratorWithErasureOfGeneratedData implements HarnessTestTools {
-	
+
 	@BeforeEach
 	void setup() {
 		eraseGeneratedData();
 	}
-	
+
 	@Test
 	@Order(1)
 	@DisplayName("Generate single file with erasure of generated data and not recursive")
@@ -31,7 +31,7 @@ class TestGeneratorWithErasureOfGeneratedData implements HarnessTestTools {
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
-	
+
 	@Test
 	@Order(2)
 	@DisplayName("Generate many files with erasure of generated data and not recursive")
@@ -41,7 +41,7 @@ class TestGeneratorWithErasureOfGeneratedData implements HarnessTestTools {
 		Generator.generate();
 		Assertions.assertTrue(Files.exists(sourceDirPath));
 	}
-	
+
 	@Test
 	@Order(3)
 	@Disabled("Teste bem-sucedido")
