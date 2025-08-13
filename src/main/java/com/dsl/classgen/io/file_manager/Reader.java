@@ -2,9 +2,6 @@ package com.dsl.classgen.io.file_manager;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.context.GeneralContext;
+import com.dsl.classgen.core.classloader.CustomClassLoader;
 import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.utils.LogLevels;
@@ -94,13 +92,9 @@ public final class Reader extends SupportProvider {
 	 */
 	public static Class<?> loadGeneratedBinClass() {
 		Class<?> generatedClass = null;
-		String fullPackageClass = pathsCtx.getFullPackageClass().replace(".java", "");
 		try {
-			URLClassLoader classLoader = new URLClassLoader(
-					new URL[] { pathsCtx.getOutputClassFilePath().toUri().toURL() },
-					ClassLoader.getPlatformClassLoader());
-			generatedClass = Class.forName(fullPackageClass, true, classLoader);
-		} catch (ClassNotFoundException | MalformedURLException e) {
+			generatedClass = new CustomClassLoader().loadClass(pathsCtx.getOutputClassFilePath().toString());
+		} catch (ClassNotFoundException e) {
 			Utils.logException(e);
 		}
 		return generatedClass;

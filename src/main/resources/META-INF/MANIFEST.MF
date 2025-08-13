@@ -7,4 +7,3 @@ Build-Jdk: 23 (Oracle Corporation)
 Build-Os: Linux (6.15.2-zen1-1-zen; amd64)
 Class-Path: junit-jupiter-api-5.11.4.jar opentest4j-1.3.0.jar junit-plat
  form-commons-1.11.4.jar apiguardian-api-1.1.2.jar gson-2.10.jar
-

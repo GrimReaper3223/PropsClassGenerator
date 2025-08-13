@@ -6,7 +6,6 @@ package com.dsl.classgen.context;
 public class FlagsContext {
 
 	// deve ser true ao depurar o projeto.
-	/** The is debug mode. */
 	// se true for definido, a classe gerada sera impressa ao inves de escrita
 	private boolean isDebugMode = false;
 

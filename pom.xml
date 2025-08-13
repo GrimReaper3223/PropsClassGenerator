@@ -5,7 +5,7 @@
 
 	<groupId>com.dsl.classgen</groupId>
 	<artifactId>PropsClassGenerator</artifactId>
-	<version>0.2.4</version>
+	<version>1.0</version>
 	<packaging>jar</packaging>
 
 	<name>PropsClassGenerator</name>
@@ -74,7 +74,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.4.1</version>
+				<version>3.4.2</version>
 				<configuration>
 					<outputDirectory>${user.dir}/src/main/resources/libs</outputDirectory>
 					<archive>
