@@ -29,6 +29,14 @@
 		<url>https://github.com/GrimReaper3223/PropsClassGenerator/tree/master</url>
 	</scm>
 
+	<distributionManagement>
+		<repository>
+			<id>central</id>
+			<name>Central Repository</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
+
 	<developers>
 		<developer>
 			<name>Deiv</name>
@@ -119,7 +127,6 @@
 					<compilerArgs>--enable-preview</compilerArgs>
 				</configuration>
 			</plugin>
-			<!-- Maven Dependency Plugin para copiar dependências -->
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<version>3.7.0</version>
