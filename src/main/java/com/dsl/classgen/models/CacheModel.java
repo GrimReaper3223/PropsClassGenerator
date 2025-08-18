@@ -16,16 +16,15 @@ import com.dsl.classgen.utils.Utils;
 public class CacheModel implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	
+
 	public String filePath;
 	public int fileHash;
 	public String javaType;
 	public Map<Integer, CachePropertiesData> entries;
 
 	/**
-	 * Instantiates a new cache model.
-	 * 
-	 * This constructor is used by deserialization processes and should not be used
+	 * Instantiates a new cache model. This constructor is used by deserialization
+	 * processes and should not be used
 	 */
 	public CacheModel() {}
 

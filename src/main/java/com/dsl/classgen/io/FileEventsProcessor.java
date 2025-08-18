@@ -89,7 +89,8 @@ public final class FileEventsProcessor extends SupportProvider {
 	/**
 	 * Provides a manual call to the change processor for other areas of the system
 	 *
-	 * @param <T>  the generic type to be associated with the argument (String or Path)
+	 * @param <T>  the generic type to be associated with the argument (String or
+	 *             Path)
 	 * @param kind the event kind for the given file
 	 * @param path the file path that was changed
 	 */
@@ -107,7 +108,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	/**
 	 * Creates the section.
 	 *
-	 * @param path the new file path 
+	 * @param path the new file path
 	 */
 	private static void createSection(Path path) {
 		if (Files.isDirectory(path)) {

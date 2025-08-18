@@ -65,7 +65,8 @@ public final class Utils {
 	/**
 	 * Resolve json file path.
 	 *
-	 * @param <T> the generic type to be associated with the argument (String or Path)
+	 * @param <T>  the generic type to be associated with the argument (String or
+	 *             Path)
 	 * @param path the path of the properties file
 	 * @return the path reference to the cache file
 	 */
@@ -85,7 +86,8 @@ public final class Utils {
 	/**
 	 * Convert source path to class path.
 	 *
-	 * @param <T> the generic type to be associated with the argument (String or Path)
+	 * @param <T>        the generic type to be associated with the argument (String
+	 *                   or Path)
 	 * @param sourcePath the source path to be converted to class path
 	 * @return the path of the class file corresponding to the source path
 	 * @throws ClassNotFoundException if the class file cannot be found
@@ -102,7 +104,8 @@ public final class Utils {
 	/**
 	 * Normalize path.
 	 *
-	 * @param <T>         the generic type to be associated with the argument (String or Path)
+	 * @param <T>         the generic type to be associated with the argument
+	 *                    (String or Path)
 	 * @param path        the path
 	 * @param toReplace   string that must be found in the path to be replaced
 	 * @param replaceWith string that should replace the previously mentioned string

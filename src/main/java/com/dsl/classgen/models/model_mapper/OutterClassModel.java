@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 public class OutterClassModel {
 
 	private static Map<String, InnerStaticClassModel> mapModel = new HashMap<>();
-	
+
 	private OutterClassModel() {}
 
 	/**
@@ -29,7 +29,8 @@ public class OutterClassModel {
 	/**
 	 * Gets the model.
 	 *
-	 * @param <T> the generic type to be associated with the argument (String or Path)
+	 * @param <T>      the generic type to be associated with the argument (String
+	 *                 or Path)
 	 * @param filePath the properties file path
 	 * @return the mapped inner static class model
 	 */
@@ -40,7 +41,8 @@ public class OutterClassModel {
 	/**
 	 * Check path in class model map.
 	 *
-	 * @param <T> the generic type to be associated with the argument (String or Path)
+	 * @param <T>      the generic type to be associated with the argument (String
+	 *                 or Path)
 	 * @param filePath the properties file path
 	 * @return true, if exists in map model
 	 */

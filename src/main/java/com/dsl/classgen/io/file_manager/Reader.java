@@ -26,7 +26,8 @@ public final class Reader extends SupportProvider {
 	/**
 	 * Reads a properties file from a path passed as an argument.
 	 *
-	 * @param <T> the generic type to be associated with the argument (String or Path)
+	 * @param <T>  the generic type to be associated with the argument (String or
+	 *             Path)
 	 * @param path the properties file path
 	 */
 	public static <T> void read(T path) {

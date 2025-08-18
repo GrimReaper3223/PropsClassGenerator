@@ -68,7 +68,7 @@ public class WatchServiceImpl {
 	}
 
 	/**
-	 * Initial registration. Must be called when initializing the framework. 
+	 * Initial registration. Must be called when initializing the framework.
 	 * Registers all directories configured for monitoring.
 	 *
 	 * @throws IOException Signals that an I/O exception has occurred.
@@ -94,12 +94,13 @@ public class WatchServiceImpl {
 	}
 
 	/**
-	 * Check the monitoring key created from a directory path, 
-	 * notifying whether the key should be updated or registered
+	 * Check the monitoring key created from a directory path, notifying whether the
+	 * key should be updated or registered
 	 *
 	 * @param key  the directory watch key
 	 * @param path the directory path
-	 * @return an entry whose key is the WatchKey linked to the mapped directory path
+	 * @return an entry whose key is the WatchKey linked to the mapped directory
+	 *         path
 	 */
 	private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Checking {}...", path);

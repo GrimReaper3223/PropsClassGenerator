@@ -33,7 +33,8 @@ public record InnerStaticClassModel(ClassAnnotationModel annotationMetadata, Lis
 	/**
 	 * Inits the instance.
 	 *
-	 * @param <T> the generic type to be associated with the argument (String or Path)
+	 * @param <T>      the generic type to be associated with the argument (String
+	 *                 or Path)
 	 * @param filePath the property file path
 	 * @return the instance of this class
 	 */
@@ -63,7 +64,8 @@ public record InnerStaticClassModel(ClassAnnotationModel annotationMetadata, Lis
 	 *
 	 * @param propertiesKey   the properties key
 	 * @param propertiesValue the properties value
-	 * @param fieldType       the field type (a.k.a javaType, declared in the properties file)
+	 * @param fieldType       the field type (a.k.a javaType, declared in the
+	 *                        properties file)
 	 * @return the new inner field model
 	 */
 	public InnerFieldModel insertNewModel(String propertiesKey, Object propertiesValue, Class<?> fieldType) {
@@ -102,9 +104,9 @@ public record InnerStaticClassModel(ClassAnnotationModel annotationMetadata, Lis
 		Class<?> javaType = null;
 
 		try {
-    		if ((javaType = Class.forPrimitiveName(extractedJavaType)) == null) {
-    			javaType = Class.forName(extractedJavaType);
-    		}
+			if ((javaType = Class.forPrimitiveName(extractedJavaType)) == null) {
+				javaType = Class.forName(extractedJavaType);
+			}
 		} catch (ClassNotFoundException _) {
 			try {
 				javaType = Class.forName("java.lang." + extractedJavaType);
@@ -119,7 +121,8 @@ public record InnerStaticClassModel(ClassAnnotationModel annotationMetadata, Lis
 	 * Inits the field list.
 	 *
 	 * @param filePath  the properties file path
-	 * @param fieldType the field type (a.k.a javaType, declared in the properties file)
+	 * @param fieldType the field type (a.k.a javaType, declared in the properties
+	 *                  file)
 	 * @return the list
 	 */
 	private static List<InnerFieldModel> initFieldList(Path filePath, Class<?> fieldType) {

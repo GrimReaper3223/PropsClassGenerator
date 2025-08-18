@@ -11,12 +11,12 @@ import java.util.stream.Collectors;
 public interface Parsers {
 
 	/**
-	 * Parses the class name. 
-	 * 
-	 * Receives the path of the properties file to be mapped and converts 
-	 * the file name to the name of a class, according to Java conventions.
+	 * Parses the class name. Receives the path of the properties file to be mapped
+	 * and converts the file name to the name of a class, according to Java
+	 * conventions.
 	 *
-	 * @param <T> the generic type to be associated with the argument (String or Path)
+	 * @param <T>                the generic type to be associated with the argument
+	 *                           (String or Path)
 	 * @param propertiesFilePath the properties file path
 	 * @return the string containing the formatted class name
 	 */
@@ -32,10 +32,9 @@ public interface Parsers {
 	}
 
 	/**
-	 * Parses the field name.
-	 * 
-	 * Receives the key of a property to be mapped and converts the key name to the 
-	 * name of a constant field, according to Java conventions.
+	 * Parses the field name. Receives the key of a property to be mapped and
+	 * converts the key name to the name of a constant field, according to Java
+	 * conventions.
 	 * 
 	 * @param data the mapped key of the currently loaded properties file
 	 * @return the string containing the formatted field name
@@ -47,11 +46,9 @@ public interface Parsers {
 	}
 
 	/**
-	 * Parses the field value.
-	 *
-	 * Receives the value associated with the key that was 
-	 * mapped from a properties file and formats this value 
-	 * according to the Java type assigned in the mapped properties file.
+	 * Parses the field value. Receives the value associated with the key that was
+	 * mapped from a properties file and formats this value according to the Java
+	 * type assigned in the mapped properties file.
 	 *
 	 * @param fieldValue         the field value
 	 * @param propertiesDataType the properties data type

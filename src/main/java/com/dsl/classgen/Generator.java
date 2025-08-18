@@ -42,7 +42,6 @@ public final class Generator {
 
 	private Generator() {}
 
-
 	/**
 	 * Inits the framework with the specified parameters.
 	 *
@@ -88,9 +87,14 @@ public final class Generator {
 				-----------------------------
 
 				Call 'Generator.generate()' to generate java classes or parse existing classes.
-				""", inputPath, pathsCtx.getOutputSourceDirPath(), pathsCtx.getPackageClass(), isRecursive,
-				flagsCtx.getIsSingleFile(), flagsCtx.getIsDirStructureAlreadyGenerated(),
-				flagsCtx.getIsExistsCompiledPJavaClass(), flagsCtx.getIsDebugMode());
+				""", inputPath,
+				pathsCtx.getOutputSourceDirPath(),
+				pathsCtx.getPackageClass(),
+				isRecursive,
+				flagsCtx.getIsSingleFile(),
+				flagsCtx.getIsDirStructureAlreadyGenerated(),
+				flagsCtx.getIsExistsCompiledPJavaClass(),
+				flagsCtx.getIsDebugMode());
 	}
 
 	/**
@@ -101,10 +105,9 @@ public final class Generator {
 		init(Path.of(inputPath), packageClass, isRecursive);
 	}
 
-	
 	/**
 	 * Starts generating all necessary files
-	 * 
+	 *
 	 * @since
 	 * @author Deiv
 	 */
@@ -126,7 +129,7 @@ public final class Generator {
 
 	/**
 	 * Loads chunks (structural models mapped from property files) into memory
-	 * 
+	 *
 	 * @author Deiv
 	 */
 	private static void loadChunks() {
@@ -139,7 +142,7 @@ public final class Generator {
 
 	/**
 	 * It is called when the framework starts. It should only be called once.
-	 * 
+	 *
 	 * @author Deiv
 	 */
 	private static void resync() {
@@ -158,26 +161,28 @@ public final class Generator {
 			} else {
 				LOGGER.warn("All is up to date.");
 			}
-
 			writeNewCacheIfExists();
 		}
 	}
 
 	/**
 	 * Filters files deleted while the framework was not in operation
-	 * 
+	 *
 	 * @return a list of CacheModel objects representing the deleted files
 	 * @author Deiv
 	 */
 	private static List<CacheModel> filterDeletedFiles() {
-		return CacheManager.getCacheModelMapEntries().stream()
+		return CacheManager.getCacheModelMapEntries()
+				.stream()
 				.filter(entry -> !OutterClassModel.checkPathInClassModelMap(entry.getValue().filePath))
-				.map(CacheManager::removeElementFromCacheModelMap).filter(Objects::nonNull).toList();
+				.map(CacheManager::removeElementFromCacheModelMap)
+				.filter(Objects::nonNull)
+				.toList();
 	}
 
 	/**
 	 * Writes the new cache to disk if there are any new files to write.
-	 * 
+	 *
 	 * @author Deiv
 	 */
 	private static void writeNewCacheIfExists() {

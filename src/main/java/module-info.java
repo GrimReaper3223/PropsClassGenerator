@@ -12,7 +12,7 @@ module com.dsl.classgen {
 	exports com.dsl.classgen.annotation.containers;
 	exports com.dsl.classgen.models;
 	exports com.dsl.classgen.models.model_mapper;
-	
+
 	exports com.dsl.classgen.core.classloader;
 
 	// for test package
