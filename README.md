@@ -18,6 +18,16 @@ Generate .java class files from a properties file
 
 - After all the settings are done, call the **Generator.generate()** method;
 
+- Alternatively, you can use the project as a maven dependency:
+
+```
+	<dependency>
+		<groupId>io.github.grimreaper3223</groupId>
+		<artifactId>PropsClassGenerator</artifactId>
+		<version>1.0</version>
+	</dependency>
+```
+
 # How it works:
 
 In a simplified way, when entering the path to the properties file or directory containing the properties files, the package where the source code will be saved and the recursion option, the generation occurs as follows:
@@ -91,6 +101,10 @@ Types such as <ins>**float**</ins>, <ins>**double**</ins>, <ins>**long**</ins>, 
 
 Some important implementations, such as checking for errors in class files, detecting the pre-existence of a variable before adding it to the source code and compiled code, and additional performance improvements, have not yet been made.
 The supported data types remain the same (known Java primitive types and their wrappers). Custom types have not yet been tested, with the exception of the Class<?> type, for example.
+
+#### Known issues in this version
+- **No action occurs when deleting a properties file, added after loading the already known classes, while the framework is running.** This may be due to a lack of bytecode updates. No exception is thrown when this happens. The data simply isn't updated.
+- **Possible resource overload.** I haven't done the profiling yet, but I suspect the properties files are read twice in a single operation in different phases.
 
 ### v0.2.4-R1:
 
