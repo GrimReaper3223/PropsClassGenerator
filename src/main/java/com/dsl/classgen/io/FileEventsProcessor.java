@@ -44,7 +44,7 @@ public final class FileEventsProcessor extends SupportProvider {
 		try {
 			pathStream = Files.walk(path).filter(Utils.fileFilter::test);
 		} catch (IOException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 
 		return pathStream;
@@ -152,7 +152,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	 * @param path the file path that was modified
 	 */
 	private static void modifySection(Path path) {
-		CacheModel currentCacheModel = CacheManager.getModelFromCacheMap(path);
+		CacheModel currentCacheModel = CacheManager.getCacheModelFromMap(path);
 		if (currentCacheModel == null) {
 			LOGGER.error("Model (File: {}) not found in cache.", path.getFileName());
 			return;

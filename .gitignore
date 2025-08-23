@@ -4,4 +4,7 @@
 /.settings/
 /bin/
 /.jsonProperties-cache/
-/TODO.txt
+/pumls/
+/*.drawio
+/*.drawio.*
+/*.uml

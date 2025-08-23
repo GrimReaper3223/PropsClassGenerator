@@ -41,7 +41,7 @@ public final class Writer extends SupportProvider {
 			LOGGER.log(LogLevels.SUCCESS.getLevel(), "***File created in: {} [Elapsed Time: {}ms]***\n",
 					outputPackagePath, Utils.calculateElapsedTime());
 		} catch (IOException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		} finally {
 			pathsCtx.setExistingPJavaGeneratedSourcePath(outputFilePath);
 		}
@@ -78,11 +78,11 @@ public final class Writer extends SupportProvider {
 						default -> throw new IllegalArgumentException("Unexpected value: " + content);
 					}
 				} catch (IOException | IllegalArgumentException e) {
-					Utils.logException(e);
+					Utils.handleException(e);
 				}
 			}).get();
 		} catch (InterruptedException | ExecutionException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 	}
 
@@ -93,12 +93,16 @@ public final class Writer extends SupportProvider {
 		LOGGER.log(LogLevels.CACHE.getLevel(), "Writing cache...\n");
 		Gson gson = new Gson();
 
+		/*
+		 *  NOTE: initInstance tenta inicializar um novo modelo de dados e retorna esse modelo.
+		 *  Se o modelo ja existir, ele e recuperado da pilha. Se nao, um novo modelo e criado
+		 */
 		CacheManager.getQueuedCacheFiles(true).stream().map(InnerStaticClassModel::initInstance).forEach(model -> {
 			try {
-				Files.writeString(Utils.resolveJsonFilePath(model.annotationMetadata().filePath()),
+				Files.writeString(Utils.toJsonFilePath(model.annotationMetadata().filePath()),
 						gson.toJson(new CacheModel(model)), OPTS);
 			} catch (IOException e) {
-				Utils.logException(e);
+				Utils.handleException(e);
 			}
 		});
 	}

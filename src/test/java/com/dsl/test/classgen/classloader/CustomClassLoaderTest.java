@@ -36,7 +36,7 @@ class CustomClassLoaderTest extends ClassLoader implements HarnessTestTools {
 				}
 			}
 		} catch (Exception e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 		return baos.toByteArray();
 	}

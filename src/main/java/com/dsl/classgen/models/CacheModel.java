@@ -58,7 +58,7 @@ public class CacheModel implements Serializable {
 			try {
 				cls = Class.forName(javaType);
 			} catch (ClassNotFoundException e) {
-				Utils.logException(e);
+				Utils.handleException(e);
 			}
 		}
 		return cls;
@@ -77,7 +77,7 @@ public class CacheModel implements Serializable {
 			entries.put(model.annotationMetadata().hash(), cachePropData);
 		}
 
-		CacheManager.queueNewCacheFile(this.filePath);
+		CacheManager.queueNewFileToCreateCache(this.filePath);
 	}
 
 	/**
@@ -92,7 +92,7 @@ public class CacheModel implements Serializable {
 
 	/**
 	 * NOTE: This method should not be used. It is overridden to avoid
-	 * 
+	 *
 	 * @return the int
 	 */
 	@Override

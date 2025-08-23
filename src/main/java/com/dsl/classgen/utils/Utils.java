@@ -27,8 +27,10 @@ public final class Utils {
 
 	private static GeneralContext generalCtx = GeneralContext.getInstance();
 	private static PathsContext pathsCtx = generalCtx.getPathsContextInstance();
+	private static final String JSON_FILE_SUFFIX = "-cache.json";
 
 	public static final Predicate<Path> fileFilter = path -> Files.isRegularFile(path) && Utils.isPropertiesFile(path);
+
 
 	private Utils() {}
 
@@ -70,16 +72,16 @@ public final class Utils {
 	 * @param path the path of the properties file
 	 * @return the path reference to the cache file
 	 */
-	public static <T> Path resolveJsonFilePath(T path) {
+	public static <T> Path toJsonFilePath(T path) {
 		Path filePath = Path.of(path.toString());
 		String fileName = filePath.getFileName().toString();
-		String jsonFileNamePattern = "%s-cache.json";
+		String jsonFileNamePattern = "%s" + JSON_FILE_SUFFIX;
 
-		if (fileName.contains("-cache.json")) {
+		if (fileName.contains(JSON_FILE_SUFFIX)) {
 			return filePath;
 		}
-		Path jsonFileName = Path.of(String.format(jsonFileNamePattern,
-				fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf(".")) : filePath));
+		String jsonFileName = String.format(jsonFileNamePattern,
+				fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf(".")) : filePath);
 		return pathsCtx.getCacheDir().resolve(jsonFileName);
 	}
 
@@ -120,7 +122,7 @@ public final class Utils {
 	 *
 	 * @param e the exception to log
 	 */
-	public static void logException(Exception e) {
+	public static void handleException(Exception e) {
 		if (e instanceof InterruptedException && Thread.currentThread().isInterrupted()) {
 			LOGGER.error("Thread is interrupted.", e);
 			Thread.currentThread().interrupt();

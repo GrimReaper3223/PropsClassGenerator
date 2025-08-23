@@ -35,7 +35,7 @@ public class CustomClassLoader extends ClassLoader {
 				}
 			}
 		} catch (Exception e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 		return baos.toByteArray();
 	}

@@ -7,4 +7,19 @@
 			<password>ZBUE4iRi62cndwhupJTO4DnaL1x5jpsX0</password>
 		</server>
 	</servers>
+
+	<profiles>
+    <profile>
+      <id>central</id>
+		  <properties>
+		  	<gpg.executable>gpg2</gpg.executable>
+		    <gpg.useagent>true</gpg.useagent>
+		    <bestPractices>true</bestPractices>
+		  </properties>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+    </profile>
+  </profiles>
+
 </settings>

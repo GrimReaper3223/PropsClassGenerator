@@ -61,7 +61,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 		try {
 			cm = cf.parse(pathsCtx.getOutputClassFilePath());
 		} catch (IOException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 	}
 
@@ -120,7 +120,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 			try {
 				consumer.accept(Utils.convertSourcePathToClassPath(model.filePath));
 			} catch (ClassNotFoundException e) {
-				Utils.logException(e);
+				Utils.handleException(e);
 			}
 		}).toList();
 
@@ -195,7 +195,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 			keyMethodName = annotationClass.getDeclaredMethod("key").getName();
 			hashMethodName = annotationClass.getDeclaredMethod("hash").getName();
 		} catch (NoSuchMethodException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 
 		return RuntimeVisibleAnnotationsAttribute.of(Annotation.of(annotationClass.describeConstable().orElseThrow(),
@@ -227,7 +227,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 			javaTypeMethodName = annotationClass.getDeclaredMethod("javaType").getName();
 			hashMethodName = annotationClass.getDeclaredMethod("hash").getName();
 		} catch (NoSuchMethodException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 
 		return RuntimeVisibleAnnotationsAttribute.of(Annotation.of(annotationClass.describeConstable().orElseThrow(),
@@ -264,7 +264,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 				});
 			}));
 		} catch (IOException | ClassNotFoundException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 	}
 }

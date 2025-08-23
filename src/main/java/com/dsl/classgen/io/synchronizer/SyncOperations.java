@@ -68,7 +68,7 @@ sealed interface SyncOperations permits SyncBin, SyncSource {
 		try {
 			cUnit = StaticJavaParser.parse(path);
 		} catch (IOException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 		return cUnit;
 	}

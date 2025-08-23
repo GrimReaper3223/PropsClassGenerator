@@ -5,7 +5,7 @@
 
 	<groupId>com.dsl.classgen</groupId>
 	<artifactId>PropsClassGenerator</artifactId>
-	<version>1.0</version>
+	<version>1.1</version>
 	<packaging>jar</packaging>
 
 	<properties>
@@ -32,12 +32,15 @@
 	</scm>
 
 	<distributionManagement>
-		<repository>
-			<id>central</id>
-			<name>Central Repository</name>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>
+    <snapshotRepository>
+      <id>central</id>
+      <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>central</id>
+      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
 	<developers>
 		<developer>
@@ -83,6 +86,7 @@
 
 	<build>
 		<plugins>
+
 			<plugin>
 				<groupId>org.sonatype.central</groupId>
 				<artifactId>central-publishing-maven-plugin</artifactId>
@@ -92,6 +96,7 @@
 					<publishingServerId>central</publishingServerId>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<artifactId>maven-source-plugin</artifactId>
 				<version>3.2.1</version>
@@ -104,6 +109,7 @@
 					</execution>
 				</executions>
 			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
@@ -121,6 +127,7 @@
 					<failOnError>false</failOnError>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.13.0</version>
@@ -129,6 +136,7 @@
 					<compilerArgs>--enable-preview</compilerArgs>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<version>3.7.0</version>
@@ -148,11 +156,12 @@
 					</execution>
 				</executions>
 			</plugin>
+
 			<plugin>
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>3.4.2</version>
 				<configuration>
-					<outputDirectory>${user.dir}/src/main/resources/libs</outputDirectory>
+					<!--<outputDirectory>${user.dir}/src/main/resources/libs</outputDirectory>-->
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
@@ -161,6 +170,7 @@
 					</archive>
 				</configuration>
 			</plugin>
+
 		</plugins>
 	</build>
 </project>

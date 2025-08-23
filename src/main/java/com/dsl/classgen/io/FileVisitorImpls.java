@@ -84,11 +84,11 @@ public final class FileVisitorImpls extends SupportProvider {
 						LOGGER.log(LogLevels.CACHE.getLevel(), "Loading JSON file: {}", file);
 						CacheManager.computeCacheModelToMap(file, new Gson().fromJson(br, CacheModel.class));
 					} catch (IOException e) {
-						Utils.logException(e);
+						Utils.handleException(e);
 					}
 				}).get();
 			} catch (InterruptedException | ExecutionException e) {
-				Utils.logException(e);
+				Utils.handleException(e);
 			}
 
 			return FileVisitResult.CONTINUE;
@@ -104,7 +104,7 @@ public final class FileVisitorImpls extends SupportProvider {
 		 */
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			Utils.logException(exc);
+			Utils.handleException(exc);
 			return FileVisitResult.TERMINATE;
 		}
 	}

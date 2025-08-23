@@ -36,11 +36,13 @@ public final class CacheManager extends SupportProvider {
 	 *                 or Path)
 	 * @param filePath the properties file path
 	 */
-	public static <T> void queueNewCacheFile(T filePath) {
+	public static <T> void queueNewFileToCreateCache(T filePath) {
 		Path path = Path.of(filePath.toString());
 		if (!cacheFilesToWrite.offer(path)) {
+			LOGGER.log(LogLevels.CACHE.getLevel(), "Queue for cache files is full. Processing files...");
 			Writer.writeJson();
-			queueNewCacheFile(filePath);
+			LOGGER.log(LogLevels.CACHE.getLevel(), "Re-queueing files for cache writing...");
+			queueNewFileToCreateCache(filePath);
 		}
 	}
 
@@ -87,7 +89,7 @@ public final class CacheManager extends SupportProvider {
 	 * @param value   the new cache model value
 	 */
 	public static <T> void computeCacheModelToMap(T keyPath, CacheModel value) {
-		Path jsonKey = Utils.resolveJsonFilePath(keyPath);
+		Path jsonKey = Utils.toJsonFilePath(keyPath);
 		if (cacheModelMap.computeIfPresent(jsonKey, (_, _) -> value) == null) {
 			cacheModelMap.put(jsonKey, value);
 		}
@@ -101,8 +103,8 @@ public final class CacheManager extends SupportProvider {
 	 * @param keyPath the properties path
 	 * @return the existing model from cache map
 	 */
-	public static <T> CacheModel getModelFromCacheMap(T keyPath) {
-		Path jsonKey = Utils.resolveJsonFilePath(keyPath);
+	public static <T> CacheModel getCacheModelFromMap(T keyPath) {
+		Path jsonKey = Utils.toJsonFilePath(keyPath);
 		return cacheModelMap.get(jsonKey);
 	}
 
@@ -115,36 +117,52 @@ public final class CacheManager extends SupportProvider {
 	 * @return the removed cache model element
 	 */
 	public static <T> CacheModel removeElementFromCacheModelMap(T keyPath) {
-		Path jsonKey = Utils.resolveJsonFilePath(keyPath);
+		Path jsonKey = Utils.toJsonFilePath(keyPath);
 		try {
-			Files.delete(jsonKey);
+			Files.deleteIfExists(jsonKey);
 		} catch (IOException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 		return cacheModelMap.remove(jsonKey);
 	}
 
 	/**
-	 * Checks if is invalid cache file.
+	 * Tests the integrity of cached files.
+	 * <p>
+	 * If the generated directory structure and
+	 * the cache file already exist, a cache model is created from this file in
+	 * memory, while another already loaded in memory is retrieved from the model
+	 * list.
+	 * <p>
+	 * An internal check is performed to verify whether they are different. <br>
+	 * If so, the analyzed file is placed on the list for cache reprocessing. <br>
+	 * If not, the method simply returns.
+	 * <p>
+	 * If there is no existing generation of the directory structure with which
+	 * the framework works, then it will be assumed that there are no caches.
+	 * The file received by the method is added directly to the list for processing.
 	 *
 	 * @param <T>       the generic type to be associated with the argument (String
 	 *                  or Path)
 	 * @param propsPath the properties file path
-	 * @return true, if is invalid cache file
 	 */
-	public static <T> boolean isInvalidCacheFile(T propsPath) {
-		Path jsonFilePath = Utils.resolveJsonFilePath(propsPath);
-		boolean isInvalidCacheFile = true;
+	public static <T> void testFileIntegrity(T propsPath) {
+		if(flagsCtx.getIsDirStructureAlreadyGenerated() && flagsCtx.getIsExistsPJavaSource()) {
+			Path jsonFilePath = Utils.toJsonFilePath(propsPath);
 
-		if (Files.exists(jsonFilePath)) {
-			try (BufferedReader br = Files.newBufferedReader(jsonFilePath)) {
-				CacheModel cm = CacheManager.getModelFromCacheMap(jsonFilePath);
-				isInvalidCacheFile = !cm.equals(new Gson().fromJson(br, CacheModel.class));
-			} catch (IOException e) {
-				Utils.logException(e);
+			if (Files.exists(jsonFilePath)) {
+				try (BufferedReader br = Files.newBufferedReader(jsonFilePath)) {
+					CacheModel cm = CacheManager.getCacheModelFromMap(jsonFilePath);
+					if(!cm.equals(new Gson().fromJson(br, CacheModel.class))) {
+						queueNewFileToCreateCache(propsPath);
+					}
+					return;
+				} catch (IOException e) {
+					Utils.handleException(e);
+				}
 			}
+			queueNewFileToCreateCache(propsPath);
 		}
-		return isInvalidCacheFile;
 	}
 
 	/**
@@ -178,7 +196,7 @@ public final class CacheManager extends SupportProvider {
 				createCache();
 			}
 		} catch (IOException e) {
-			Utils.logException(e);
+			Utils.handleException(e);
 		}
 	}
 
@@ -187,7 +205,7 @@ public final class CacheManager extends SupportProvider {
 	 *
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	private static void loadCache() throws IOException {
+	public static void loadCache() throws IOException {
 		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheLoaderFileVisitor());
 	}
 
@@ -206,7 +224,7 @@ public final class CacheManager extends SupportProvider {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private static void createCache() throws IOException {
-		pathsCtx.getFileList().forEach(CacheManager::queueNewCacheFile);
+		pathsCtx.getFileList().forEach(CacheManager::queueNewFileToCreateCache);
 		Files.createDirectories(pathsCtx.getCacheDir());
 		Writer.writeJson();
 	}
