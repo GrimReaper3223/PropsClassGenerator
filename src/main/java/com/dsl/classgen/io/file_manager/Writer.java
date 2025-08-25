@@ -13,6 +13,7 @@ import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * The Class Writer.
@@ -91,12 +92,8 @@ public final class Writer extends SupportProvider {
 	 */
 	public static void writeJson() {
 		LOGGER.log(LogLevels.CACHE.getLevel(), "Writing cache...\n");
-		Gson gson = new Gson();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-		/*
-		 *  NOTE: initInstance tenta inicializar um novo modelo de dados e retorna esse modelo.
-		 *  Se o modelo ja existir, ele e recuperado da pilha. Se nao, um novo modelo e criado
-		 */
 		CacheManager.getQueuedCacheFiles(true).stream().map(InnerStaticClassModel::initInstance).forEach(model -> {
 			try {
 				Files.writeString(Utils.toJsonFilePath(model.annotationMetadata().filePath()),
