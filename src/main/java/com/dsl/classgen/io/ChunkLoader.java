@@ -49,10 +49,12 @@ public final class ChunkLoader extends SupportProvider {
 
 		try {
 			latch.await();
+			// FIX: pattern @|style text|@ not working in log4j2
 			LOGGER.log(LogLevels.SUCCESS.getLevel(), "Chunks loaded successfully.");
 			LOGGER.info("Checking data integrity...");
 			fileList.forEach(CacheManager::testFileIntegrity);
 			resync();
+			CacheManager.processCache(); // reprocess cache after full sync
 		} catch (InterruptedException e) {
 			Utils.handleException(e);
 		}
@@ -63,9 +65,6 @@ public final class ChunkLoader extends SupportProvider {
 			LOGGER.warn("There is already a generated structure.");
 			LOGGER.log(LogLevels.NOTICE.getLevel(), "Looking for changes...");
 
-			/*
-			 * FIX: Arquivos de cache nao sao excluidos corretamente
-			 */
 			List<CacheModel> outdatedCache = filterDeletedFiles();
 
 			if(!outdatedCache.isEmpty()) {
