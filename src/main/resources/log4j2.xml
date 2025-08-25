@@ -7,7 +7,7 @@
 	</CustomLevels>
     <Appenders>
         <Console name="Console">
-            <PatternLayout disableAnsi="false" pattern="%highlight{%d{dd-MM-yyyy HH:mm:ss} [%t] %-5level: %msg%n%throwable}{FATAL=blink red, ERROR=bright_red, SUCCESS=bright_green bold, WARN=bright_yellow bold, INFO=white, NOTICE=bright_cyan, CACHE=bright_black, DEBUG=bright_blue, TRACE=bright_magenta}"/>
+            <PatternLayout disableAnsi="false" pattern="%highlight{%d{dd-MM-yyyy HH:mm:ss} [%t] %-5level: %msg%n%throwable}{FATAL=bright_red blink, ERROR=bright_red, SUCCESS=bright_green, WARN=bright_yellow, INFO=white, NOTICE=bright_cyan, CACHE=bright_black, DEBUG=bright_blue, TRACE=bright_magenta}"/>
         </Console>
     </Appenders>
      <Loggers>
