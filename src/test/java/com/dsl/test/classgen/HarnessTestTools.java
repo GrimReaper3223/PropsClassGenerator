@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
+import com.dsl.classgen.utils.Utils;
+
 public interface HarnessTestTools {
 
 	Path inPropsPath = Path.of("src/test/resources/values/stringsx");
@@ -45,7 +47,7 @@ public interface HarnessTestTools {
 			Files.walkFileTree(sourceDirPath, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					if (file.getFileName().toString().equals("P.java")) {
+					if (Utils.getSafetyFileName(file, null).toString().equals("P.java")) {
 						Files.delete(file);
 						return FileVisitResult.TERMINATE;
 					}
@@ -54,7 +56,7 @@ public interface HarnessTestTools {
 
 				@Override
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-					if (dir.getFileName().toString().equals("generated") && Files.size(dir) == 0) {
+					if (Utils.getSafetyFileName(dir, null).toString().equals("generated") && Files.size(dir) == 0) {
 						Files.delete(dir);
 						return FileVisitResult.TERMINATE;
 					}

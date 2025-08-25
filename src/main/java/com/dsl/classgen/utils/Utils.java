@@ -3,12 +3,14 @@ package com.dsl.classgen.utils;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.context.PathsContext;
@@ -60,8 +62,8 @@ public final class Utils {
 	 * @param filePath the properties file path
 	 * @return true, if is properties file
 	 */
-	public static boolean isPropertiesFile(Path filePath) {
-		return filePath.getFileName().toString().endsWith(".properties");
+	public static boolean isPropertiesFile(@NonNull Path filePath) {
+		return getSafetyFileName(filePath, null).toString().endsWith(".properties");
 	}
 
 	/**
@@ -72,9 +74,9 @@ public final class Utils {
 	 * @param path the path of the properties file
 	 * @return the path reference to the cache file
 	 */
-	public static <T> Path toJsonFilePath(T path) {
+	public static <T> Path toJsonFilePath(@NonNull T path) {
 		Path filePath = Path.of(path.toString());
-		String fileName = filePath.getFileName().toString();
+		String fileName = getSafetyFileName(filePath, null).toString();
 		String jsonFileNamePattern = "%s" + JSON_FILE_SUFFIX;
 
 		if (fileName.contains(JSON_FILE_SUFFIX)) {
@@ -95,7 +97,8 @@ public final class Utils {
 	 * @throws ClassNotFoundException if the class file cannot be found
 	 */
 	public static <T> Path convertSourcePathToClassPath(T sourcePath) throws ClassNotFoundException {
-		String classFileName = new Parsers() {}.parseClassName(Path.of(sourcePath.toString()).getFileName());
+		Path filePath = Path.of(sourcePath.toString());
+		String classFileName = new Parsers() {}.parseClassName(getSafetyFileName(filePath, null));
 		return Arrays.stream(Reader.loadGeneratedBinClass().getClasses())
 				.filter(cls -> cls.getName().contains(classFileName))
 				.map(cls -> Path.of(pathsCtx.getOutputClassFilePath().subpath(0, 2)
@@ -129,5 +132,11 @@ public final class Utils {
 		} else {
 			LOGGER.catching(e);
 		}
+	}
+
+	public static Path getSafetyFileName(Path path, String orElseGet) {
+		// pode retornar o proprio path se getFileName for null (isso significa que o proprio path e um nome de arquivo)
+		// ou pode retornar o valor de orElseGet caso ele esteja definido e a avaliacao de getFileName ainda retorne null
+		return Objects.requireNonNullElse(path.getFileName(), orElseGet == null ? path : Path.of(orElseGet));
 	}
 }

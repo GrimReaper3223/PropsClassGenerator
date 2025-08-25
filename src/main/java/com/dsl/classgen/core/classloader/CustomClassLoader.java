@@ -5,6 +5,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import com.dsl.classgen.utils.Utils;
 
 public class CustomClassLoader extends ClassLoader {
@@ -40,15 +42,14 @@ public class CustomClassLoader extends ClassLoader {
 		return baos.toByteArray();
 	}
 
-	private String pathFormatToBinaryNameFormat(String value) {
+	private String pathFormatToBinaryNameFormat(@NonNull String value) {
 		// assumes the path contains the file name and replaces file separators with
 		// dots and removes the file extension
 		Path filePath = Path.of(value);
-		Path fileName = filePath.getFileName();
 		Path parentPath = filePath.subpath(2, filePath.getNameCount() - 1);
 
 		String binaryName = Utils.normalizePath(parentPath, File.separator, ".").toString()
-				.concat("." + fileName.toString());
+				.concat("." + Utils.getSafetyFileName(filePath, "").toString());
 		return binaryName.replace(".class", "");
 	}
 }

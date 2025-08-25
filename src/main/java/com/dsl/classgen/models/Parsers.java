@@ -2,8 +2,11 @@ package com.dsl.classgen.models;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * The Interface Parsers.
@@ -20,9 +23,9 @@ public interface Parsers {
 	 * @param propertiesFilePath the properties file path
 	 * @return the string containing the formatted class name
 	 */
-	default <T> String parseClassName(T propertiesFilePath) {
+	default <T> String parseClassName(@NonNull T propertiesFilePath) {
 		final String regex = "[\\s\\Q`!@#$%^&*()_+{}:\"<>?|\\~/.;',[]=-\\E]+";
-		String propertyFileName = Path.of(propertiesFilePath.toString()).getFileName().toString();
+		String propertyFileName = Optional.of(Path.of(propertiesFilePath.toString()).getFileName()).orElseThrow().toString();
 		String formattedPropertyFileName = propertyFileName.substring(0, propertyFileName.lastIndexOf("."));
 
 		return Arrays.stream(formattedPropertyFileName.split(regex))
@@ -35,7 +38,7 @@ public interface Parsers {
 	 * Parses the field name. Receives the key of a property to be mapped and
 	 * converts the key name to the name of a constant field, according to Java
 	 * conventions.
-	 * 
+	 *
 	 * @param data the mapped key of the currently loaded properties file
 	 * @return the string containing the formatted field name
 	 */

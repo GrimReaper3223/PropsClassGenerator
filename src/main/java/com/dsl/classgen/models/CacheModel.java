@@ -86,15 +86,13 @@ public class CacheModel implements Serializable {
 	 */
 	@Override
 	public boolean equals(Object obj) {
-		CacheModel cm = CacheModel.class.cast(Objects.requireNonNull(obj));
-		return cm.fileHash == this.fileHash && cm.entries.equals(this.entries);
+		if(Objects.nonNull(obj)) {
+			CacheModel cm = CacheModel.class.cast(obj);
+			return cm.fileHash == this.fileHash && cm.entries.equals(this.entries);
+		}
+		throw new NullPointerException("** BUG **: The object instance is null.");
 	}
 
-	/**
-	 * NOTE: This method should not be used. It is overridden to avoid
-	 *
-	 * @return the int
-	 */
 	@Override
 	public int hashCode() {
 		return super.hashCode();

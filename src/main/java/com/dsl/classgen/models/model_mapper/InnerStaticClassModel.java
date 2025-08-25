@@ -35,19 +35,19 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 
     		try {
     			var annotation = initAnnotation(path);
-    			model = new InnerStaticClassModel(annotation,
+    			model = OutterClassModel.computeModelToMap(new InnerStaticClassModel(annotation,
     					initFieldList(path, annotation.javaType()),
     					formattedClassName,
     					sourceFlags,
-    					byteCodeFlags);
+    					byteCodeFlags));
     		} catch (InterruptedException | ExecutionException e) {
     			Utils.handleException(e);
     		}
-
-    		OutterClassModel.computeModelToMap(model);
+		} else {
+			model = OutterClassModel.getModel(filePath);
 		}
 
-		return model == null ? OutterClassModel.getModel(filePath) : model;
+		return model;
 	}
 
 	public InnerFieldModel insertNewModel(String propertiesKey, Object propertiesValue, Class<?> fieldType) {
@@ -117,10 +117,13 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 
 	@Override
 	public boolean equals(Object obj) {
-		InnerStaticClassModel iscm = InnerStaticClassModel.class.cast(Objects.requireNonNull(obj));
-		var hashList1 = iscm.fieldModelList.stream().map(model -> model.annotationMetadata().hash()).toList();
-		var hashList2 = fieldModelList.stream().map(model -> model.annotationMetadata().hash()).toList();
-    	return iscm.annotationMetadata.hash() == annotationMetadata.hash() && hashList1.containsAll(hashList2);
+		if(Objects.nonNull(obj)) {
+			InnerStaticClassModel iscm = InnerStaticClassModel.class.cast(obj);
+			var hashList1 = iscm.fieldModelList.stream().map(model -> model.annotationMetadata().hash()).toList();
+			var hashList2 = fieldModelList.stream().map(model -> model.annotationMetadata().hash()).toList();
+			return iscm.annotationMetadata.hash() == annotationMetadata.hash() && hashList1.containsAll(hashList2);
+		}
+		throw new NullPointerException("** BUG **: The object instance is null.");
 	}
 
 	@Override
