@@ -1,5 +1,7 @@
 package com.dsl.classgen.models;
 
+import java.io.Serializable;
+
 /**
  * The Record CachePropertiesData.
  *
@@ -7,4 +9,4 @@ package com.dsl.classgen.models;
  * @param rawPropValue    the raw property value
  * @param parsedPropValue the parsed property value
  */
-public record CachePropertiesData(String propKey, Object rawPropValue, Object parsedPropValue) {}
+public record CachePropertiesData(String propKey, Object rawPropValue, Object parsedPropValue) implements Serializable {}
