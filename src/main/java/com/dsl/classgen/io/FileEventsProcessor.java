@@ -4,16 +4,13 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Stream;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
 
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.synchronizer.ModelMapper;
@@ -24,7 +21,6 @@ import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.service.WatchServiceImpl;
-import com.dsl.classgen.utils.Utils;
 
 /**
  * The Class FileEventsProcessor.
@@ -32,24 +28,6 @@ import com.dsl.classgen.utils.Utils;
 public final class FileEventsProcessor extends SupportProvider {
 
 	private static final Thread eventProcessorThread = new Thread(FileEventsProcessor::processChanges);
-	private static SyncSource staticSyncSource = new SyncSource();
-	private static SyncBin staticSyncBin = new SyncBin();
-
-	/**
-	 * The stream filter creator. This function creates a stream of paths from the
-	 * given directory, filtering them based on the fileFilter predicate.
-	 */
-	private static Function<Path, Stream<Path>> streamFilterCreator = path -> {
-		Stream<Path> pathStream = null;
-		try {
-			pathStream = Files.walk(path).filter(Utils.fileFilter::test);
-		} catch (IOException e) {
-			Utils.handleException(e);
-		}
-
-		return pathStream;
-	};
-
 	private FileEventsProcessor() {}
 
 	/**
@@ -68,18 +46,12 @@ public final class FileEventsProcessor extends SupportProvider {
 	 */
 	private static void processChanges() {
 		while (WatchServiceImpl.isWatchServiceThreadAlive()) {
-			try {
-				var entry = pathsCtx.getQueuedChangedFilesEntries();
-				var kind = entry.getValue();
-
-				caller(kind, entry.getKey());
-			} catch (InterruptedException _) {
-				if (eventProcessorThread.isInterrupted()) {
-					eventProcessorThread.interrupt();
-					LOGGER.warn("{} is interrupted. Restarting thread...", eventProcessorThread.getName());
-					initialize();
-				}
+			if (!pathsCtx.getMappedChangedFiles().isEmpty() && pathsCtx.locker.tryLock()) {
+				caller(pathsCtx.getMappedChangedFiles());
+				pathsCtx.getMappedChangedFiles().clear();
+				pathsCtx.locker.unlock();
 			}
+			Thread.onSpinWait();
 		}
 		LOGGER.error("'{}' was interrupted. Finishing '{}'...", WatchServiceImpl.getThreadName(),
 				eventProcessorThread.getName());
@@ -91,18 +63,22 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param <T>  the generic type to be associated with the argument (String or
 	 *             Path)
-	 * @param kind the event kind for the given file
-	 * @param path the file path that was changed
 	 */
-	public static <T> void caller(WatchEvent.Kind<Path> kind, T path) {
-		Path filePath = Path.of(path.toString());
+	public static <T> void caller(Set<Entry<Kind<Path>, List<T>>> mappedChangedFiles) {
+		mappedChangedFiles.stream().forEach(entry -> {
+			Kind<Path> kind = entry.getKey();
+			List<Path> pathList = entry.getValue().stream().map(String::valueOf).map(Path::of).toList();
+			switch (kind) {
+				case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(pathList);
+				case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(pathList);
+				case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(pathList);
+				default -> throw new IllegalArgumentException("** BUG ** Unexpected values: " + pathList.toString());
+			}
+		});
+	}
 
-		switch (kind) {
-			case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(filePath);
-			case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(filePath);
-			case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(filePath);
-			default -> throw new IllegalArgumentException("*** BUG *** - Unexpected value: " + path);
-		}
+	public static <T> void caller(Kind<Path> kind, T path) {
+		caller(Set.of(Map.entry(kind, List.of(path))));
 	}
 
 	/**
@@ -110,17 +86,9 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param path the new file path
 	 */
-	private static void createSection(Path path) {
-		if (Files.isDirectory(path)) {
-			try (Stream<Path> files = streamFilterCreator.apply(path)) {
-				var fileList = files.toList();
-				staticSyncSource.insertClassSection(fileList);
-				staticSyncBin.insertClassSection(fileList);
-			}
-		} else {
-			staticSyncSource.insertClassSection(path);
-			staticSyncBin.insertClassSection(path);
-		}
+	private static void createSection(List<Path> fileList) {
+		new SyncSource().insertClassSection(fileList);
+		new SyncBin().insertClassSection(fileList);
 	}
 
 	/**
@@ -128,22 +96,12 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param path the file path that should be deleted
 	 */
-	private static void deleteSection(Path path) {
-		List<CacheModel> list = new ArrayList<>();
+	private static void deleteSection(List<Path> fileList) {
+		LOGGER.warn("Existing file(s) deleted. Deleting cache and reprocessing source file entries...");
+		List<CacheModel> list = fileList.stream().map(CacheManager::removeElementFromCacheModelMap).toList();
 
-		if (Files.isDirectory(path)) {
-			LOGGER.warn("Existing directory deleted. Deleting cache and reprocessing source file entries...");
-
-			try (Stream<Path> files = streamFilterCreator.apply(path)) {
-				list.addAll(files.map(CacheManager::removeElementFromCacheModelMap).toList());
-			}
-		} else if (Utils.isPropertiesFile(path)) {
-			LOGGER.warn("Existing file deleted. Deleting cache and reprocessing source file entries...");
-			list.add(CacheManager.removeElementFromCacheModelMap(path));
-		}
-
-		staticSyncSource.eraseClassSection(list);
-		staticSyncBin.eraseClassSection(list);
+		new SyncSource().eraseClassSection(list);
+		new SyncBin().eraseClassSection(list);
 	}
 
 	/**
@@ -151,10 +109,10 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param path the file path that was modified
 	 */
-	private static void modifySection(Path path) {
-		CacheModel currentCacheModel = CacheManager.getCacheModelFromMap(path);
-		if (currentCacheModel == null) {
-			LOGGER.error("Model (File: {}) not found in cache.", path.getFileName());
+	private static void modifySection(List<Path> filePath) {
+		List<CacheModel> currentCacheModelList = filePath.stream().map(CacheManager::getCacheModelFromMap).filter(Objects::nonNull).toList();
+		if (currentCacheModelList.isEmpty()) {
+			LOGGER.error("No models were found loaded in the cache.");
 			return;
 		}
 
@@ -166,33 +124,34 @@ public final class FileEventsProcessor extends SupportProvider {
 				super(model);
 			}
 
-			public boolean checkHash() {
+			public boolean checkHash(CacheModel currentCacheModel) {
 				return this.fileHash == currentCacheModel.fileHash;
 			}
 
-			public boolean checkPropertyMap() {
+			public boolean checkPropertyMap(CacheModel currentCacheModel) {
 				return this.entries.equals(currentCacheModel.entries);
 			}
 		}
 
-		Path filePath = Path.of(currentCacheModel.filePath);
-		Reader.read(filePath);
-		ExtendedCacheModel newCacheModel = new ExtendedCacheModel(InnerStaticClassModel.initInstance(filePath));
+		currentCacheModelList.forEach(currentCacheModel -> {
+			Path path = Path.of(currentCacheModel.filePath);
+			Reader.read(path);
+			ExtendedCacheModel newCacheModel = new ExtendedCacheModel(InnerStaticClassModel.initInstance(path));
 
-		boolean isHashEquals = newCacheModel.checkHash();
-		boolean isPropertyMapEntriesEquals = newCacheModel.checkPropertyMap();
+			boolean isHashEquals = newCacheModel.checkHash(currentCacheModel);
+			boolean isPropertyMapEntriesEquals = newCacheModel.checkPropertyMap(currentCacheModel);
 
-		if (!isHashEquals) {
-			if (isPropertyMapEntriesEquals) {
-				deleteSection(filePath);
-				createSection(filePath);
+			if(!isHashEquals) {
+				if (isPropertyMapEntriesEquals) {
+					// TODO: Deve implementar a modificacao dos metadados, e nao a regeneracao de uma secao
+				} else {
+					Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>()
+							.mapper(currentCacheModel.entries, newCacheModel.entries);
 
-			} else {
-				Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>()
-						.mapper(currentCacheModel.entries, newCacheModel.entries);
-				staticSyncSource.modifySection(mappedChanges, currentCacheModel);
-				staticSyncBin.modifySection(mappedChanges, newCacheModel);
+					new SyncSource().modifySection(mappedChanges, currentCacheModel);
+					new SyncBin().modifySection(mappedChanges, newCacheModel);
+				}
 			}
-		}
+		});
 	}
 }

@@ -15,6 +15,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,6 +58,8 @@ public class WatchServiceImpl {
         }
     }
 
+    // NOTE: verificar se, ao chamar o metodo abaixo, ele registra corretamente os diretorios contidos na fila de caminhos de diretorios
+    // NOTE: verificar tambem se outras partes do codigo inserem diretorios corretamente na fila que e processada por este metodo
     public static void performDirRegistration() {
     	pathsCtx.getDirList().forEach(path -> {
             WatchKey key = null;
@@ -103,7 +106,11 @@ public class WatchServiceImpl {
 	            	continue;
 	            }
 
+	            while(!pathsCtx.locker.tryLock()) {
+	            	Thread.onSpinWait();
+	            }
 	            processStream(key);
+	            pathsCtx.locker.unlock();
 
 	            if (!key.reset()) {
 	            	keys.remove(key);
@@ -118,29 +125,18 @@ public class WatchServiceImpl {
     	} while (!keys.isEmpty());
     }
 
-    private static void processStream(WatchKey key) {
-    	key.pollEvents()
-    		.stream()
-    		.filter(event -> event.kind() != OVERFLOW)
-    		.map(event -> {
-    			WatchEvent<Path> eventPath = cast(event);
-    			Path occurrence = keys.get(key).resolve(eventPath.context());
-    			return Map.entry(occurrence, eventPath.kind());
-		  	 })
-		  	 .filter(entry -> Utils.isPropertiesFile(entry.getKey()) || Files.isDirectory(entry.getKey()))
-		  	 .forEach(entry -> {
-	  		 	LOGGER.log(LogLevels.NOTICE.getLevel(), "{}: {}", entry.getValue().name(), entry.getKey());
-
-	  		 	try {
-					pathsCtx.queueChangedFileEntry(entry);
-		  		 	if(entry.getValue().name().equals("ENTRY_CREATE") && Files.isDirectory(entry.getKey())) {
-		  		 		pathsCtx.queueDir(entry.getKey());
-		  		 	}
-	  		 	} catch (InterruptedException e) {
-	  		 		Utils.handleException(e);
-	  		 	}
-		   	});
-    }
+	private static void processStream(WatchKey key) {
+		key.pollEvents()
+				.stream()
+				.filter(event -> event.kind() != OVERFLOW)
+				.map(event -> {
+					WatchEvent<Path> eventPath = cast(event);
+					Path occurrence = keys.get(key).resolve(eventPath.context());
+					return Map.entry(eventPath.kind(), occurrence);
+				})
+				.filter(entry -> Utils.isPropertiesFile(entry.getValue()) || Files.isDirectory(entry.getValue()))
+				.forEach(entry -> ForkJoinPool.commonPool().execute(new RecursiveFileProcessor(entry)));
+	}
 
     public static boolean isWatchServiceThreadAlive() {
     	return watchServiceThread.isAlive();

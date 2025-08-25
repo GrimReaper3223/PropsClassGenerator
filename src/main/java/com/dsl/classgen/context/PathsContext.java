@@ -1,12 +1,19 @@
 package com.dsl.classgen.context;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.WatchEvent;
+import java.nio.file.WatchEvent.Kind;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.SynchronousQueue;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -18,8 +25,9 @@ public class PathsContext {
 
 	private static final Logger LOGGER = LogManager.getLogger(PathsContext.class);
 	private static final Level SUCCESS = Level.getLevel("SUCCESS");
+	public Lock locker = new ReentrantLock();
 
-	private final SynchronousQueue<Map.Entry<Path, WatchEvent.Kind<Path>>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
+	private final ConcurrentMap<Kind<Path>, List<Path>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
 	private final List<Path> fileList;														// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
 	private final List<Path> dirList;														// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista
 
@@ -42,7 +50,7 @@ public class PathsContext {
     private String generatedClass;						// contem o conteudo da classe gerada. Esta variavel deve ser usada pelo escritor para armazenar os dados no caminho de saida, ou a saida padrao para imprimir na tela, caso o debug esteja habilitado
 
 	PathsContext(boolean isDebugMode) {
-		changedFiles = new SynchronousQueue<>();
+		changedFiles = new ConcurrentHashMap<>();
 		fileList = new ArrayList<>();
 		dirList = new ArrayList<>();
 
@@ -82,12 +90,12 @@ public class PathsContext {
     }
 
     // changedFiles
-    public void queueChangedFileEntry(Map.Entry<Path, WatchEvent.Kind<Path>> entry) throws InterruptedException {
-		changedFiles.put(entry);
+    public void queueChangedFileEntry(Map.Entry<Kind<Path>, Path> entry) {
+    	changedFiles.computeIfAbsent(entry.getKey(), _ -> new ArrayList<>()).add(entry.getValue());
     }
 
-    public Map.Entry<Path, WatchEvent.Kind<Path>> getQueuedChangedFilesEntries() throws InterruptedException {
-    	return changedFiles.take();
+    public Set<Entry<Kind<Path>, List<Path>>> getMappedChangedFiles() {
+    	return changedFiles.entrySet();
     }
 
 	/**
@@ -157,10 +165,13 @@ public class PathsContext {
 	 * @param outputClassFilePath the outputClassFilePath to set
 	 */
 	public void setOutputClassFilePath(Path outputClassFilePath) {
-		boolean isSame = outputClassFilePath != this.outputClassFilePath;
-		if(isSame) {
-			GeneralContext.getInstance().getFlagsContextInstance().setIsExistsCompiledPJavaClass(isSame);
-			this.outputClassFilePath = outputClassFilePath;
+		try {
+			if(!Files.isSameFile(outputClassFilePath, this.outputClassFilePath)) {
+				GeneralContext.getInstance().getFlagsContextInstance().setIsExistsCompiledPJavaClass(true);
+				this.outputClassFilePath = outputClassFilePath;
+			}
+		} catch (IOException e) {
+			Utils.handleException(e);
 		}
 	}
 
