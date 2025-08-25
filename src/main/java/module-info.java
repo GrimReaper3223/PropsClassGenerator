@@ -1,5 +1,6 @@
 module com.dsl.classgen {
 	requires static org.junit.jupiter.api;
+	requires static org.checkerframework.checker.qual;
 
 	requires transitive org.apache.logging.log4j.core;
 	requires transitive org.apache.logging.log4j;

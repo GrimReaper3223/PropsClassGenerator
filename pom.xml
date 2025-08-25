@@ -82,6 +82,11 @@
 			<artifactId>central-publishing-maven-plugin</artifactId>
 			<version>0.8.0</version>
 		</dependency>
+		<dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <version>3.49.5</version>
+    </dependency>
 	</dependencies>
 
 	<build>
@@ -161,7 +166,7 @@
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>3.4.2</version>
 				<configuration>
-					<!--<outputDirectory>${user.dir}/src/main/resources/libs</outputDirectory>-->
+					<outputDirectory>${user.dir}/src/main/resources/libs</outputDirectory>
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
