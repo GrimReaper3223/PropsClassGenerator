@@ -3,6 +3,7 @@ package com.dsl.classgen.io.synchronizer;
 import java.io.IOException;
 import java.lang.classfile.Annotation;
 import java.lang.classfile.AnnotationElement;
+import java.lang.classfile.ClassBuilder;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
@@ -20,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.annotation.GeneratedInnerField;
@@ -75,36 +77,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 	public void insertClassSection(List<Path> pathList) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new compiled data entries...");
 		List<InnerStaticClassModel> classModelList = pathList.stream().map(OutterClassModel::getModel).toList();
-
-		classModelList.forEach(classModel -> {
-
-			byte[] bytes = cf.build(ClassDesc.of(classModel.className()), classBuilder -> classBuilder
-					.withSuperclass(cm.thisClass().asSymbol()).withFlags(classModel.byteCodeModifiers())
-					.with(buildInnerClassAnnotation(classModel.annotationMetadata().filePath(),
-							classModel.annotationMetadata().javaType(), classModel.annotationMetadata().hash()))
-					.withMethod(ConstantDescs.INIT_NAME, ConstantDescs.MTD_void, ClassFile.ACC_PRIVATE,
-							mtdBuilder -> mtdBuilder.with(RuntimeVisibleAnnotationsAttribute.of(Annotation
-									.of(GeneratedPrivateConstructor.class.describeConstable().orElseThrow())))));
-
-			ClassModel innerClassFileModel = cf.parse(bytes);
-
-			// gera os campos internos
-			ByteBuffer bb = ByteBuffer.wrap(cf.build(innerClassFileModel.thisClass().asSymbol(), classBuilder -> {
-				innerClassFileModel.elementStream().forEach(classBuilder::with);
-
-				classModel.fieldModelList()
-						.forEach(fieldModel -> classBuilder.withField(fieldModel.fieldName(),
-								fieldModel.fieldType().describeConstable().orElseThrow(),
-								fieldBuilder -> fieldBuilder
-										.with(buildInnerFieldAnnotation(fieldModel.annotationMetadata().key(),
-												fieldModel.annotationMetadata().hash()))
-										.with(ConstantValueAttribute.of(fieldModel.rawFieldValue().toString()))
-										.withFlags(fieldModel.byteCodeModifiers())));
-			}));
-
-			// escreve os novos dados da classe interna na outter class
-			consumeWriter.accept(bb.array());
-		});
+		classModelList.forEach(classModel -> consumeWriter.accept(createInnerClassFileds(createClassSection(classModel), classModel)));
 	}
 
 	/**
@@ -113,24 +86,28 @@ public final class SyncBin implements SyncOperations, Parsers {
 	 *
 	 * @param currentCacheModelList the current cache model list to process
 	 */
+
+	/*
+	 * FIX: Um erro e lancado quando muitos arquivos sao processados de uma so vez
+	 * por este metodo. O erro indica uma possivel inconsistencia entre herancas, no
+	 * qual a classe principal tenta herdar de alguma classe interna final.
+	 */
 	@Override
 	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing compiled class section...");
-		List<Path> fileNameList = currentCacheModelList.stream().<Path>mapMulti((model, consumer) -> {
+
+		// lista de nomes de arquivos convertidos para o formato de classpath
+		currentCacheModelList.stream().<Path>mapMulti((model, consumer) -> {
 			try {
 				consumer.accept(Utils.convertSourcePathToClassPath(model.filePath));
 			} catch (ClassNotFoundException e) {
 				Utils.handleException(e);
 			}
-		}).toList();
-
-		byte[] newBytes = cf.build(cm.thisClass().asSymbol(),
-				classBuilder -> cm.attributes().stream().filter(InnerClassesAttribute.class::isInstance)
-						.map(InnerClassesAttribute.class::cast).flatMap(attr -> attr.classes().stream())
-						.filter(elem -> !fileNameList.contains(Path.of(elem.innerClass().name().stringValue())))
-						.forEach(elem -> classBuilder.withSuperclass(elem.innerClass().asSymbol())));
-
-		consumeWriter.accept(newBytes);
+		}).collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
+			// gera e escreve o byte array da classe externa atualizada
+			consumeWriter.accept(removeSomeExistingClassSections(list));
+			return null;
+		}));
 	}
 
 	/**
@@ -140,19 +117,14 @@ public final class SyncBin implements SyncOperations, Parsers {
 	 * @param cacheModel    the cache model representing the current state
 	 */
 	@Override
-	public void modifySection(Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges,
-			CacheModel cacheModel) {
+	public void modifySection(Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges, CacheModel cacheModel) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Modifying binary entries...");
 		mappedChanges.entrySet().forEach(entry -> {
-			Supplier<Stream<Map.Entry<Integer, CachePropertiesData>>> keys = () -> entry.getValue().entrySet().stream();
+			Supplier<Stream<Map.Entry<Integer, CachePropertiesData>>> entries = () -> entry.getValue().entrySet().stream();
 
 			switch (entry.getKey()) {
-				case INSERT -> insertFieldSection(keys.get().toList(), cacheModel);
-				case DELETE -> keys.get().map(entries -> {
-					ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm
-							&& fm.fieldName().stringValue().equals(parseFieldName(entries.getValue().propKey())));
-					return cf.transformClass(cm, ct);
-				}).reduce((_, arr) -> arr).ifPresent(arr -> consumeWriter.accept(arr));
+				case INSERT -> createFieldSectionForExistingClass(entries.get().toList(), cacheModel);
+				case DELETE -> removeFieldSectionForExistingClass(entries.get());
 			}
 		});
 	}
@@ -186,7 +158,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 	 * @param hash the hash representing the "hash" method in the annotation
 	 * @return the builded runtime visible annotations attribute
 	 */
-	private RuntimeVisibleAnnotationsAttribute buildInnerFieldAnnotation(String key, Integer hash) {
+	private RuntimeVisibleAnnotationsAttribute buildInnerFieldAnnotation(String key, int hash) {
 		final Class<?> annotationClass = GeneratedInnerField.class;
 		String keyMethodName = null;
 		String hashMethodName = null;
@@ -215,8 +187,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 	 * @param hash     the hash representing the "hash" method in the annotation
 	 * @return the builded runtime visible annotations attribute
 	 */
-	private <T> RuntimeVisibleAnnotationsAttribute buildInnerClassAnnotation(T filePath, Class<?> javaType,
-			Integer hash) {
+	private <T> RuntimeVisibleAnnotationsAttribute buildInnerClassAnnotation(T filePath, Class<?> javaType, int hash) {
 		final Class<?> annotationClass = GeneratedInnerStaticClass.class;
 		String filePathMethodName = null;
 		String javaTypeMethodName = null;
@@ -236,6 +207,38 @@ public final class SyncBin implements SyncOperations, Parsers {
 						AnnotationElement.ofInt(hashMethodName, hash))));
 	}
 
+	private ClassModel createClassSection(InnerStaticClassModel classModel) {
+		// cria a classe interna
+		Consumer<ClassBuilder> classDeclHandler = cb -> cb
+				.withSuperclass(cm.thisClass().asSymbol()).withFlags(classModel.byteCodeModifiers())
+				.with(buildInnerClassAnnotation(classModel.annotationMetadata().filePath(),
+						classModel.annotationMetadata().javaType(), classModel.annotationMetadata().hash()))
+				.withMethod(ConstantDescs.INIT_NAME, ConstantDescs.MTD_void, ClassFile.ACC_PRIVATE,
+						mtdBuilder -> mtdBuilder.with(RuntimeVisibleAnnotationsAttribute.of(Annotation
+								.of(GeneratedPrivateConstructor.class.describeConstable().orElseThrow()))));
+
+		return cf.parse(cf.build(ClassDesc.of(classModel.className()), classDeclHandler));
+	}
+
+	private byte[] createInnerClassFileds(ClassModel innerClassModel, InnerStaticClassModel	classModel) {
+		Consumer<ClassBuilder> fieldDeclHandler = cb -> {
+			// preserva os elementos originais da classe interna
+			innerClassModel.elementStream().forEach(cb::with);
+
+			// adiciona os novos campos
+			classModel.fieldModelList()
+					.forEach(fieldModel -> cb.withField(fieldModel.fieldName(),
+							fieldModel.fieldType().describeConstable().orElseThrow(),
+							fieldBuilder -> fieldBuilder
+									.with(buildInnerFieldAnnotation(fieldModel.annotationMetadata().key(),
+											fieldModel.annotationMetadata().hash()))
+									.with(ConstantValueAttribute.of(fieldModel.rawFieldValue().toString()))
+									.withFlags(fieldModel.byteCodeModifiers())));
+		};
+
+		return ByteBuffer.wrap(cf.build(innerClassModel.thisClass().asSymbol(), fieldDeclHandler)).array();
+	}
+
 	/**
 	 * Handles controlled insertion of internal fields into the enclosing static
 	 * inner class
@@ -243,7 +246,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 	 * @param entryList the entry list of mapped changes
 	 * @param model     the cache model representing the current state
 	 */
-	private void insertFieldSection(List<Entry<Integer, CachePropertiesData>> entryList, CacheModel model) {
+	private void createFieldSectionForExistingClass(List<Entry<Integer, CachePropertiesData>> entryList, CacheModel model) {
 		try {
 			Path classPath = Utils.convertSourcePathToClassPath(model.filePath);
 			ClassModel clsModel = cf.parse(classPath);
@@ -252,7 +255,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 				clsModel.elementStream().forEach(classBuilder::with);
 
 				entryList.forEach(entry -> {
-					Integer hash = entry.getKey();
+					int hash = entry.getKey().intValue();
 					CachePropertiesData cachedFieldValues = entry.getValue();
 
 					classBuilder.withField(parseFieldName(cachedFieldValues.propKey()),
@@ -266,5 +269,25 @@ public final class SyncBin implements SyncOperations, Parsers {
 		} catch (IOException | ClassNotFoundException e) {
 			Utils.handleException(e);
 		}
+	}
+
+	private void removeFieldSectionForExistingClass(Stream<Map.Entry<Integer, CachePropertiesData>> entries) {
+		entries.map(entry -> {
+			ClassTransform ct = ClassTransform.dropping(elem -> elem instanceof FieldModel fm
+					&& fm.fieldName().stringValue().equals(parseFieldName(entry.getValue().propKey())));
+			return cf.transformClass(cm, ct);
+		}).reduce((_, arr) -> arr)
+		.ifPresent(arr -> consumeWriter.accept(arr));
+	}
+
+	private byte[] removeSomeExistingClassSections(List<Path> fileNameList) {
+		// handler que remove as classes internas que não estão mais presentes na lista
+		Consumer<ClassBuilder> classEraserHandler = cb -> cm.attributes().stream()
+				.filter(InnerClassesAttribute.class::isInstance)
+				.map(InnerClassesAttribute.class::cast)
+				.flatMap(attr -> attr.classes().stream())
+				.filter(elem -> !fileNameList.contains(Path.of(elem.innerClass().name().stringValue())))
+				.forEach(elem -> cb.withSuperclass(elem.innerClass().asSymbol()));
+		return cf.build(cm.thisClass().asSymbol(), classEraserHandler);
 	}
 }
