@@ -75,4 +75,10 @@ class TestSourceSync implements HarnessTestTools {
 		System.out.println("**********************\n");
 		System.out.println(changedValue);
 	}
+
+	@Test
+	void testReplacement() {
+		System.out.println(sourceFilePath.toString());
+		System.out.println(sourceFilePath.toString().replaceAll("(.*/java/)", ""));
+	}
 }

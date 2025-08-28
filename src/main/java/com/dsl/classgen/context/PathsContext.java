@@ -1,12 +1,11 @@
 package com.dsl.classgen.context;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent.Kind;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -19,6 +18,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
 public class PathsContext {
@@ -27,9 +27,9 @@ public class PathsContext {
 	private static final Level SUCCESS = Level.getLevel("SUCCESS");
 	public Lock locker = new ReentrantLock();
 
-	private final ConcurrentMap<Kind<Path>, List<Path>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
-	private final List<Path> fileList;														// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
-	private final List<Path> dirList;														// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista
+	private final ConcurrentMap<Kind<Path>, Set<Path>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
+	private final Set<Path> fileList;														// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
+	private final Set<Path> dirList;														// caso um ou mais diretorios sejam processados, os diretorios ficarao aqui. O sistema de monitoramento de diretorios se encarrega de processar esta lista
 
 	private final String outterClassName;													// nome final da classe externa
 
@@ -51,8 +51,8 @@ public class PathsContext {
 
 	PathsContext(boolean isDebugMode) {
 		changedFiles = new ConcurrentHashMap<>();
-		fileList = new ArrayList<>();
-		dirList = new ArrayList<>();
+		fileList = new HashSet<>();
+		dirList = new HashSet<>();
 
 		outterClassName = "P";
 		userDir = Paths.get(System.getProperty("user.dir"));
@@ -61,23 +61,19 @@ public class PathsContext {
 		cacheDir = userDir.resolve(".jsonProperties-cache");
 	}
 
-	public void resolvePaths() {
-		var flagsCtx = GeneralContext.getInstance().getFlagsContextInstance();
-		if(!flagsCtx.getIsDirStructureAlreadyGenerated()) {
-	        outputSourceDirPath = outputSourceDirPath.resolve(Utils.normalizePath(this.packageClass, ".", "/"));
-	        outputSourceFilePath = outputSourceDirPath.resolve(outterClassName + ".java");
-		}
-    }
-
 	// fileList
-	public List<Path> getFileList() {
+	public Set<Path> getFileSet() {
         return fileList;
     }
 
 	// dirList
-	public List<Path> getDirList() {
+	public Set<Path> getDirSet() {
         return dirList;
     }
+
+	public boolean isDirListEmpty() {
+		return dirList.isEmpty();
+	}
 
 	public void queueFile(Path filePath) {
     	fileList.add(filePath);
@@ -85,17 +81,35 @@ public class PathsContext {
     }
 
     public void queueDir(Path dirPath) {
-    	dirList.add(dirPath);
-    	LOGGER.log(SUCCESS, "Directory added to dir list: {}", dirPath);
+    	if(!WatchServiceImpl.verifyValue(dirPath)) {
+    		dirList.add(dirPath);
+    		LOGGER.log(SUCCESS, "Directory added to dir list: {}", dirPath);
+    	}
     }
 
     // changedFiles
     public void queueChangedFileEntry(Map.Entry<Kind<Path>, Path> entry) {
-    	changedFiles.computeIfAbsent(entry.getKey(), _ -> new ArrayList<>()).add(entry.getValue());
+    	changedFiles.computeIfAbsent(entry.getKey(), _ -> new HashSet<>()).add(entry.getValue());
     }
 
-    public Set<Entry<Kind<Path>, List<Path>>> getMappedChangedFiles() {
+    public Set<Entry<Kind<Path>, Set<Path>>> getMappedChangedFiles() {
+    	var createdEvent = StandardWatchEventKinds.ENTRY_CREATE;
+		var modifiedEvent = StandardWatchEventKinds.ENTRY_MODIFY;
+    	if(changedFiles.containsKey(createdEvent)) {
+    		changedFiles.get(createdEvent).removeIf(Files::isDirectory);
+    	}
+    	if(changedFiles.containsKey(modifiedEvent)) {
+    		changedFiles.get(modifiedEvent).removeIf(Files::isDirectory);
+    	}
     	return changedFiles.entrySet();
+    }
+
+    public boolean isEmptyChangedFilesMap() {
+    	return changedFiles.isEmpty();
+    }
+
+    public void clearMapOfChanges() {
+    	changedFiles.clear();
     }
 
 	/**
@@ -123,10 +137,7 @@ public class PathsContext {
 	 * @param existingPJavaGeneratedSourcePath the existingPJavaGeneratedSourcePath to set
 	 */
 	public void setExistingPJavaGeneratedSourcePath(Path existingPJavaGeneratedSourcePath) {
-		if (existingPJavaGeneratedSourcePath != null) {
-			this.existingPJavaGeneratedSourcePath = existingPJavaGeneratedSourcePath;
-			GeneralContext.getInstance().getFlagsContextInstance().setIsExistsPJavaSource(true);
-		}
+		this.existingPJavaGeneratedSourcePath = existingPJavaGeneratedSourcePath;
 	}
 
 	/**
@@ -140,9 +151,11 @@ public class PathsContext {
 	 * @param outputSourceDirPath the outputSourceDirPath to set
 	 */
 	public void setOutputSourceDirPath(Path outputSourceDirPath) {
-		boolean isSame = outputSourceDirPath != this.outputSourceDirPath;
-		if (isSame) {
-			GeneralContext.getInstance().getFlagsContextInstance().setIsDirStructureAlreadyGenerated(isSame);
+		var flagsCtx = GeneralContext.getInstance().getFlagsContextInstance();
+		if(!flagsCtx.getIsDirStructureAlreadyGenerated()) {
+	        this.outputSourceDirPath = outputSourceDirPath.resolve(Utils.normalizePath(this.packageClass, ".", "/"));
+	        this.outputSourceFilePath = this.outputSourceDirPath.resolve(outterClassName + ".java");
+		} else {
 			this.outputSourceDirPath = outputSourceDirPath;
 		}
 	}
@@ -165,14 +178,7 @@ public class PathsContext {
 	 * @param outputClassFilePath the outputClassFilePath to set
 	 */
 	public void setOutputClassFilePath(Path outputClassFilePath) {
-		try {
-			if(!Files.isSameFile(outputClassFilePath, this.outputClassFilePath)) {
-				GeneralContext.getInstance().getFlagsContextInstance().setIsExistsCompiledPJavaClass(true);
-				this.outputClassFilePath = outputClassFilePath;
-			}
-		} catch (IOException e) {
-			Utils.handleException(e);
-		}
+		this.outputClassFilePath = outputClassFilePath;
 	}
 
 	/**

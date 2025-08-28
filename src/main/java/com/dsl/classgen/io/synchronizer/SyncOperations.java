@@ -2,9 +2,9 @@ package com.dsl.classgen.io.synchronizer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,14 +39,14 @@ sealed interface SyncOperations permits SyncBin, SyncSource {
 	 *
 	 * @param pathList the path list to process
 	 */
-	void insertClassSection(List<Path> pathList);
+	void insertClassSection(Set<Path> pathSet);
 
 	/**
 	 * Erase class section.
 	 *
 	 * @param currentCacheModelList the current cache model list to process
 	 */
-	void eraseClassSection(List<CacheModel> currentCacheModelList);
+	void eraseClassSection(Set<CacheModel> currentCacheModelSet);
 
 	/**
 	 * Modify section.

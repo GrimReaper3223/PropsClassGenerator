@@ -3,6 +3,7 @@ package com.dsl.classgen.annotation.processors;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
@@ -22,9 +23,10 @@ public class AnnotationProcessor {
 	 * @param cacheModelList the cache model list
 	 * @return the list of generated inner static classes
 	 */
-	public static List<Class<?>> processClassAnnotations(List<CacheModel> cacheModelList) {
+	public static List<Class<?>> processClassAnnotations(Set<CacheModel> cacheModelList) {
 		List<Integer> hashList = cacheModelList.stream().map(model -> model.fileHash).toList();
 
+		// FIX: Exception in thread "File Event Processor - Thread" java.lang.IllegalAccessError: class test.generated.P (in unnamed module @0x75b97d38) cannot access class test.generated.P$AppMetadata (in module com.dsl.test) because module com.dsl.test does not export test.generated to unnamed module @0x75b97d38
 		return Arrays.stream(Reader.loadGeneratedBinClass().getDeclaredClasses())
 				.filter(cl -> hashList.contains(cl.getDeclaredAnnotation(GeneratedInnerStaticClass.class).hash()))
 				.toList();

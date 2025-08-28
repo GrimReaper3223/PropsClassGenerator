@@ -88,11 +88,12 @@ public final class CacheManager extends SupportProvider {
 	 * @param keyPath the properties path
 	 * @param value   the new cache model value
 	 */
-	public static <T> void computeCacheModelToMap(T keyPath, CacheModel value) {
+	public static <T> CacheModel computeCacheModelToMap(T keyPath, CacheModel value) {
 		Path jsonKey = Utils.toJsonFilePath(keyPath);
 		if (cacheModelMap.computeIfPresent(jsonKey, (_, _) -> value) == null) {
 			cacheModelMap.put(jsonKey, value);
 		}
+		return value;
 	}
 
 	/**
@@ -224,7 +225,7 @@ public final class CacheManager extends SupportProvider {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private static void createCache() throws IOException {
-		pathsCtx.getFileList().forEach(CacheManager::queueNewFileToCreateCache);
+		pathsCtx.getFileSet().forEach(CacheManager::queueNewFileToCreateCache);
 		Files.createDirectories(pathsCtx.getCacheDir());
 		Writer.writeJson();
 	}

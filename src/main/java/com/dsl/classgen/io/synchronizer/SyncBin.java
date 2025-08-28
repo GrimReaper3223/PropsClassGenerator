@@ -10,6 +10,7 @@ import java.lang.classfile.ClassTransform;
 import java.lang.classfile.FieldModel;
 import java.lang.classfile.attribute.ConstantValueAttribute;
 import java.lang.classfile.attribute.InnerClassesAttribute;
+import java.lang.classfile.attribute.ModuleAttribute;
 import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
@@ -18,6 +19,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -71,41 +73,45 @@ public final class SyncBin implements SyncOperations, Parsers {
 	 * Insert class section to the compiled class file. Perform operation in a batch
 	 * manner, processing a list of paths
 	 *
-	 * @param pathList the path list to process
+	 * @param pathSet the path list to process
 	 */
 	@Override
-	public void insertClassSection(List<Path> pathList) {
+	public void insertClassSection(Set<Path> pathSet) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new compiled data entries...");
-		List<InnerStaticClassModel> classModelList = pathList.stream().map(OutterClassModel::getModel).toList();
-		classModelList.forEach(classModel -> consumeWriter.accept(createInnerClassFileds(createClassSection(classModel), classModel)));
+		List<InnerStaticClassModel> classModelList = pathSet.stream().map(OutterClassModel::getModel).toList();
+		classModelList.stream()
+				.map(classModel -> createInnerClassFields(createClassSection(classModel), classModel))
+				.reduce((_, arr) -> arr)
+				.ifPresent(consumeWriter::accept);
 	}
 
 	/**
 	 * Erase class section from the compiled class file. Perform operation in a
 	 * batch manner, processing a list of cache models
 	 *
-	 * @param currentCacheModelList the current cache model list to process
+	 * @param currentCacheModelSet the current cache model list to process
 	 */
 
-	/*
-	 * FIX: Um erro e lancado quando muitos arquivos sao processados de uma so vez
-	 * por este metodo. O erro indica uma possivel inconsistencia entre herancas, no
-	 * qual a classe principal tenta herdar de alguma classe interna final.
-	 */
 	@Override
-	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
+	public void eraseClassSection(Set<CacheModel> currentCacheModelSet) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing compiled class section...");
 
 		// lista de nomes de arquivos convertidos para o formato de classpath
-		currentCacheModelList.stream().<Path>mapMulti((model, consumer) -> {
+		currentCacheModelSet.stream().<Path>mapMulti((model, consumer) -> {
 			try {
-				consumer.accept(Utils.convertSourcePathToClassPath(model.filePath));
-			} catch (ClassNotFoundException e) {
-				Utils.handleException(e);
+				var path = Utils.convertSourcePathToClassPath(model.filePath);
+				consumer.accept(path);
+			} catch (ClassNotFoundException _) {
+				LOGGER.error("Class not found for the given source path: {}.", model.filePath);
+				LOGGER.log(LogLevels.NOTICE.getLevel(), "Checking next entry...");
 			}
 		}).collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
 			// gera e escreve o byte array da classe externa atualizada
-			consumeWriter.accept(removeSomeExistingClassSections(list));
+			if(!list.isEmpty()) {
+				consumeWriter.accept(removeSomeExistingClassSections(list));
+			} else {
+				LOGGER.error("No bytecode class deletion performed, because the list that should have the reference files is empty.");
+			}
 			return null;
 		}));
 	}
@@ -129,26 +135,12 @@ public final class SyncBin implements SyncOperations, Parsers {
 		});
 	}
 
-	/**
-	 * Insert class section to the compiled class file. Performs operation on a
-	 * single path.
-	 *
-	 * @param <T>  the generic type to be associated with the argument (String or
-	 *             Path)
-	 * @param path the properties file path
-	 */
-	public <T> void insertClassSection(T path) {
-		insertClassSection(List.of(Path.of(path.toString())));
-	}
-
-	/**
-	 * Erase class section to the compiled class file. Performs operation on a
-	 * single path.
-	 *
-	 * @param currentCacheModel the current cache model to process
-	 */
-	public void eraseClassSection(CacheModel currentCacheModel) {
-		eraseClassSection(List.of(currentCacheModel));
+	public void insertModuleToOutterClass(ModuleAttribute attr) {
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Adding module to outter class...");
+		consumeWriter.accept(cf.build(cm.thisClass().asSymbol(), handler -> {
+			cm.elementStream().forEach(handler::accept);
+			handler.accept(attr);
+		}));
 	}
 
 	/**
@@ -220,7 +212,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 		return cf.parse(cf.build(ClassDesc.of(classModel.className()), classDeclHandler));
 	}
 
-	private byte[] createInnerClassFileds(ClassModel innerClassModel, InnerStaticClassModel	classModel) {
+	private byte[] createInnerClassFields(ClassModel innerClassModel, InnerStaticClassModel	classModel) {
 		Consumer<ClassBuilder> fieldDeclHandler = cb -> {
 			// preserva os elementos originais da classe interna
 			innerClassModel.elementStream().forEach(cb::with);
@@ -287,7 +279,8 @@ public final class SyncBin implements SyncOperations, Parsers {
 				.map(InnerClassesAttribute.class::cast)
 				.flatMap(attr -> attr.classes().stream())
 				.filter(elem -> !fileNameList.contains(Path.of(elem.innerClass().name().stringValue())))
-				.forEach(elem -> cb.withSuperclass(elem.innerClass().asSymbol()));
+				.map(InnerClassesAttribute::of)
+				.forEach(cb::with);
 		return cf.build(cm.thisClass().asSymbol(), classEraserHandler);
 	}
 }

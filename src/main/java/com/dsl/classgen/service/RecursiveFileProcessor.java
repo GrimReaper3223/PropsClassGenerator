@@ -37,10 +37,10 @@ public class RecursiveFileProcessor extends RecursiveAction {
 		var value = entry.getValue();
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "{}: {}", key.name(), value);
 
-	 	if(key.name().equals("ENTRY_CREATE") || key.name().equals("ENTRY_DELETE") && Files.isDirectory(value)) {
-	 		pathsCtx.queueDir(entry.getValue());
+	 	if(Files.isDirectory(value)) {
+	 		pathsCtx.queueDir(value);
 
-	 		try(Stream<Path> files = Files.walk(value)) {
+	 		try(Stream<Path> files = Files.list(value)) {
 	 			files.forEach(path -> {
 	 				var subEntry = Map.entry(key, path);
 

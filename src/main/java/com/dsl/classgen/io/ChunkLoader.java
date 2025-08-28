@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -25,7 +24,7 @@ public final class ChunkLoader extends SupportProvider {
 	public static void loadChunks() {
 		LOGGER.info("Loading chunks...");
 		CountDownLatch latch = new CountDownLatch(2);
-		var fileList = pathsCtx.getFileList();
+		var fileList = pathsCtx.getFileSet();
 
 		// load class models
 		new Thread(() -> {
@@ -65,7 +64,7 @@ public final class ChunkLoader extends SupportProvider {
 			LOGGER.warn("There is already a generated structure.");
 			LOGGER.log(LogLevels.NOTICE.getLevel(), "Looking for changes...");
 
-			List<CacheModel> outdatedCache = filterDeletedFiles();
+			Set<CacheModel> outdatedCache = filterDeletedFiles();
 
 			if(!outdatedCache.isEmpty()) {
 				LOGGER.warn("Changes detected. Synchronizing entities...");
@@ -81,7 +80,7 @@ public final class ChunkLoader extends SupportProvider {
 		}
 	}
 
-	private static List<CacheModel> filterDeletedFiles() {
+	private static Set<CacheModel> filterDeletedFiles() {
 		Set<String> innerClassesModelKeySet = OutterClassModel.getMapModel().keySet();
 		Set<String> cacheModelKeySet = CacheManager.getCacheModelMapEntries()
 				.stream()
@@ -89,13 +88,13 @@ public final class ChunkLoader extends SupportProvider {
 				.collect(Collectors.toSet());
 
 		if(cacheModelKeySet.removeAll(innerClassesModelKeySet) && cacheModelKeySet.isEmpty()) {
-			return Collections.emptyList();
+			return Collections.emptySet();
 		}
 
 		return cacheModelKeySet.stream()
 				.map(CacheManager::removeElementFromCacheModelMap)
 				.filter(Objects::nonNull)
-				.toList();
+				.collect(Collectors.toSet());
 	}
 
 	private static void writeNewCacheIfExists() {

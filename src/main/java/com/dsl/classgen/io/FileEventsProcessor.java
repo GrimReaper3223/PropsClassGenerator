@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.io.synchronizer.ModelMapper;
@@ -21,6 +22,7 @@ import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.service.WatchServiceImpl;
+import com.dsl.classgen.utils.Utils;
 
 /**
  * The Class FileEventsProcessor.
@@ -34,11 +36,15 @@ public final class FileEventsProcessor extends SupportProvider {
 	 * Initialize thread.
 	 */
 	public static void initialize() {
-		if (!eventProcessorThread.isAlive()) {
-			eventProcessorThread.setDaemon(false);
-			eventProcessorThread.setName("File Event Processor - Thread");
-			eventProcessorThread.start();
+		if (eventProcessorThread.isAlive()) {
+			eventProcessorThread.interrupt();
+			if(!eventProcessorThread.isInterrupted()) {
+				initialize();
+			}
 		}
+		eventProcessorThread.setDaemon(false);
+		eventProcessorThread.setName("File Event Processor - Thread");
+		eventProcessorThread.start();
 	}
 
 	/**
@@ -46,12 +52,24 @@ public final class FileEventsProcessor extends SupportProvider {
 	 */
 	private static void processChanges() {
 		while (WatchServiceImpl.isWatchServiceThreadAlive()) {
-			if (!pathsCtx.getMappedChangedFiles().isEmpty() && pathsCtx.locker.tryLock()) {
-				caller(pathsCtx.getMappedChangedFiles());
-				pathsCtx.getMappedChangedFiles().clear();
-				pathsCtx.locker.unlock();
+			try {
+				if (!pathsCtx.isEmptyChangedFilesMap() && pathsCtx.locker.tryLock()) {
+					caller(pathsCtx.getMappedChangedFiles());
+					pathsCtx.clearMapOfChanges();
+					pathsCtx.locker.unlock();
+				}
+				Thread.onSpinWait();
+			} catch (Exception e) {
+				LOGGER.error("An error occurred in the thread '{}'.", eventProcessorThread.getName());
+				Utils.handleException(e);
+
+				// thread que recupera a thread de processamento de arquivos.
+				// se nao houver uma thread adicional de recuperacao e se a thread com a excecao
+				// nao estiver parada, ao parar a thread com a excecao iria, em teoria, parar a execucao
+				// dela mesma, impedindo que ela se reinicie
+				LOGGER.warn("Trying to restart the thread...");
+				new Thread(FileEventsProcessor::initialize).start();
 			}
-			Thread.onSpinWait();
 		}
 		LOGGER.error("'{}' was interrupted. Finishing '{}'...", WatchServiceImpl.getThreadName(),
 				eventProcessorThread.getName());
@@ -60,25 +78,23 @@ public final class FileEventsProcessor extends SupportProvider {
 
 	/**
 	 * Provides a manual call to the change processor for other areas of the system
-	 *
-	 * @param <T>  the generic type to be associated with the argument (String or
-	 *             Path)
 	 */
-	public static <T> void caller(Set<Entry<Kind<Path>, List<T>>> mappedChangedFiles) {
+	public static void caller(Set<Entry<Kind<Path>, Set<Path>>> mappedChangedFiles) {
 		mappedChangedFiles.stream().forEach(entry -> {
-			Kind<Path> kind = entry.getKey();
-			List<Path> pathList = entry.getValue().stream().map(String::valueOf).map(Path::of).toList();
-			switch (kind) {
-				case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(pathList);
-				case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(pathList);
-				case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(pathList);
-				default -> throw new IllegalArgumentException("** BUG ** Unexpected values: " + pathList.toString());
+			if(!entry.getValue().isEmpty()) {
+				Kind<Path> kind = entry.getKey();
+				switch (kind) {
+					case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(entry.getValue());
+					case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(entry.getValue());
+					case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(entry.getValue());
+					default -> throw new IllegalArgumentException("** BUG ** Unexpected values: " + entry.getValue().toString());
+				}
 			}
 		});
 	}
 
-	public static <T> void caller(Kind<Path> kind, T path) {
-		caller(Set.of(Map.entry(kind, List.of(path))));
+	public static void caller(Kind<Path> kind, Path path) {
+		caller(Set.of(Map.entry(kind, Set.of(path))));
 	}
 
 	/**
@@ -86,7 +102,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param path the new file path
 	 */
-	private static void createSection(List<Path> fileList) {
+	private static void createSection(Set<Path> fileList) {
 		new SyncSource().insertClassSection(fileList);
 		new SyncBin().insertClassSection(fileList);
 	}
@@ -96,12 +112,12 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param path the file path that should be deleted
 	 */
-	private static void deleteSection(List<Path> fileList) {
+	private static void deleteSection(Set<Path> fileSet) {
 		LOGGER.warn("Existing file(s) deleted. Deleting cache and reprocessing source file entries...");
-		List<CacheModel> list = fileList.stream().map(CacheManager::removeElementFromCacheModelMap).toList();
+		Set<CacheModel> modelSet = fileSet.stream().map(CacheManager::removeElementFromCacheModelMap).collect(Collectors.toSet());
 
-		new SyncSource().eraseClassSection(list);
-		new SyncBin().eraseClassSection(list);
+		new SyncSource().eraseClassSection(modelSet);
+		new SyncBin().eraseClassSection(modelSet);
 	}
 
 	/**
@@ -109,7 +125,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param path the file path that was modified
 	 */
-	private static void modifySection(List<Path> filePath) {
+	private static void modifySection(Set<Path> filePath) {
 		List<CacheModel> currentCacheModelList = filePath.stream().map(CacheManager::getCacheModelFromMap).filter(Objects::nonNull).toList();
 		if (currentCacheModelList.isEmpty()) {
 			LOGGER.error("No models were found loaded in the cache.");

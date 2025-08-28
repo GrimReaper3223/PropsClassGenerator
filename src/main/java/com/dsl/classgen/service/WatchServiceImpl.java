@@ -58,35 +58,41 @@ public class WatchServiceImpl {
         }
     }
 
-    // NOTE: verificar se, ao chamar o metodo abaixo, ele registra corretamente os diretorios contidos na fila de caminhos de diretorios
-    // NOTE: verificar tambem se outras partes do codigo inserem diretorios corretamente na fila que e processada por este metodo
     public static void performDirRegistration() {
-    	pathsCtx.getDirList().forEach(path -> {
-            WatchKey key = null;
-            try {
-                key = path.register(watcher, EVENT_KIND_ARR);
-            }
-            catch (IOException e) {
-            	Utils.handleException(e);
-            }
-            keys.putAll(Map.ofEntries(WatchServiceImpl.verifyKey(key, path)));
-        });
-
-        LOGGER.log(LogLevels.NOTICE.getLevel(), "Done");
+    	if(!pathsCtx.isDirListEmpty()) {
+        	pathsCtx.getDirSet().forEach(path -> {
+                try {
+                	var key = path.register(watcher, EVENT_KIND_ARR);
+                	WatchServiceImpl.verifyKey(key, path);
+                }
+                catch (IOException e) {
+                	Utils.handleException(e);
+                }
+            });
+        	pathsCtx.getDirSet().clear();
+        	LOGGER.log(LogLevels.NOTICE.getLevel(), "Done");
+    	}
     }
 
-    private static Map.Entry<WatchKey, Path> verifyKey(WatchKey key, Path path) {
+    public static boolean verifyValue(Path dirPath) {
+    	return keys.containsValue(dirPath);
+    }
+
+    private static void verifyKey(WatchKey key, Path path) {
     	LOGGER.log(LogLevels.NOTICE.getLevel(), "Checking {}...", path);
         Path mappedPath = keys.get(key);
 
         if (mappedPath == null) {
         	LOGGER.log(LogLevels.NOTICE.getLevel(), "Registering: {}...", path);
+        	keys.computeIfAbsent(key, _ -> path);
 
         } else if (!path.equals(mappedPath)) {
         	LOGGER.log(LogLevels.NOTICE.getLevel(), "Updating: {} -> {}...", mappedPath, path);
-        }
+        	keys.computeIfPresent(key, (_, _) -> path);
 
-        return Map.entry(key, path);
+        } else {
+        	LOGGER.log(LogLevels.NOTICE.getLevel(), "No actions to be taken.");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -110,6 +116,7 @@ public class WatchServiceImpl {
 	            	Thread.onSpinWait();
 	            }
 	            processStream(key);
+	            performDirRegistration();
 	            pathsCtx.locker.unlock();
 
 	            if (!key.reset()) {
@@ -135,7 +142,11 @@ public class WatchServiceImpl {
 					return Map.entry(eventPath.kind(), occurrence);
 				})
 				.filter(entry -> Utils.isPropertiesFile(entry.getValue()) || Files.isDirectory(entry.getValue()))
-				.forEach(entry -> ForkJoinPool.commonPool().execute(new RecursiveFileProcessor(entry)));
+				.forEach(entry -> {
+					var recursiveAction = new RecursiveFileProcessor(entry);
+					ForkJoinPool.commonPool().execute(recursiveAction);
+					recursiveAction.join();
+				});
 	}
 
     public static boolean isWatchServiceThreadAlive() {
@@ -144,6 +155,10 @@ public class WatchServiceImpl {
 
     public static String getThreadName() {
     	return watchServiceThread.getName();
+    }
+
+    public static void tearDown() {
+    	watchServiceThread.interrupt();
     }
 }
 

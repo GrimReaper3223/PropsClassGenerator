@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -38,15 +39,15 @@ public final class SyncSource implements SyncOperations {
 	 * Insert class section to the source file. Perform operation in a batch manner,
 	 * processing a list of paths.
 	 *
-	 * @param pathList the path list to process
+	 * @param pathSet the path list to process
 	 */
 	@Override
-	public void insertClassSection(List<Path> pathList) {
+	public void insertClassSection(Set<Path> pathSet) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new class entries...");
 
-		pathList.forEach(path -> {
+		pathSet.forEach(path -> {
 			InnerStaticClassModel model = InnerStaticClassModel.initInstance(path);
-			new CacheModel(model);
+			CacheManager.queueNewFileToCreateCache(model.annotationMetadata().filePath());
 
 			ClassOrInterfaceDeclaration classDecl = innerClassGen.generateData(model);
 			cUnit.getClassByName(pathsCtx.getOutterClassName()).ifPresent(c -> c.addMember(classDecl));
@@ -59,12 +60,12 @@ public final class SyncSource implements SyncOperations {
 	 * Erase class section to the source file. Perform operation in a batch manner,
 	 * processing a list of paths.
 	 *
-	 * @param currentCacheModelList the current cache model list to process
+	 * @param currentCacheModelSet the current cache model list to process
 	 */
 	@Override
-	public void eraseClassSection(List<CacheModel> currentCacheModelList) {
+	public void eraseClassSection(Set<CacheModel> currentCacheModelSet) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing class entries...");
-		List<Class<?>> filteredClassList = AnnotationProcessor.processClassAnnotations(currentCacheModelList);
+		List<Class<?>> filteredClassList = AnnotationProcessor.processClassAnnotations(currentCacheModelSet);
 
 		cUnit.findAll(ClassOrInterfaceDeclaration.class).stream()
 				.filter(classDecl -> filteredClassList.stream()
@@ -81,13 +82,11 @@ public final class SyncSource implements SyncOperations {
 	 *                          state
 	 */
 	@Override
-	public void modifySection(Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges,
-			CacheModel currentCacheModel) {
+	public void modifySection(Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges, CacheModel currentCacheModel) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Modifying source entries...");
 
 		mappedChanges.entrySet().forEach(entry -> {
-			Supplier<Stream<Map.Entry<Integer, CachePropertiesData>>> streamEntry = () -> entry.getValue().entrySet()
-					.stream();
+			Supplier<Stream<Map.Entry<Integer, CachePropertiesData>>> streamEntry = () -> entry.getValue().entrySet().stream();
 
 			// TODO: implementar a lógica de modificação de campos com o enum 'MODIFY'
 			switch (entry.getKey()) {
@@ -109,27 +108,6 @@ public final class SyncSource implements SyncOperations {
 		});
 		consumeWriter.accept(null);
 		CacheManager.processCache();
-	}
-
-	/**
-	 * Insert class section to the source file. Performs operation on a single path.
-	 *
-	 * @param <T>  the generic type to be associated with the argument (String or
-	 *             Path)
-	 * @param path the properties file path
-	 */
-	public <T> void insertClassSection(T path) {
-		insertClassSection(List.of(Path.of(path.toString())));
-	}
-
-	/**
-	 * Erase class section to the compiled class file. Performs operation on a
-	 * single path.
-	 *
-	 * @param currentCacheModel the current cache model to process
-	 */
-	public void eraseClassSection(CacheModel currentCacheModel) {
-		eraseClassSection(List.of(currentCacheModel));
 	}
 
 	/**

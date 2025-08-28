@@ -16,7 +16,7 @@ public class CustomClassLoader extends ClassLoader {
 		// convert from binary name format to file path
 		if (name.contains(".") && !name.contains("/")) {
 			// replace dots with file separators
-			name = "target/classes/" + Utils.normalizePath(name, ".", File.separator).toString().concat(".class");
+			name = "target/classes/" + Utils.normalizePath(name, ".", "/").toString().concat(".class");
 		}
 
 		byte[] classData = loadClassData(name);

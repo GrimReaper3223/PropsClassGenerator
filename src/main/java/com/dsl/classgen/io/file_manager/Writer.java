@@ -96,8 +96,9 @@ public final class Writer extends SupportProvider {
 
 		CacheManager.getQueuedCacheFiles(true).stream().map(InnerStaticClassModel::initInstance).forEach(model -> {
 			try {
-				Files.writeString(Utils.toJsonFilePath(model.annotationMetadata().filePath()),
-						gson.toJson(new CacheModel(model)), OPTS);
+				Path filePath = model.annotationMetadata().filePath();
+				var cacheModel = CacheManager.computeCacheModelToMap(filePath, new CacheModel(model));
+				Files.writeString(Utils.toJsonFilePath(filePath), gson.toJson(cacheModel), OPTS);
 			} catch (IOException e) {
 				Utils.handleException(e);
 			}

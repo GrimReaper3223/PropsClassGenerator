@@ -43,8 +43,6 @@ public class CacheModel implements Serializable {
 			entries.put(annotation.hash(),
 					new CachePropertiesData(annotation.key(), instance.rawFieldValue(), instance.parsedFieldValue()));
 		});
-
-		CacheManager.computeCacheModelToMap(model.annotationMetadata().filePath(), this);
 	}
 
 	/**

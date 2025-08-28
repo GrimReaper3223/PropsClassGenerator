@@ -9,6 +9,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import com.dsl.classgen.utils.Utils;
 
 public final class StructureChecker extends SupportProvider {
@@ -43,18 +45,22 @@ public final class StructureChecker extends SupportProvider {
         catch (IOException e) {
         	Utils.handleException(e);
         }
+        flagsCtx.setIsDirStructureAlreadyGenerated(foundedPath != null);
         return Objects.requireNonNullElse(foundedPath, pathsCtx.getOutputSourceDirPath());
     }
 
     // verifica se o arquivo P.java existe
-    private static Path checkSourceFile() {
+    private static @Nullable Path checkSourceFile() {
     	Path foundedPath = null;
-    	try (Stream<Path> files = Files.list(pathsCtx.getOutputSourceDirPath())) {
-    		foundedPath = genFilter.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".java"));
+    	if(Files.exists(pathsCtx.getOutputSourceDirPath())) {
+    		try (Stream<Path> files = Files.list(pathsCtx.getOutputSourceDirPath())) {
+    			foundedPath = genFilter.apply(files, predicateFactory.apply(pathsCtx.getOutterClassName() + ".java"));
+    		}
+    		catch (IOException e) {
+    			Utils.handleException(e);
+    		}
     	}
-    	catch (IOException e) {
-    		Utils.handleException(e);
-    	}
+    	flagsCtx.setIsExistsPJavaSource(foundedPath != null);
     	return foundedPath;
     }
 
@@ -67,6 +73,7 @@ public final class StructureChecker extends SupportProvider {
     	catch (IOException e) {
     		Utils.handleException(e);
         }
+    	flagsCtx.setIsExistsCompiledPJavaClass(foundedPath != null);
     	return Objects.requireNonNullElse(foundedPath, pathsCtx.getOutputClassFilePath());
     }
 }

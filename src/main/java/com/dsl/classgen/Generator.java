@@ -29,12 +29,12 @@ public final class Generator {
 	private Generator() {}
 
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
-		StructureChecker.checkStructure();
-
 		flagsCtx.setRecursion(isRecursive);
 		pathsCtx.setPackageClass(packageClass);
 		pathsCtx.setInputPath(inputPath);
-		pathsCtx.resolvePaths();
+
+		StructureChecker.checkStructure();
+//		pathsCtx.resolvePaths();
 
 		Reader.read(inputPath);
 		ChunkLoader.loadChunks();
@@ -59,7 +59,7 @@ public final class Generator {
 				-----------------------------
 				-----------------------------
 
-				Call 'Generator.generate()' to generate java classes or parse existing classes.
+				Call 'Generator.generate()' to generate java classes or manage existing classes.
 				""", inputPath,
 					 pathsCtx.getOutputSourceDirPath(),
 					 pathsCtx.getPackageClass(),
