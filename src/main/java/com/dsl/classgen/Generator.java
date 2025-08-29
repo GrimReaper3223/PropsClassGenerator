@@ -34,7 +34,6 @@ public final class Generator {
 		pathsCtx.setInputPath(inputPath);
 
 		StructureChecker.checkStructure();
-//		pathsCtx.resolvePaths();
 
 		Reader.read(inputPath);
 		ChunkLoader.loadChunks();

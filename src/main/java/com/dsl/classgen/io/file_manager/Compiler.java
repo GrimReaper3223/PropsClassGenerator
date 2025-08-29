@@ -41,6 +41,13 @@ public final class Compiler extends SupportProvider {
         }
     }
 
+	/*
+	 * Automatically inserts a module attribute for the P.class class when
+	 * generating all files for the first time. The developer deploying this
+	 * framework should be responsible for inserting the 'exports *.generated;'
+	 * directive in their module-info.java and then running a build so that
+	 * module-info.class has the new 'exports' directive values.
+	 */
     private static void exportGeneratedPackageInCurrentModule() {
     	SyncBin syncBin = new SyncBin();
     	ModuleFinder mf = ModuleFinder.of(Path.of("target/classes"));

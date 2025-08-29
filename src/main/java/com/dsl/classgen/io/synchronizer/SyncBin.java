@@ -135,6 +135,7 @@ public final class SyncBin implements SyncOperations, Parsers {
 		});
 	}
 
+	//
 	public void insertModuleToOutterClass(ModuleAttribute attr) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Adding module to outter class...");
 		consumeWriter.accept(cf.build(cm.thisClass().asSymbol(), handler -> {
