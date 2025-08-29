@@ -65,6 +65,8 @@ The first thread delegates changed files to the second thread, which only runs w
 
 While the framework is running, any change (modification, insertion or deletion) to the mapped property files will result in data being synchronized.
 
+<hr>
+
 #### **IMPORTANT:**
 You must define a comment at the top of your .properties file that defines the format of the data held. <p>
 Examples:
@@ -76,6 +78,14 @@ Examples:
 | **# $javatype:@Character** | public static final **Character** ... = 'a'; |
 
 Types such as <ins>**float**</ins>, <ins>**double**</ins>, <ins>**long**</ins>, and their wrapper variants must contain the type definition character  <ins>**f or F**</ins>, <ins>**d or D**</ins> or <ins>**l or L**</ins> next to the data. **The framework does not insert these identifiers.** This may be supported when new data types are integrated.
+
+I also recommend defining the **'exports'** directive in your *module-info.java* file for the generated package containing the mapped properties.
+
+If this isn't done, future uses of the framework may experience errors due to the generated package not being exported (this is due to an unresolvable bug, where I should have inserted the **'exports'** clause in the *module-info.java* file. However, as I found this to be too invasive, I decided to let the developer handle this).
+
+In the future, with the builder pattern, I will include an option that you can use if you want the **'exports'** clause to be inserted automatically after the files are generated.
+
+<hr>
 
 ## **CHANGELOG:**
 
