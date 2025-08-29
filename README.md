@@ -24,7 +24,7 @@ Generate .java class files from a properties file
 	<dependency>
 		<groupId>io.github.grimreaper3223</groupId>
 		<artifactId>PropsClassGenerator</artifactId>
-		<version>1.0</version>
+		<version>1.1</version>
 	</dependency>
 ```
 
@@ -89,7 +89,18 @@ In the future, with the builder pattern, I will include an option that you can u
 
 ## **CHANGELOG:**
 
-### v1.0 [First Production Release]:
+### v1.1:
+- Added asynchronous processing. Asynchronous processing occurs during chunk loading and management of files and directories listed by the WatchService for mapping;
+- Minor bug fixes and performance improvements implemented;
+
+#### Bug fixes from previous versions
+- v1.0[^v1.0] - ~No action occurs when deleting a properties file, added after loading the already known classes, while the framework is running;~
+
+#### Know issues in this version
+- **Possible resource overload.** I haven't done the profiling yet, but I suspect the properties files are read twice in a single operation in different phases. (From v1.0[^v1.0])
+
+[^v1.0]:
+### v1.0 - First Production Release:
 
 - Improved relational data mapping. The framework now uses the chunked loading model;
 - Improved structure checkers;
@@ -113,7 +124,7 @@ Some important implementations, such as checking for errors in class files, dete
 The supported data types remain the same (known Java primitive types and their wrappers). Custom types have not yet been tested, with the exception of the Class<?> type, for example.
 
 #### Known issues in this version
-- **No action occurs when deleting a properties file, added after loading the already known classes, while the framework is running.** This may be due to a lack of bytecode updates. No exception is thrown when this happens. The data simply isn't updated.
+- ~**No action occurs when deleting a properties file, added after loading the already known classes, while the framework is running.** This may be due to a lack of bytecode updates. No exception is thrown when this happens. The data simply isn't updated.~
 - **Possible resource overload.** I haven't done the profiling yet, but I suspect the properties files are read twice in a single operation in different phases.
 
 ### v0.2.4-R1:
