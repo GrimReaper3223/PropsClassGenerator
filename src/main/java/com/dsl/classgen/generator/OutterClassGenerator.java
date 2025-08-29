@@ -55,7 +55,6 @@ public final class OutterClassGenerator extends SupportProvider {
 	 */
 	private List<ClassOrInterfaceDeclaration> generateInnerClasses() {
 		var innerClassGenerator = new InnerStaticClassGenerator();
-
 		return OutterClassModel.getMapModelStream().map(innerClassGenerator::generateData).toList();
 	}
 }

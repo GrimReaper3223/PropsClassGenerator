@@ -21,6 +21,7 @@ import com.dsl.classgen.io.synchronizer.SyncSource;
 import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
+import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
@@ -62,13 +63,6 @@ public final class FileEventsProcessor extends SupportProvider {
 			} catch (Exception e) {
 				LOGGER.error("An error occurred in the thread '{}'.", eventProcessorThread.getName());
 				Utils.handleException(e);
-
-				// thread que recupera a thread de processamento de arquivos.
-				// se nao houver uma thread adicional de recuperacao e se a thread com a excecao
-				// nao estiver parada, ao parar a thread com a excecao iria, em teoria, parar a execucao
-				// dela mesma, impedindo que ela se reinicie
-				LOGGER.warn("Trying to restart the thread...");
-				new Thread(FileEventsProcessor::initialize).start();
 			}
 		}
 		LOGGER.error("'{}' was interrupted. Finishing '{}'...", WatchServiceImpl.getThreadName(),
@@ -152,7 +146,9 @@ public final class FileEventsProcessor extends SupportProvider {
 		currentCacheModelList.forEach(currentCacheModel -> {
 			Path path = Path.of(currentCacheModel.filePath);
 			Reader.read(path);
-			ExtendedCacheModel newCacheModel = new ExtendedCacheModel(InnerStaticClassModel.initInstance(path));
+			InnerStaticClassModel newModel = InnerStaticClassModel.initInstance(path);
+			ExtendedCacheModel newCacheModel = new ExtendedCacheModel(newModel);
+			OutterClassModel.computeModelToMap(newModel);
 
 			boolean isHashEquals = newCacheModel.checkHash(currentCacheModel);
 			boolean isPropertyMapEntriesEquals = newCacheModel.checkPropertyMap(currentCacheModel);

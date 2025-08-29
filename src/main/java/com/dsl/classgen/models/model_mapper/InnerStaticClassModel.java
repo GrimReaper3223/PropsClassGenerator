@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -27,26 +28,21 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 	public static <T> InnerStaticClassModel initInstance(T filePath) {
 		InnerStaticClassModel model = null;
 
-		if(!OutterClassModel.isModelAlreadyLoaded(filePath)) {
-    		Path path = Path.of(filePath.toString());
-    		String formattedClassName = new Parsers() {}.parseClassName(filePath);
-    		Keyword[] sourceFlags = new Keyword[] { Keyword.PUBLIC, Keyword.STATIC, Keyword.FINAL };
-    		int byteCodeFlags = ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC | ClassFile.ACC_FINAL | ClassFile.ACC_SUPER ;
+		Path path = Path.of(filePath.toString());
+		String formattedClassName = new Parsers() {}.parseClassName(filePath);
+		Keyword[] sourceFlags = new Keyword[] { Keyword.PUBLIC, Keyword.STATIC, Keyword.FINAL };
+		int byteCodeFlags = ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC | ClassFile.ACC_FINAL | ClassFile.ACC_SUPER ;
 
-    		try {
-    			var annotation = initAnnotation(path);
-    			model = OutterClassModel.computeModelToMap(new InnerStaticClassModel(annotation,
-    					initFieldList(path, annotation.javaType()),
-    					formattedClassName,
-    					sourceFlags,
-    					byteCodeFlags));
-    		} catch (InterruptedException | ExecutionException e) {
-    			Utils.handleException(e);
-    		}
-		} else {
-			model = OutterClassModel.getModel(filePath);
+		try {
+			var annotation = initAnnotation(path);
+			model = new InnerStaticClassModel(annotation,
+					initFieldList(path, annotation.javaType()),
+					formattedClassName,
+					sourceFlags,
+					byteCodeFlags);
+		} catch (InterruptedException | ExecutionException e) {
+			Utils.handleException(e);
 		}
-
 		return model;
 	}
 
@@ -129,5 +125,21 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 	@Override
 	public int hashCode() {
 		return staticHashCode(annotationMetadata.filePath());
+	}
+
+	@Override
+	public final String toString() {
+		return String.format("""
+				Annotation Metadata: %s
+				ByteCode Modifiers: %d
+				Class Name: %s
+				Field Model List: %s
+				Source Modifiers: %s
+
+				""", annotationMetadata.toString(),
+				byteCodeModifiers,
+				className,
+				fieldModelList.toString(),
+				Arrays.asList(sourceModifiers).toString());
 	}
 }

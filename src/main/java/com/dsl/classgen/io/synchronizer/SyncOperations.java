@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import com.dsl.classgen.context.FlagsContext;
 import com.dsl.classgen.context.GeneralContext;
@@ -62,7 +63,7 @@ sealed interface SyncOperations permits SyncBin, SyncSource {
 	 * @param path the path to the class file
 	 * @return the new compilation unit or null if an error occurs
 	 */
-	default CompilationUnit getNewCompilationUnit(Path path) {
+	default CompilationUnit getNewCompilationUnit(@NonNull Path path) {
 		Objects.requireNonNull(path, "Path cannot be null");
 		CompilationUnit cUnit = null;
 		try {

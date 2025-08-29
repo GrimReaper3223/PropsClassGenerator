@@ -45,13 +45,17 @@ public final class SyncSource implements SyncOperations {
 	public void insertClassSection(Set<Path> pathSet) {
 		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new class entries...");
 
-		pathSet.forEach(path -> {
-			InnerStaticClassModel model = InnerStaticClassModel.initInstance(path);
-			CacheManager.queueNewFileToCreateCache(model.annotationMetadata().filePath());
-
-			ClassOrInterfaceDeclaration classDecl = innerClassGen.generateData(model);
-			cUnit.getClassByName(pathsCtx.getOutterClassName()).ifPresent(c -> c.addMember(classDecl));
-		});
+		List<String> classList = cUnit.findAll(ClassOrInterfaceDeclaration.class).stream().map(elem -> elem.getNameAsString()).toList();
+		cUnit.getClassByName(pathsCtx.getOutterClassName()).ifPresent(c ->
+			pathSet.forEach(path -> {
+				InnerStaticClassModel model = InnerStaticClassModel.initInstance(path);
+				if(!classList.contains(model.className())) {
+					OutterClassModel.computeModelToMap(model);
+					CacheManager.queueNewFileToCreateCache(model.annotationMetadata().filePath());
+					c.addMember(innerClassGen.generateData(model));
+				}
+			})
+		);
 		consumeWriter.accept(null);
 		CacheManager.processCache();
 	}

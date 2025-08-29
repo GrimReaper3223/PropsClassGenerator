@@ -10,14 +10,9 @@ public class OutterClassModel {
 
 	private OutterClassModel() {}
 
-	public static InnerStaticClassModel computeModelToMap(InnerStaticClassModel model) {
+	public static void computeModelToMap(InnerStaticClassModel model) {
 		String stringFilePath = model.annotationMetadata().filePath().toString();
-
-		if(mapModel.computeIfPresent(stringFilePath, (_, _) -> model) == null) {
-			mapModel.put(stringFilePath, model);
-		}
-
-		return model;
+		mapModel.compute(stringFilePath, (_, value) -> value != null ? model.equals(value) ? value : model : model);
 	}
 
 	public static <T> InnerStaticClassModel getModel(T filePath) {
@@ -30,7 +25,7 @@ public class OutterClassModel {
 
 	public static Map<String, InnerStaticClassModel> getMapModel() {
 		return mapModel;
-	};
+	}
 
 	public static Stream<InnerStaticClassModel> getMapModelStream() {
 		return mapModel.values().stream();

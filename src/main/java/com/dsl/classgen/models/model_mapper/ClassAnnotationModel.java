@@ -11,4 +11,14 @@ import com.dsl.classgen.models.Parsers;
  * @param filePath the file path
  * @param javaType the java type
  */
-public record ClassAnnotationModel(int hash, Path filePath, Class<?> javaType) implements Parsers {}
+public record ClassAnnotationModel(int hash, Path filePath, Class<?> javaType) implements Parsers {
+
+	@Override
+	public final String toString() {
+		return String.format("""
+				\tHash: %d
+				\tFile Path: %s
+				\tJava Type: %s
+				""", hash, filePath.toString(), javaType.getSimpleName());
+	}
+}

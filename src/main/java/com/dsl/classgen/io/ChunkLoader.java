@@ -28,7 +28,10 @@ public final class ChunkLoader extends SupportProvider {
 
 		// load class models
 		new Thread(() -> {
-			fileList.forEach(InnerStaticClassModel::initInstance);
+			fileList.forEach(filePath -> {
+				var model = InnerStaticClassModel.initInstance(filePath);
+				OutterClassModel.computeModelToMap(model);
+			});
 			latch.countDown();
 		}).start();
 
