@@ -14,7 +14,7 @@ import com.dsl.classgen.context.PathsContext;
 class RuntimeCompilerTest {
 
 	@Test
-	@Disabled("Teste bem-sucedido")
+	@Disabled("Test is successful")
 	void executeRuntimeCompiler() {
 		PathsContext pathsCtx = GeneralContext.getInstance().getPathsContextInstance();
 		String libs = getClass().getResource("/libs").getPath();

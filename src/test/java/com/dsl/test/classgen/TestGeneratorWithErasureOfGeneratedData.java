@@ -44,7 +44,7 @@ class TestGeneratorWithErasureOfGeneratedData implements HarnessTestTools {
 
 	@Test
 	@Order(3)
-	@Disabled("Teste bem-sucedido")
+	@Disabled("Test is successful")
 	@DisplayName("Generate many files with erasure of generated data and recursive")
 	void generateManyFilesWithRecursionAndWithErasureOfGeneratedData() {
 		Assertions.assertFalse(Files.exists(sourceDirPath));

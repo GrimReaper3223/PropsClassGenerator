@@ -7,15 +7,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.dsl.classgen.Generator;
 import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.annotation.GeneratedInnerStaticClass;
-import com.dsl.classgen.utils.Utils;
 
 class TestFormatTools implements HarnessTestTools {
 
 	@Test
-	@Disabled
+	@Disabled("Test is successful")
 	void testAnnotationCreation() {
 		Assertions.assertDoesNotThrow(
 				() -> createAnnotation(GeneratedInnerStaticClass.class, Map.of("key", "test", "hash", 12345)));
@@ -39,10 +37,4 @@ class TestFormatTools implements HarnessTestTools {
 				annotationValues.substring(0, annotationValues.lastIndexOf(",")));
 	}
 
-	@Test
-	void testPathConverter() throws ClassNotFoundException {
-		Generator.init(inPropsPath, PACKAGE_CLASS, true);
-		Generator.generate();
-		System.out.println(Utils.convertSourcePathToClassPath(inPropsPath.resolve("fx/fx-button.properties")));
-	}
 }

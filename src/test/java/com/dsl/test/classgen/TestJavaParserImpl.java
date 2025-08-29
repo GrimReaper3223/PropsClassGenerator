@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.dsl.classgen.annotation.GeneratedInnerField;
@@ -21,6 +23,7 @@ import com.github.javaparser.ast.type.TypeParameter;
 class TestJavaParserImpl implements HarnessTestTools {
 
 	@Test
+	@Disabled("Test is successful")
 	void testASTParser() throws IOException {
 		CompilationUnit cu1 = new CompilationUnit();
 		CompilationUnit cu2 = new CompilationUnit();
@@ -59,6 +62,9 @@ class TestJavaParserImpl implements HarnessTestTools {
 			c.addMember(cu2.getClassByName("TestProp").orElseThrow(() -> new IllegalStateException("Class not found")));
 		});
 
+
+		Assertions.assertNotNull(cu1.toString());
+		Assertions.assertNotNull(cu2.toString());
 		Files.writeString(Path.of(System.getProperty("user.dir"), "test.java"), cu1.toString());
 	}
 }

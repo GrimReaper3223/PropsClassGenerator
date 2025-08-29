@@ -44,7 +44,7 @@ class TestGeneratorWithCacheErasure implements HarnessTestTools {
 
 	@Test
 	@Order(3)
-	@Disabled("Teste bem-sucedido")
+	@Disabled("Test is successful")
 	@DisplayName("Generate many files with cache erasure and with recursion")
 	void generateManyFilesWithRecursionAndWithCacheErasure() {
 		Assertions.assertFalse(Files.exists(cachePath));
