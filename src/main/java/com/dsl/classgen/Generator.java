@@ -29,16 +29,17 @@ public final class Generator {
 	private Generator() {}
 
 	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
-		flagsCtx.setRecursion(isRecursive);
-		pathsCtx.setPackageClass(packageClass);
-		pathsCtx.setInputPath(inputPath);
+		if(flagsCtx.getIsSingleExecution()) {
+    		flagsCtx.setRecursion(isRecursive);
+    		pathsCtx.setPackageClass(packageClass);
+    		pathsCtx.setInputPath(inputPath);
 
-		StructureChecker.checkStructure();
+    		StructureChecker.checkStructure();
 
-		Reader.read(inputPath);
-		ChunkLoader.loadChunks();
+    		Reader.read(inputPath);
+    		ChunkLoader.loadChunks();
 
-		LOGGER.info("""
+    		LOGGER.info("""
 
 				-----------------------------
 				--- Framework Initialized ---
@@ -67,6 +68,7 @@ public final class Generator {
 					 flagsCtx.getIsDirStructureAlreadyGenerated(),
 					 flagsCtx.getIsExistsCompiledPJavaClass(),
 					 flagsCtx.getIsDebugMode());
+		}
 	}
 
 	public static void init(String inputPath, String packageClass, boolean isRecursive) {
@@ -74,18 +76,20 @@ public final class Generator {
 	}
 
 	public static void generate() {
-		if (!flagsCtx.getIsDirStructureAlreadyGenerated() || !flagsCtx.getIsExistsPJavaSource()) {
-			Utils.calculateElapsedTime();
-			new OutterClassGenerator().generateData();
+		if(flagsCtx.getIsSingleExecution()) {
+    		if (!flagsCtx.getIsDirStructureAlreadyGenerated() || !flagsCtx.getIsExistsPJavaSource()) {
+    			Utils.calculateElapsedTime();
+    			new OutterClassGenerator().generateData();
 
-			if(flagsCtx.getIsDebugMode()) {
-				LOGGER.debug(pathsCtx.getGeneratedClass());
-			}
-			Writer.writeFirstGeneration();
+    			if(flagsCtx.getIsDebugMode()) {
+    				LOGGER.debug(pathsCtx.getGeneratedClass());
+    			}
+    			Writer.writeFirstGeneration();
+    		}
+
+    		Compiler.compile();
+    		WatchServiceImpl.initialize();
+    		FileEventsProcessor.initialize();
 		}
-
-		Compiler.compile();
-		WatchServiceImpl.initialize();
-		FileEventsProcessor.initialize();
 	}
 }

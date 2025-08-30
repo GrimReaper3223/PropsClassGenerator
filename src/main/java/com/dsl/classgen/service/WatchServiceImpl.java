@@ -112,12 +112,12 @@ public class WatchServiceImpl {
 	            	continue;
 	            }
 
-	            while(!pathsCtx.locker.tryLock()) {
+	            while(!pathsCtx.getLocker().tryLock()) {
 	            	Thread.onSpinWait();
 	            }
 	            processStream(key);
 	            performDirRegistration();
-	            pathsCtx.locker.unlock();
+	            pathsCtx.getLocker().unlock();
 
 	            if (!key.reset()) {
 	            	keys.remove(key);
@@ -149,16 +149,7 @@ public class WatchServiceImpl {
 				});
 	}
 
-    public static boolean isWatchServiceThreadAlive() {
-    	return watchServiceThread.isAlive();
-    }
-
-    public static String getThreadName() {
-    	return watchServiceThread.getName();
-    }
-
-    public static void tearDown() {
-    	watchServiceThread.interrupt();
-    }
+	public static Thread getThread() {
+		return watchServiceThread;
+	}
 }
-

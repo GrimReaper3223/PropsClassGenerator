@@ -25,7 +25,7 @@ public class PathsContext {
 
 	private static final Logger LOGGER = LogManager.getLogger(PathsContext.class);
 	private static final Level SUCCESS = Level.getLevel("SUCCESS");
-	public Lock locker = new ReentrantLock();
+	private static final Lock LOCKER = new ReentrantLock();
 
 	private final ConcurrentMap<Kind<Path>, Set<Path>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
 	private final Set<Path> fileList;														// caso um diretorio inteiro seja processado, os arquivos ficarao aqui
@@ -110,6 +110,10 @@ public class PathsContext {
 
     public void clearMapOfChanges() {
     	changedFiles.clear();
+    }
+
+    public Lock getLocker() {
+    	return LOCKER;
     }
 
 	/**

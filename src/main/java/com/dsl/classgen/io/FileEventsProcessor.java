@@ -52,22 +52,21 @@ public final class FileEventsProcessor extends SupportProvider {
 	 * Process file changes detected.
 	 */
 	private static void processChanges() {
-		while (WatchServiceImpl.isWatchServiceThreadAlive()) {
-			try {
-				if (!pathsCtx.isEmptyChangedFilesMap() && pathsCtx.locker.tryLock()) {
+		try {
+			while (WatchServiceImpl.getThread().isAlive()) {
+				if (!pathsCtx.isEmptyChangedFilesMap() && pathsCtx.getLocker().tryLock()) {
 					caller(pathsCtx.getMappedChangedFiles());
 					pathsCtx.clearMapOfChanges();
-					pathsCtx.locker.unlock();
+					pathsCtx.getLocker().unlock();
 				}
 				Thread.onSpinWait();
-			} catch (Exception e) {
-				LOGGER.error("An error occurred in the thread '{}'.", eventProcessorThread.getName());
-				Utils.handleException(e);
 			}
+			LOGGER.error("'{}' was interrupted. Finishing '{}'...", WatchServiceImpl.getThread().getName(), eventProcessorThread.getName());
+			eventProcessorThread.interrupt();
+		} catch (Exception e) {
+			LOGGER.error("An error occurred in the thread '{}'.", eventProcessorThread.getName());
+			Utils.handleException(e);
 		}
-		LOGGER.error("'{}' was interrupted. Finishing '{}'...", WatchServiceImpl.getThreadName(),
-				eventProcessorThread.getName());
-		eventProcessorThread.interrupt();
 	}
 
 	/**
@@ -165,5 +164,9 @@ public final class FileEventsProcessor extends SupportProvider {
 				}
 			}
 		});
+	}
+
+	public static Thread getThread() {
+		return eventProcessorThread;
 	}
 }

@@ -10,7 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import com.dsl.classgen.context.GeneralContext;
-import com.dsl.classgen.core.classloader.CustomClassLoader;
+import com.dsl.classgen.core.CustomClassLoader;
 import com.dsl.classgen.io.FileVisitorImpls;
 import com.dsl.classgen.io.SupportProvider;
 import com.dsl.classgen.utils.LogLevels;

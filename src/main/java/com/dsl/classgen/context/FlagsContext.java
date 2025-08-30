@@ -1,5 +1,7 @@
 package com.dsl.classgen.context;
 
+import com.dsl.classgen.core.InspectHotspot;
+
 public class FlagsContext {
 
 	// deve ser true ao depurar o projeto.
@@ -13,13 +15,20 @@ public class FlagsContext {
     private boolean isExistsPJavaSource;				// indica se o arquivo P.java existe dentro da estrutura existente (se houver uma)
     private boolean isExistsCompiledPJavaClass;			// indica se ja existe uma compilacao do arquivo P.java
     private boolean hasChangedFilesLeft;				// indica se ainda existem eventos gerados pela implementacao do WatchService na fila. Esta variavel deve ser usada como interruptor pelo processador alteracoes em arquivos.
+    private boolean isSingleExecution;					// indica se a execucao deste hotspot e unico e nao existe outro em memoria. Isso previne que o framework seja executado duas vezes com os mesmos dados, trazendo inconsistencias e pesando a memoria de execucao. Esse controle e necessario tambem por conveniencia, para que o dev nao precise comentar o codigo de inicializacao do framework
 
-	FlagsContext() {}
+	FlagsContext() {
+		this.isSingleExecution = new InspectHotspot().lookupForHotspotModuleExecution() < 2;
+	}
+
+	public boolean getIsSingleExecution() {
+		return isSingleExecution;
+	}
 
 	/**
 	 * @return the isDebugMode
 	 */
-	public  boolean getIsDebugMode() {
+	public boolean getIsDebugMode() {
 		return isDebugMode;
 	}
 

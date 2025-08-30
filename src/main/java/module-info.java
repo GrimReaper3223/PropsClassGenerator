@@ -14,7 +14,7 @@ module com.dsl.classgen {
 	exports com.dsl.classgen.models;
 	exports com.dsl.classgen.models.model_mapper;
 
-	exports com.dsl.classgen.core.classloader;
+	exports com.dsl.classgen.core;
 
 	// for test package
 	exports com.dsl.classgen.io.file_manager to com.dsl.test.classgen;
