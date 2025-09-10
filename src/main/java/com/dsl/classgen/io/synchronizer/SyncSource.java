@@ -75,6 +75,8 @@ public final class SyncSource implements SyncOperations {
 				.filter(classDecl -> filteredClassList.stream()
 						.anyMatch(clazz -> clazz.getSimpleName().equals(classDecl.getNameAsString())))
 				.forEach(Node::remove);
+
+		generalCtx.setGeneratedOutterClass(null);
 		consumeWriter.accept(null);
 	}
 
@@ -110,8 +112,9 @@ public final class SyncSource implements SyncOperations {
 						.forEach(Node::remove);
 			}
 		});
+		CacheManager.queueNewFileToCreateCache(currentCacheModel.filePath);
+		generalCtx.setGeneratedOutterClass(null);
 		consumeWriter.accept(null);
-		CacheManager.processCache();
 	}
 
 	/**
@@ -140,8 +143,7 @@ public final class SyncSource implements SyncOperations {
 	 *                          state
 	 * @return the generated fields
 	 */
-	private List<Field> getGeneratedFields(Stream<Map.Entry<Integer, CachePropertiesData>> entries,
-			CacheModel currentCacheModel) {
+	private List<Field> getGeneratedFields(Stream<Map.Entry<Integer, CachePropertiesData>> entries, CacheModel currentCacheModel) {
 		return entries
 				.map(entry -> AnnotationProcessor.processFieldAnnotations(currentCacheModel.fileHash, entry.getKey()))
 				.toList();

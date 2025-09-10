@@ -136,10 +136,6 @@ public final class FileEventsProcessor extends SupportProvider {
 			public boolean checkHash(CacheModel currentCacheModel) {
 				return this.fileHash == currentCacheModel.fileHash;
 			}
-
-			public boolean checkPropertyMap(CacheModel currentCacheModel) {
-				return this.entries.equals(currentCacheModel.entries);
-			}
 		}
 
 		currentCacheModelList.forEach(currentCacheModel -> {
@@ -150,20 +146,16 @@ public final class FileEventsProcessor extends SupportProvider {
 			OutterClassModel.computeModelToMap(newModel);
 
 			boolean isHashEquals = newCacheModel.checkHash(currentCacheModel);
-			boolean isPropertyMapEntriesEquals = newCacheModel.checkPropertyMap(currentCacheModel);
 
 			if(!isHashEquals) {
-				if (isPropertyMapEntriesEquals) {
-					// TODO: Deve implementar a modificacao dos metadados, e nao a regeneracao de uma secao
-				} else {
-					Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>()
-							.mapper(currentCacheModel.entries, newCacheModel.entries);
+				Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>()
+						.mapper(currentCacheModel.entries, newCacheModel.entries);
 
-					new SyncSource().modifySection(mappedChanges, currentCacheModel);
-					new SyncBin().modifySection(mappedChanges, newCacheModel);
-				}
+				new SyncSource().modifySection(mappedChanges, currentCacheModel);
+				new SyncBin().modifySection(mappedChanges, newCacheModel);
 			}
 		});
+		CacheManager.processCache();
 	}
 
 	public static Thread getThread() {

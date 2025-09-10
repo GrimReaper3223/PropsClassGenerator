@@ -14,21 +14,22 @@ import com.dsl.classgen.models.CachePropertiesData;
 /**
  * The Class ModelMapper.
  *
+ * BUG: nao filtra insercoes, apenas exclusoes
+ *
  * @param <T> the type of the map, which should extend Map<Integer,
  *            CachePropertiesData>
  */
 public class ModelMapper<T extends Map<Integer, CachePropertiesData>> {
 
 	/** The stream map creator. */
-	private final BiFunction<T, T, Stream<Map.Entry<Integer, CachePropertiesData>>> streamMapCreator = (map1,
-			map2) -> map1.entrySet().stream().filter(entry -> !map2.containsKey(entry.getKey()));
+	private final BiFunction<T, T, Stream<Map.Entry<Integer, CachePropertiesData>>> streamMapCreator =
+			(map1, map2) -> map1.entrySet().stream().filter(entry -> !map2.containsKey(entry.getKey()));
 
 	/** The stream map finisher. */
-	private final BiFunction<Stream<Map.Entry<Integer, CachePropertiesData>>, SyncOptions, Map<SyncOptions, Map<Integer, CachePropertiesData>>> streamMapFinisher = (
-			stream,
-			op) -> stream.flatMap(entry -> Map.of(op, entry).entrySet().stream()).collect(Collectors.groupingBy(
-					Map.Entry::getKey,
-					Collectors.toMap(entry -> entry.getValue().getKey(), entry -> entry.getValue().getValue())));
+	private final BiFunction<Stream<Map.Entry<Integer, CachePropertiesData>>, SyncOptions, Map<SyncOptions, Map<Integer, CachePropertiesData>>> streamMapFinisher =
+			(stream, op) -> stream.flatMap(entry -> Map.of(op, entry).entrySet().stream()).collect(
+					Collectors.groupingBy(Map.Entry::getKey,
+							Collectors.toMap(entry -> entry.getValue().getKey(), entry -> entry.getValue().getValue())));
 
 	/**
 	 * Categorizes the distinctions between the maps to be analyzed, so that changes

@@ -9,4 +9,10 @@ import java.io.Serializable;
  * @param rawPropValue    the raw property value
  * @param parsedPropValue the parsed property value
  */
-public record CachePropertiesData(String propKey, Object rawPropValue, Object parsedPropValue) implements Serializable {}
+public record CachePropertiesData(String propKey, Object rawPropValue, Object parsedPropValue) implements Serializable {
+
+	@Override
+	public final String toString() {
+		return String.format("%s = %s", propKey, parsedPropValue.toString());
+	}
+}

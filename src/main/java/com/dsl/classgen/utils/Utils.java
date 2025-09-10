@@ -63,7 +63,7 @@ public final class Utils {
 	 * @return true, if is properties file
 	 */
 	public static boolean isPropertiesFile(@NonNull Path filePath) {
-		return getSafetyFileName(filePath, null).toString().endsWith(".properties");
+		return getSafetyFileName(filePath, null, true).toString().endsWith(".properties");
 	}
 
 	/**
@@ -76,15 +76,13 @@ public final class Utils {
 	 */
 	public static <T> Path toJsonFilePath(@NonNull T path) {
 		Path filePath = Path.of(path.toString());
-		String fileName = getSafetyFileName(filePath, null).toString();
+		String fileName = getSafetyFileName(filePath, null, false).toString();
 		String jsonFileNamePattern = "%s" + JSON_FILE_SUFFIX;
 
 		if (fileName.contains(JSON_FILE_SUFFIX)) {
 			return filePath;
 		}
-		String jsonFileName = String.format(jsonFileNamePattern,
-				fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf(".")) : filePath);
-		return pathsCtx.getCacheDir().resolve(jsonFileName);
+		return pathsCtx.getCacheDir().resolve(String.format(jsonFileNamePattern, fileName));
 	}
 
 	/**
@@ -98,12 +96,13 @@ public final class Utils {
 	 */
 	public static <T> Path convertSourcePathToClassPath(T sourcePath) throws ClassNotFoundException {
 		Path filePath = Path.of(sourcePath.toString());
-		String classFileName = new Parsers() {}.parseClassName(getSafetyFileName(filePath, null));
-		return Arrays.stream(Reader.loadGeneratedBinClass().getClasses())
+		String classFileName = new Parsers() {}.parseClassName(getSafetyFileName(filePath, null, true));
+		Path path = Arrays.stream(Reader.loadGeneratedBinClass().getClasses())
 				.filter(cls -> cls.getName().contains(classFileName))
 				.map(cls -> Path.of(pathsCtx.getOutputClassFilePath().subpath(0, 2)
 						.resolve(normalizePath(cls.getName(), ".", "/")).toString().concat(".class")))
 				.findFirst().orElseThrow(ClassNotFoundException::new);
+		return path;
 	}
 
 	/**
@@ -134,9 +133,11 @@ public final class Utils {
 		}
 	}
 
-	public static Path getSafetyFileName(Path path, String orElseGet) {
+	public static Path getSafetyFileName(Path path, String orElseGet, boolean withFileExtension) {
 		// pode retornar o proprio path se getFileName for null (isso significa que o proprio path e um nome de arquivo)
 		// ou pode retornar o valor de orElseGet caso ele esteja definido e a avaliacao de getFileName ainda retorne null
-		return Objects.requireNonNullElse(path.getFileName(), orElseGet == null ? path : Path.of(orElseGet));
+		Path fileName = Objects.requireNonNullElse(path.getFileName(), orElseGet == null ? path : Path.of(orElseGet));
+		String strFileName = fileName.toString();
+		return withFileExtension ? fileName : Path.of(strFileName.substring(0, strFileName.lastIndexOf(".")));
 	}
 }

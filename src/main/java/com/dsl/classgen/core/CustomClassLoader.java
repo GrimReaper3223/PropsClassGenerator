@@ -48,8 +48,7 @@ public class CustomClassLoader extends ClassLoader {
 		Path filePath = Path.of(value);
 		Path parentPath = filePath.subpath(2, filePath.getNameCount() - 1);
 
-		String binaryName = Utils.normalizePath(parentPath, File.separator, ".").toString()
-				.concat("." + Utils.getSafetyFileName(filePath, "").toString());
-		return binaryName.replace(".class", "");
+		return Utils.normalizePath(parentPath, File.separator, ".").toString()
+				.concat("." + Utils.getSafetyFileName(filePath, "", false).toString());
 	}
 }

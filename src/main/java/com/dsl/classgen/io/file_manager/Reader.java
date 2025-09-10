@@ -63,14 +63,15 @@ public final class Reader extends SupportProvider {
     }
 
     public static Class<?> loadGeneratedBinClass() {
-        Class<?> generatedClass = null;
-        try {
-        	generatedClass = new CustomClassLoader().loadClass(pathsCtx.getOutputClassFilePath().toString());
-        }
-        catch (ClassNotFoundException e) {
-        	Utils.handleException(e);
-        }
-        return generatedClass;
+    	if(generalCtx.getGeneratedOutterClass() == null) {
+    		try {
+    			generalCtx.setGeneratedOutterClass(new CustomClassLoader().loadClass(pathsCtx.getOutputClassFilePath().toString()));
+        	}
+            catch (ClassNotFoundException e) {
+            	Utils.handleException(e);
+            }
+    	}
+        return generalCtx.getGeneratedOutterClass();
     }
 
     public static <T> String readJavaType(T path) throws InterruptedException, ExecutionException {

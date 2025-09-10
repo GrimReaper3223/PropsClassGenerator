@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.dsl.classgen.io.CacheManager;
 import com.dsl.classgen.models.model_mapper.InnerFieldModel;
@@ -94,5 +95,20 @@ public class CacheModel implements Serializable {
 	@Override
 	public int hashCode() {
 		return super.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("""
+				File Path: %s,
+				File Hash: %d,
+				Java Type: %s,
+				Properties: %n%s
+				""", filePath,
+				fileHash,
+				javaType,
+				entries.entrySet().stream()
+						.map(entry -> String.format("\t%s : (%d)", entry.getValue().toString(), entry.getKey()))
+						.collect(Collectors.joining("\n")));
 	}
 }

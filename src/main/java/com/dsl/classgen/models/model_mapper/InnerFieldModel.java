@@ -34,4 +34,9 @@ public record InnerFieldModel(FieldAnnotationModel annotationMetadata, Class<?> 
 				new Keyword[] { Keyword.PUBLIC, Keyword.STATIC, Keyword.FINAL },
 				new AccessFlag[] { AccessFlag.PUBLIC, AccessFlag.STATIC, AccessFlag.FINAL });
 	}
+
+	@Override
+	public final String toString() {
+		return String.format("\t%s = %s : (%s)", fieldName, parsedFieldValue, fieldType.getSimpleName());
+	}
 }

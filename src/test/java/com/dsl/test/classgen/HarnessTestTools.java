@@ -17,8 +17,7 @@ public interface HarnessTestTools {
 	Path cachePath = Paths.get(System.getProperty("user.dir")).resolve(".jsonProperties-cache");
 	Path sourceDirPath = Path.of("src/test/java/com/dsl/test/classgen/generated");
 	Path sourceFilePath = sourceDirPath.resolve("P.java");
-	Path classPath = Path.of("target/test-classes", sourceDirPath.subpath(3, sourceDirPath.getNameCount()).toString(),
-			"P.class");
+	Path classPath = Path.of("target/test-classes", sourceDirPath.subpath(3, sourceDirPath.getNameCount()).toString(), "P.class");
 
 	default void eraseCache() {
 		if (Files.exists(cachePath)) {
@@ -47,7 +46,7 @@ public interface HarnessTestTools {
 			Files.walkFileTree(sourceDirPath, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					if (Utils.getSafetyFileName(file, null).toString().equals("P.java")) {
+					if (Utils.getSafetyFileName(file, null, true).toString().equals("P.java")) {
 						Files.delete(file);
 						return FileVisitResult.TERMINATE;
 					}
@@ -56,7 +55,7 @@ public interface HarnessTestTools {
 
 				@Override
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-					if (Utils.getSafetyFileName(dir, null).toString().equals("generated") && Files.size(dir) == 0) {
+					if (Utils.getSafetyFileName(dir, null, true).toString().equals("generated") && Files.size(dir) == 0) {
 						Files.delete(dir);
 						return FileVisitResult.TERMINATE;
 					}

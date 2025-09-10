@@ -26,7 +26,6 @@ public class AnnotationProcessor {
 	public static List<Class<?>> processClassAnnotations(Set<CacheModel> cacheModelList) {
 		List<Integer> hashList = cacheModelList.stream().map(model -> model.fileHash).toList();
 
-		// FIX: Exception in thread "File Event Processor - Thread" java.lang.IllegalAccessError: class test.generated.P (in unnamed module @0x75b97d38) cannot access class test.generated.P$AppMetadata (in module com.dsl.test) because module com.dsl.test does not export test.generated to unnamed module @0x75b97d38
 		return Arrays.stream(Reader.loadGeneratedBinClass().getDeclaredClasses())
 				.filter(cl -> hashList.contains(cl.getDeclaredAnnotation(GeneratedInnerStaticClass.class).hash()))
 				.toList();

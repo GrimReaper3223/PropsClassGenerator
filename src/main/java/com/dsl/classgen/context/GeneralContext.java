@@ -9,6 +9,8 @@ public class GeneralContext {
 	private final FlagsContext flagsContextInstance = new FlagsContext();
 	private final PathsContext pathsContextInstance = new PathsContext(flagsContextInstance.getIsDebugMode());
 
+	private Class<?> generatedOutterClass;
+
     private long timeOperation;
 
 	private GeneralContext() {}
@@ -28,9 +30,20 @@ public class GeneralContext {
 		return pathsContextInstance;
 	}
 
-	/*
-	 * get/set() others
+	/**
+	 * @return the generatedOutterClass
 	 */
+	public Class<?> getGeneratedOutterClass() {
+		return generatedOutterClass;
+	}
+
+	/**
+	 * @param generatedOutterClass the generatedOutterClass to set
+	 */
+	public void setGeneratedOutterClass(Class<?> generatedOutterClass) {
+		this.generatedOutterClass = generatedOutterClass;
+	}
+
 	public long getTimeOperation() {
 		return timeOperation;
 	}

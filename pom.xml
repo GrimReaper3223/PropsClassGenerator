@@ -5,7 +5,7 @@
 
 	<groupId>io.github.grimreaper3223</groupId>
 	<artifactId>PropsClassGenerator</artifactId>
-	<version>1.1.1</version>
+	<version>1.1.2</version>
 	<packaging>jar</packaging>
 
 	<properties>
@@ -131,7 +131,7 @@
 				</configuration>
 			</plugin>
 
-			<plugin>
+			<!--<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<version>3.7.0</version>
 				<executions>
@@ -149,7 +149,7 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin>-->
 
 			<plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -170,7 +170,7 @@
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>3.4.2</version>
 				<configuration>
-					<outputDirectory>${user.dir}/src/main/resources/libs</outputDirectory>
+					<!--<outputDirectory>${user.dir}/src/main/resources/libs</outputDirectory>-->
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>

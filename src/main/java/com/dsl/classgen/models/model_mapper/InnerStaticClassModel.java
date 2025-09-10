@@ -133,13 +133,13 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 				Annotation Metadata: %s
 				ByteCode Modifiers: %d
 				Class Name: %s
-				Field Model List: %s
 				Source Modifiers: %s
+				Field Model List: %n%s
 
 				""", annotationMetadata.toString(),
 				byteCodeModifiers,
 				className,
-				fieldModelList.toString(),
-				Arrays.asList(sourceModifiers).toString());
+				Arrays.asList(sourceModifiers).toString(),
+				fieldModelList.stream().map(InnerFieldModel::toString).collect(Collectors.joining("\n")));
 	}
 }
