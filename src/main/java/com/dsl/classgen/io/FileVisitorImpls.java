@@ -22,86 +22,49 @@ public final class FileVisitorImpls extends SupportProvider {
 	private FileVisitorImpls() {}
 
 	/**
-	 * The Class CacheEraserVisitor.
+	 * The Class CacheManagerFileVisitor.
 	 *
 	 * @author Deiv
 	 * @version 0.2.4
 	 * @since 0.2.4-R1
 	 */
-	public static class CacheEraserVisitor extends SimpleFileVisitor<Path> {
+	public static class CacheManagerFV extends SimpleFileVisitor<Path> {
 
-		/**
-		 * Post visit directory.
-		 *
-		 * @param dir the dir
-		 * @param exc the exc
-		 * @return the file visit result
-		 * @throws IOException Signals that an I/O exception has occurred.
-		 */
+		private final boolean eraseCache;
+
+		public CacheManagerFV(boolean eraseCache) {
+			this.eraseCache = eraseCache;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			if(!eraseCache) {
+				try {
+					Utils.getExecutor().submit(() -> {
+						try (BufferedReader br = Files.newBufferedReader(file)) {
+							LOGGER.log(LogLevels.CACHE.getLevel(), "Loading JSON file: {}", file);
+							CacheManager.computeCacheModelToMap(file, new Gson().fromJson(br, CacheModel.class));
+						} catch (IOException e) {
+							Utils.handleException(e);
+						}
+					}).get();
+				} catch (InterruptedException | ExecutionException e) {
+					Utils.handleException(e);
+				}
+			} else {
+				Files.delete(file);
+			}
+			return FileVisitResult.CONTINUE;
+		}
+
 		@Override
 		public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-			Files.delete(dir);
-			return FileVisitResult.CONTINUE;
-		}
-
-		/**
-		 * Visit file.
-		 *
-		 * @param file  the file
-		 * @param attrs the attrs
-		 * @return the file visit result
-		 * @throws IOException Signals that an I/O exception has occurred.
-		 */
-		@Override
-		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			Files.delete(file);
-			return FileVisitResult.CONTINUE;
-		}
-	}
-
-	/**
-	 * The Class CacheLoaderFileVisitor.
-	 *
-	 * @author Deiv
-	 * @version 0.2.4
-	 * @since 0.2.4-R1
-	 */
-	public static class CacheLoaderFileVisitor extends SimpleFileVisitor<Path> {
-
-		/**
-		 * Visit file.
-		 *
-		 * @param file  the file
-		 * @param attrs the attrs
-		 * @return the file visit result
-		 * @throws IOException Signals that an I/O exception has occurred.
-		 */
-		@Override
-		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			try {
-				Utils.getExecutor().submit(() -> {
-					try (BufferedReader br = Files.newBufferedReader(file)) {
-						LOGGER.log(LogLevels.CACHE.getLevel(), "Loading JSON file: {}", file);
-						CacheManager.computeCacheModelToMap(file, new Gson().fromJson(br, CacheModel.class));
-					} catch (IOException e) {
-						Utils.handleException(e);
-					}
-				}).get();
-			} catch (InterruptedException | ExecutionException e) {
-				Utils.handleException(e);
+			if(eraseCache) {
+				Files.delete(dir);
 			}
-
 			return FileVisitResult.CONTINUE;
 		}
 
-		/**
-		 * Visit file failed.
-		 *
-		 * @param file the file
-		 * @param exc  the exc
-		 * @return the file visit result
-		 * @throws IOException Signals that an I/O exception has occurred.
-		 */
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
 			Utils.handleException(exc);
@@ -116,34 +79,61 @@ public final class FileVisitorImpls extends SupportProvider {
 	 * @version 0.2.4
 	 * @since 0.2.4-R1
 	 */
-	public static class ReaderFileVisitor extends SimpleFileVisitor<Path> {
+	public static class FileSystemReaderFV extends SimpleFileVisitor<Path> {
 
-		/**
-		 * Post visit directory.
-		 *
-		 * @param dir the dir
-		 * @param exc the exc
-		 * @return the file visit result
-		 * @throws IOException Signals that an I/O exception has occurred.
-		 */
-		@Override
-		public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-			pathsCtx.queueDir(dir);
-			return FileVisitResult.CONTINUE;
+		private final Path inputDirPath;
+
+		public FileSystemReaderFV(Path inputDirPath) {
+			this.inputDirPath = inputDirPath;
 		}
 
-		/**
-		 * Visit file.
-		 *
-		 * @param file  the file
-		 * @param attrs the attrs
-		 * @return the file visit result
-		 * @throws IOException Signals that an I/O exception has occurred.
-		 */
+		@Override
+		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+			if (flagsCtx.getRecursiveOption() || dir.equals(inputDirPath)) {
+				pathsCtx.queueDir(dir);
+				return FileVisitResult.CONTINUE;
+			}
+			return FileVisitResult.SKIP_SUBTREE;
+		}
+
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 			if (Utils.isPropertiesFile(file)) {
 				pathsCtx.queueFile(file);
+			}
+			return FileVisitResult.CONTINUE;
+		}
+	}
+
+	public static class SourceFinderFV extends SimpleFileVisitor<Path> {
+
+		@Override
+		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+			if(dir.getFileName().toString().equals("generated")) {
+				flagsCtx.setHasDirStructureAlreadyGenerated(true);
+				pathsCtx.setOutputSourceDirPath(dir);
+			}
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			if(file.getFileName().toString().equals(pathsCtx.getOutterClassName() + ".java")) {
+				flagsCtx.setHasExistsPJavaSource(true);
+				pathsCtx.setExistingPJavaGeneratedSourcePath(file);
+			}
+			return flagsCtx.hasSourceStructureGenerated(false) ? FileVisitResult.TERMINATE : FileVisitResult.CONTINUE;
+		}
+	}
+
+	public static class CompilationFinderFV extends SimpleFileVisitor<Path> {
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			if(file.getFileName().toString().equals(pathsCtx.getOutterClassName() + ".class")) {
+				flagsCtx.setIsExistsCompiledPJavaClass(true);
+				pathsCtx.setOutputClassFilePath(file);
+				return FileVisitResult.TERMINATE;
 			}
 			return FileVisitResult.CONTINUE;
 		}

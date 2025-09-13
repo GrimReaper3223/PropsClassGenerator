@@ -19,8 +19,12 @@ public class OutterClassModel {
 		return mapModel.get(filePath.toString());
 	}
 
-	public static <T> boolean isModelAlreadyLoaded(T filePath) {
-		return mapModel.containsKey(filePath.toString());
+	public static <T> boolean isModelValid(T filePath) {
+		boolean result = false;
+		if(mapModel.containsKey(filePath.toString())) {
+			result = getModel(filePath).equalsFileHashCode(filePath);
+		}
+		return result;
 	}
 
 	public static Map<String, InnerStaticClassModel> getMapModel() {
@@ -29,5 +33,9 @@ public class OutterClassModel {
 
 	public static Stream<InnerStaticClassModel> getMapModelStream() {
 		return mapModel.values().stream();
+	}
+
+	public static <T> void removeModelFromMap(T path) {
+		mapModel.remove(path.toString());
 	}
 }

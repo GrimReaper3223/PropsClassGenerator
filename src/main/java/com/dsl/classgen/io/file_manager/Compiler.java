@@ -22,12 +22,16 @@ public final class Compiler extends SupportProvider {
 
 	private Compiler() {}
 
-    public static void compile() {
-    	// a compilacao ocorre caso nao exista a classe P.java compilada. Do contrario, o metodo apenas retorna
-        if (!flagsCtx.getIsExistsCompiledPJavaClass()) {
+    public static int compile() {
+		// -0 e um valor especial que indica que a compilacao ja existe. Qualquer valor
+		// diferente disso (0 ou outro), indica que a compilacao nao existe e que foi
+		// compilada com sucesso ou com falha. -0 nunca e atribuido naturalmente
+    	int opStats = -0;
+
+        if (!flagsCtx.isExistsCompiledPJavaClass()) {
         	LOGGER.log(LogLevels.NOTICE.getLevel(), "Compiling classes from annotations and generated classes...\n");
 
-            int opStats = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+            opStats = ToolProvider.getSystemJavaCompiler().run(null, null, null,
             		"-d", pathsCtx.getOutputClassFilePath().toString(),
         			"--module-path", locateLoadedModules(),
         			"-sourcepath", pathsCtx.getOutputSourceDirPath().toString(),
@@ -42,6 +46,13 @@ public final class Compiler extends SupportProvider {
             	LOGGER.error("An error occurred while compiling\n");
             }
         }
+        return opStats;
+    }
+
+    public static void recompile(Runnable taskToBePerformedIfCompilationAlreadyExists) {
+    	if(compile() == -0) {
+    		new Thread(taskToBePerformedIfCompilationAlreadyExists).start();
+    	}
     }
 
 	private static String locateLoadedModules() {
@@ -63,6 +74,7 @@ public final class Compiler extends SupportProvider {
 	 * module-info.class has the new 'exports' directive values.
 	 */
     @SuppressWarnings("unused")
+    @Deprecated(forRemoval = true)
 	private static void exportGeneratedPackageInCurrentModule() {
     	SyncBin syncBin = new SyncBin();
     	ModuleFinder mf = ModuleFinder.of(Path.of("target/classes"));

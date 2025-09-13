@@ -23,6 +23,7 @@ import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.service.WatchServiceImpl;
+import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
 
 /**
@@ -37,15 +38,11 @@ public final class FileEventsProcessor extends SupportProvider {
 	 * Initialize thread.
 	 */
 	public static void initialize() {
-		if (eventProcessorThread.isAlive()) {
-			eventProcessorThread.interrupt();
-			if(!eventProcessorThread.isInterrupted()) {
-				initialize();
-			}
+		if (!eventProcessorThread.isAlive()) {
+    		eventProcessorThread.setDaemon(false);
+    		eventProcessorThread.setName("File Event Processor Thread");
+    		eventProcessorThread.start();
 		}
-		eventProcessorThread.setDaemon(false);
-		eventProcessorThread.setName("File Event Processor - Thread");
-		eventProcessorThread.start();
 	}
 
 	/**
@@ -76,11 +73,12 @@ public final class FileEventsProcessor extends SupportProvider {
 		mappedChangedFiles.stream().forEach(entry -> {
 			if(!entry.getValue().isEmpty()) {
 				Kind<Path> kind = entry.getKey();
+				Set<Path> paths = entry.getValue();
 				switch (kind) {
-					case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(entry.getValue());
-					case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(entry.getValue());
-					case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(entry.getValue());
-					default -> throw new IllegalArgumentException("** BUG ** Unexpected values: " + entry.getValue().toString());
+					case Kind<Path> _ when kind.equals(ENTRY_CREATE) -> createSection(paths);
+					case Kind<Path> _ when kind.equals(ENTRY_DELETE) -> deleteSection(paths);
+					case Kind<Path> _ when kind.equals(ENTRY_MODIFY) -> modifySection(paths);
+					default -> throw new IllegalArgumentException("** BUG ** Unexpected values: " + paths.toString());
 				}
 			}
 		});
@@ -95,9 +93,10 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param path the new file path
 	 */
-	private static void createSection(Set<Path> fileList) {
-		new SyncSource().insertClassSection(fileList);
-		new SyncBin().insertClassSection(fileList);
+	private static void createSection(Set<Path> fileSet) {
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new class entries...");
+		new SyncSource().insertClassSection(fileSet);
+		new SyncBin().insertClassSection(fileSet);
 	}
 
 	/**
@@ -106,7 +105,7 @@ public final class FileEventsProcessor extends SupportProvider {
 	 * @param path the file path that should be deleted
 	 */
 	private static void deleteSection(Set<Path> fileSet) {
-		LOGGER.warn("Existing file(s) deleted. Deleting cache and reprocessing source file entries...");
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing class entries...");
 		Set<CacheModel> modelSet = fileSet.stream().map(CacheManager::removeElementFromCacheModelMap).collect(Collectors.toSet());
 
 		new SyncSource().eraseClassSection(modelSet);
@@ -118,36 +117,22 @@ public final class FileEventsProcessor extends SupportProvider {
 	 *
 	 * @param path the file path that was modified
 	 */
-	private static void modifySection(Set<Path> filePath) {
-		List<CacheModel> currentCacheModelList = filePath.stream().map(CacheManager::getCacheModelFromMap).filter(Objects::nonNull).toList();
+	private static void modifySection(Set<Path> fileSet) {
+		LOGGER.log(LogLevels.NOTICE.getLevel(), "Modifying field entries...");
+		List<CacheModel> currentCacheModelList = fileSet.stream().map(CacheManager::getCacheModelFromMap).filter(Objects::nonNull).toList();
 		if (currentCacheModelList.isEmpty()) {
-			LOGGER.error("No models were found loaded in the cache.");
+			LOGGER.error("No models founded in cache map for the following files: \n\n{}", fileSet.stream().map(Path::toString).collect(Collectors.joining("\n")));
 			return;
-		}
-
-		final class ExtendedCacheModel extends CacheModel {
-
-			private static final long serialVersionUID = 1L;
-
-			public ExtendedCacheModel(InnerStaticClassModel model) {
-				super(model);
-			}
-
-			public boolean checkHash(CacheModel currentCacheModel) {
-				return this.fileHash == currentCacheModel.fileHash;
-			}
 		}
 
 		currentCacheModelList.forEach(currentCacheModel -> {
 			Path path = Path.of(currentCacheModel.filePath);
 			Reader.read(path);
 			InnerStaticClassModel newModel = InnerStaticClassModel.initInstance(path);
-			ExtendedCacheModel newCacheModel = new ExtendedCacheModel(newModel);
+			CacheModel newCacheModel = new CacheModel(newModel);
 			OutterClassModel.computeModelToMap(newModel);
 
-			boolean isHashEquals = newCacheModel.checkHash(currentCacheModel);
-
-			if(!isHashEquals) {
+			if(newCacheModel.fileHash != currentCacheModel.fileHash) {
 				Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges = new ModelMapper<>()
 						.mapper(currentCacheModel.entries, newCacheModel.entries);
 

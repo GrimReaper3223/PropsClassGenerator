@@ -28,15 +28,16 @@ public final class Generator {
 
 	private Generator() {}
 
-	public static void init(Path inputPath, String packageClass, boolean isRecursive) {
-		if(flagsCtx.getIsSingleExecution()) {
+	public static <T> void init(T inputPath, String packageClass, boolean isRecursive) {
+		Path path = Path.of(inputPath.toString());
+		if(!flagsCtx.isItAlreadyRunning()) {
     		flagsCtx.setRecursion(isRecursive);
     		pathsCtx.setPackageClass(packageClass);
-    		pathsCtx.setInputPath(inputPath);
+    		pathsCtx.setInputPath(path);
 
     		StructureChecker.checkStructure();
 
-    		Reader.read(inputPath);
+    		Reader.read(path);
     		ChunkLoader.loadChunks();
 
     		LOGGER.info("""
@@ -49,7 +50,6 @@ public final class Generator {
 				Output Path: {};
 				Package: {};
 				Is Recursive?: {};
-				Is Single File?: {};
 				Is There a Generated Structure?: {};
 				Is There a Compiled Class?: {};
 
@@ -60,28 +60,23 @@ public final class Generator {
 				-----------------------------
 
 				Call 'Generator.generate()' to generate java classes or manage existing classes.
-				""", inputPath,
+				""", path,
 					 pathsCtx.getOutputSourceDirPath(),
 					 pathsCtx.getPackageClass(),
 					 isRecursive,
-					 flagsCtx.getIsSingleFile(),
-					 flagsCtx.getIsDirStructureAlreadyGenerated(),
-					 flagsCtx.getIsExistsCompiledPJavaClass(),
-					 flagsCtx.getIsDebugMode());
+					 flagsCtx.hasSourceStructureGenerated(false),
+					 flagsCtx.isExistsCompiledPJavaClass(),
+					 flagsCtx.isDebugMode());
 		}
 	}
 
-	public static void init(String inputPath, String packageClass, boolean isRecursive) {
-		init(Path.of(inputPath), packageClass, isRecursive);
-	}
-
 	public static void generate() {
-		if(flagsCtx.getIsSingleExecution()) {
-    		if (!flagsCtx.getIsDirStructureAlreadyGenerated() || !flagsCtx.getIsExistsPJavaSource()) {
+		if(!flagsCtx.isItAlreadyRunning()) {
+    		if (!flagsCtx.hasSourceStructureGenerated(true)) {
     			Utils.calculateElapsedTime();
     			new OutterClassGenerator().generateData();
 
-    			if(flagsCtx.getIsDebugMode()) {
+    			if(flagsCtx.isDebugMode()) {
     				LOGGER.debug(pathsCtx.getGeneratedClass());
     			}
     			Writer.writeFirstGeneration();

@@ -16,7 +16,6 @@ import com.dsl.classgen.models.CacheModel;
 import com.dsl.classgen.models.CachePropertiesData;
 import com.dsl.classgen.models.model_mapper.InnerStaticClassModel;
 import com.dsl.classgen.models.model_mapper.OutterClassModel;
-import com.dsl.classgen.utils.LogLevels;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -32,8 +31,7 @@ public final class SyncSource implements SyncOperations {
 	/**
 	 * Writes data to a contextualized file, using the existing cUnit as content.
 	 */
-	private Consumer<Void> consumeWriter = _ -> Writer.write(pathsCtx.getExistingPJavaGeneratedSourcePath(),
-			cUnit.toString());
+	private Consumer<Void> consumeWriter = _ -> Writer.write(pathsCtx.getExistingPJavaGeneratedSourcePath(), cUnit.toString());
 
 	/**
 	 * Insert class section to the source file. Perform operation in a batch manner,
@@ -43,19 +41,17 @@ public final class SyncSource implements SyncOperations {
 	 */
 	@Override
 	public void insertClassSection(Set<Path> pathSet) {
-		LOGGER.log(LogLevels.NOTICE.getLevel(), "Generating new class entries...");
+		List<String> classList = cUnit.findAll(ClassOrInterfaceDeclaration.class).stream()
+				.map(elem -> elem.getNameAsString()).toList();
 
-		List<String> classList = cUnit.findAll(ClassOrInterfaceDeclaration.class).stream().map(elem -> elem.getNameAsString()).toList();
-		cUnit.getClassByName(pathsCtx.getOutterClassName()).ifPresent(c ->
-			pathSet.forEach(path -> {
-				InnerStaticClassModel model = InnerStaticClassModel.initInstance(path);
-				if(!classList.contains(model.className())) {
-					OutterClassModel.computeModelToMap(model);
-					CacheManager.queueNewFileToCreateCache(model.annotationMetadata().filePath());
-					c.addMember(innerClassGen.generateData(model));
-				}
-			})
-		);
+		cUnit.getClassByName(pathsCtx.getOutterClassName()).ifPresent(c -> pathSet.forEach(path -> {
+			InnerStaticClassModel model = InnerStaticClassModel.initInstance(path);
+			if (!classList.contains(model.className())) {
+				OutterClassModel.computeModelToMap(model);
+				CacheManager.queueNewFileToCreateCache(model.annotationMetadata().filePath());
+				c.addMember(innerClassGen.generateData(model));
+			}
+		}));
 		consumeWriter.accept(null);
 		CacheManager.processCache();
 	}
@@ -68,8 +64,11 @@ public final class SyncSource implements SyncOperations {
 	 */
 	@Override
 	public void eraseClassSection(Set<CacheModel> currentCacheModelSet) {
-		LOGGER.log(LogLevels.NOTICE.getLevel(), "Erasing class entries...");
 		List<Class<?>> filteredClassList = AnnotationProcessor.processClassAnnotations(currentCacheModelSet);
+		currentCacheModelSet.forEach(model -> {
+			OutterClassModel.removeModelFromMap(model.filePath);
+			CacheManager.removeElementFromCacheModelMap(Path.of(model.filePath));
+		});
 
 		cUnit.findAll(ClassOrInterfaceDeclaration.class).stream()
 				.filter(classDecl -> filteredClassList.stream()
@@ -89,27 +88,35 @@ public final class SyncSource implements SyncOperations {
 	 */
 	@Override
 	public void modifySection(Map<SyncOptions, Map<Integer, CachePropertiesData>> mappedChanges, CacheModel currentCacheModel) {
-		LOGGER.log(LogLevels.NOTICE.getLevel(), "Modifying source entries...");
-
 		mappedChanges.entrySet().forEach(entry -> {
 			Supplier<Stream<Map.Entry<Integer, CachePropertiesData>>> streamEntry = () -> entry.getValue().entrySet().stream();
 
 			// TODO: implementar a lógica de modificação de campos com o enum 'MODIFY'
 			switch (entry.getKey()) {
 				case INSERT -> cUnit.findAll(ClassOrInterfaceDeclaration.class).stream()
-						.filter(classDecl -> classDecl.getNameAsString()
-								.equals(OutterClassModel.getModel(currentCacheModel.filePath).className()))
-						.forEach(cls -> generateFieldsDeclarations(streamEntry.get(), currentCacheModel)
-								.forEach(cls::addMember));
+							.filter(classDecl -> classDecl.getNameAsString()
+									.equals(OutterClassModel.getModel(currentCacheModel.filePath).className()))
+							.forEach(cls -> generateFieldsDeclarations(streamEntry.get(), currentCacheModel)
+									.forEach(cls::addMember));
 
-				case DELETE -> cUnit.findAll(ClassOrInterfaceDeclaration.class).stream()
-						.filter(classDecl -> classDecl.getNameAsString()
-								.equals(OutterClassModel.getModel(currentCacheModel.filePath).className()))
-						.flatMap(classDecl -> classDecl.findAll(FieldDeclaration.class).stream())
-						.filter(fieldDecl -> fieldDecl.getVariables().stream()
-								.anyMatch(f -> getGeneratedFields(streamEntry.get(), currentCacheModel).stream()
-										.anyMatch(field -> field.getName().equals(f.getNameAsString()))))
-						.forEach(Node::remove);
+				case DELETE -> {
+					var model = OutterClassModel.getModel(currentCacheModel.filePath);
+
+					cUnit.findAll(ClassOrInterfaceDeclaration.class).stream()
+							.filter(classDecl -> classDecl.getNameAsString()
+									.equals(OutterClassModel.getModel(currentCacheModel.filePath).className()))
+							.flatMap(classDecl -> classDecl.findAll(FieldDeclaration.class).stream())
+							.filter(fieldDecl -> fieldDecl.getVariables().stream()
+									.anyMatch(f -> getGeneratedFields(streamEntry.get(), currentCacheModel).stream()
+											.anyMatch(field -> {
+												boolean result = field.getName().equals(f.getNameAsString());
+												if (result) {
+													model.deleteFieldModel(field);
+												}
+												return result;
+											})))
+							.forEach(Node::remove);
+				}
 			}
 		});
 		CacheManager.queueNewFileToCreateCache(currentCacheModel.filePath);
@@ -126,10 +133,9 @@ public final class SyncSource implements SyncOperations {
 	 *                          state
 	 * @return the list of field declarations
 	 */
-	private List<FieldDeclaration> generateFieldsDeclarations(Stream<Map.Entry<Integer, CachePropertiesData>> entries,
-			CacheModel currentCacheModel) {
+	private List<FieldDeclaration> generateFieldsDeclarations(Stream<Map.Entry<Integer, CachePropertiesData>> entries, CacheModel currentCacheModel) {
 		return innerFieldGen.generateData(entries
-				.map(entry -> OutterClassModel.getModel(currentCacheModel.filePath).insertNewModel(
+				.map(entry -> OutterClassModel.getModel(currentCacheModel.filePath).insertNewFieldModel(
 						entry.getValue().propKey(), entry.getValue().rawPropValue(), currentCacheModel.parseJavaType()))
 				.toList());
 	}

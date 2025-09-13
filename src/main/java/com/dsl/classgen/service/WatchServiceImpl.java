@@ -52,7 +52,7 @@ public class WatchServiceImpl {
     public static void initialize() {
         if (!watchServiceThread.isAlive()) {
             watchServiceThread.setDaemon(false);
-            watchServiceThread.setName("Watch Service - Thread");
+            watchServiceThread.setName("Watch Service Thread");
             performDirRegistration();
             watchServiceThread.start();
         }
@@ -72,10 +72,6 @@ public class WatchServiceImpl {
         	pathsCtx.getDirSet().clear();
         	LOGGER.log(LogLevels.NOTICE.getLevel(), "Done");
     	}
-    }
-
-    public static boolean verifyValue(Path dirPath) {
-    	return keys.containsValue(dirPath);
     }
 
     private static void verifyKey(WatchKey key, Path path) {

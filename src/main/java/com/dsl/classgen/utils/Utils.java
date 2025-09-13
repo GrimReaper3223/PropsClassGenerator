@@ -79,7 +79,7 @@ public final class Utils {
 		String fileName = getSafetyFileName(filePath, null, false).toString();
 		String jsonFileNamePattern = "%s" + JSON_FILE_SUFFIX;
 
-		if (fileName.contains(JSON_FILE_SUFFIX)) {
+		if (fileName.contains("-cache")) {
 			return filePath;
 		}
 		return pathsCtx.getCacheDir().resolve(String.format(jsonFileNamePattern, fileName));

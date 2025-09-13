@@ -9,41 +9,34 @@ public class FlagsContext {
     private boolean isDebugMode = Boolean.parseBoolean(System.getProperty("runtime.debug_mode", "false"));
 
 	// flags
-    private boolean isSingleFile;						// indica se o caminho passado corresponde a um unico arquivo
     private boolean isRecursive;						// indica se a recursividade nos diretorios deve ser aplicada
-    private boolean isDirStructureAlreadyGenerated;		// indica se a estrutura que o framework gera ja existe no /src/main/java/*
-    private boolean isExistsPJavaSource;				// indica se o arquivo P.java existe dentro da estrutura existente (se houver uma)
+    private boolean hasDirStructureAlreadyGenerated;		// indica se a estrutura que o framework gera ja existe no /src/main/java/*
+    private boolean hasExistsPJavaSource;				// indica se o arquivo P.java existe dentro da estrutura existente (se houver uma)
     private boolean isExistsCompiledPJavaClass;			// indica se ja existe uma compilacao do arquivo P.java
     private boolean hasChangedFilesLeft;				// indica se ainda existem eventos gerados pela implementacao do WatchService na fila. Esta variavel deve ser usada como interruptor pelo processador alteracoes em arquivos.
-    private boolean isSingleExecution;					// indica se a execucao deste hotspot e unico e nao existe outro em memoria. Isso previne que o framework seja executado duas vezes com os mesmos dados, trazendo inconsistencias e pesando a memoria de execucao. Esse controle e necessario tambem por conveniencia, para que o dev nao precise comentar o codigo de inicializacao do framework
+    private boolean isItAlreadyRunning;					// indica se a execucao deste hotspot e unico e nao existe outro em memoria. Isso previne que o framework seja executado duas vezes com os mesmos dados, trazendo inconsistencias e pesando a memoria de execucao. Esse controle e necessario tambem por conveniencia, para que o dev nao precise comentar o codigo de inicializacao do framework
 
 	FlagsContext() {
-		this.isSingleExecution = new InspectHotspot().lookupForHotspotModuleExecution() < 2;
+		/*
+		 * Identifica se o framework ja esta em execucao
+		 * Essa verificacao e feita buscando o numero de execucoes do hotspot deste modulo
+		 * O ideal e que exista apenas uma execucao deste modulo em memoria
+		 *
+		 * 1 - uma execucao (false, indica que existe uma execucao [a execucao atual]. Permite a execucao desta instancia do framework)
+		 * 2 ou + - multiplas execucoes (true, indica que existem multiplas execucoes [a execucao atual e outras], o que impede a execucao do framework)
+		 */
+		this.isItAlreadyRunning = new InspectHotspot().lookupForHotspotModuleExecution() > 1;
 	}
 
-	public boolean getIsSingleExecution() {
-		return isSingleExecution;
+	public boolean isItAlreadyRunning() {
+		return isItAlreadyRunning;
 	}
 
 	/**
 	 * @return the isDebugMode
 	 */
-	public boolean getIsDebugMode() {
+	public boolean isDebugMode() {
 		return isDebugMode;
-	}
-
-	/**
-	 * @return the isSingleFile
-	 */
-	public boolean getIsSingleFile() {
-		return isSingleFile;
-	}
-
-	/**
-	 * @param isSingleFile the isSingleFile to set
-	 */
-	public void setIsSingleFile(boolean isSingleFile) {
-		this.isSingleFile = isSingleFile;
 	}
 
 	/**
@@ -63,35 +56,36 @@ public class FlagsContext {
 	/**
 	 * @return the isDirStructureAlreadyGenerated
 	 */
-	public boolean getIsDirStructureAlreadyGenerated() {
-		return isDirStructureAlreadyGenerated;
+	public boolean hasDirStructureAlreadyGenerated() {
+		return hasDirStructureAlreadyGenerated;
 	}
 
 	/**
-	 * @param isDirStructureAlreadyGenerated the isDirStructureAlreadyGenerated to set
+	 * @param hasDirStructureAlreadyGenerated the isDirStructureAlreadyGenerated to set
 	 */
-	public void setIsDirStructureAlreadyGenerated(boolean isDirStructureAlreadyGenerated) {
-		this.isDirStructureAlreadyGenerated = isDirStructureAlreadyGenerated;
+	public void setHasDirStructureAlreadyGenerated(boolean hasDirStructureAlreadyGenerated) {
+		this.hasDirStructureAlreadyGenerated = hasDirStructureAlreadyGenerated;
+	}
+
+	public boolean hasExistsPJavaSource() {
+		return hasExistsPJavaSource;
 	}
 
 	/**
-	 * @return the isExistsPJavaSource
+	 * @param hasExistsPJavaSource the isExistsPJavaSource to set
 	 */
-	public boolean getIsExistsPJavaSource() {
-		return isExistsPJavaSource;
+	public void setHasExistsPJavaSource(boolean hasExistsPJavaSource) {
+		this.hasExistsPJavaSource = hasExistsPJavaSource;
 	}
 
-	/**
-	 * @param isExistsPJavaSource the isExistsPJavaSource to set
-	 */
-	public void setIsExistsPJavaSource(boolean isExistsPJavaSource) {
-		this.isExistsPJavaSource = isExistsPJavaSource;
+	public boolean hasSourceStructureGenerated(boolean orExistsInsteadOfAnd) {
+		return orExistsInsteadOfAnd ? hasDirStructureAlreadyGenerated || hasExistsPJavaSource : hasDirStructureAlreadyGenerated && hasExistsPJavaSource;
 	}
 
 	/**
 	 * @return the isExistsCompiledPJavaClass
 	 */
-	public boolean getIsExistsCompiledPJavaClass() {
+	public boolean isExistsCompiledPJavaClass() {
 		return isExistsCompiledPJavaClass;
 	}
 
@@ -105,7 +99,7 @@ public class FlagsContext {
 	/**
 	 * @return the hasChangedFilesLeft
 	 */
-	public boolean getHasChangedFilesLeft() {
+	public boolean hasChangedFilesLeft() {
 		return hasChangedFilesLeft;
 	}
 

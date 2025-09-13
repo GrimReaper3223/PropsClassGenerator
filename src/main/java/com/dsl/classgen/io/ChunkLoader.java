@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
+import com.dsl.classgen.io.file_manager.Compiler;
 import com.dsl.classgen.io.synchronizer.SyncBin;
 import com.dsl.classgen.io.synchronizer.SyncSource;
 import com.dsl.classgen.models.CacheModel;
@@ -24,22 +25,19 @@ public final class ChunkLoader extends SupportProvider {
 	public static void loadChunks() {
 		LOGGER.info("Loading chunks...");
 		CountDownLatch latch = new CountDownLatch(2);
-		var fileList = pathsCtx.getFileSet();
+		var fileSet = pathsCtx.getFileSet();
 
 		// load class models
-		new Thread(() -> {
-			fileList.forEach(filePath -> {
-				var model = InnerStaticClassModel.initInstance(filePath);
-				OutterClassModel.computeModelToMap(model);
-			});
+		Thread t1 = new Thread(() -> {
+			fileSet.forEach(filePath -> OutterClassModel.computeModelToMap(InnerStaticClassModel.initInstance(filePath)));
 			latch.countDown();
-		}).start();
+		});
 
 		// load cache
-		new Thread(() -> {
+		Thread t2 = new Thread(() -> {
 			try {
 				if(Files.exists(pathsCtx.getCacheDir()) && Files.size(pathsCtx.getCacheDir()) > 0
-						&& flagsCtx.getIsDirStructureAlreadyGenerated() && flagsCtx.getIsExistsPJavaSource()) {
+						&& flagsCtx.hasSourceStructureGenerated(false)) {
 					CacheManager.loadCache();
 				}
 			} catch (IOException e) {
@@ -47,23 +45,29 @@ public final class ChunkLoader extends SupportProvider {
 			} finally {
 				latch.countDown();
 			}
-		}).start();
+		});
+
+		t1.setName("ChunkLoader-Thread-1");
+		t2.setName("ChunkLoader-Thread-2");
+		t1.start();
+		t2.start();
 
 		try {
 			latch.await();
 			// FIX: pattern @|style text|@ not working in log4j2
 			LOGGER.log(LogLevels.SUCCESS.getLevel(), "Chunks loaded successfully.");
-			LOGGER.info("Checking data integrity...");
-			fileList.forEach(CacheManager::testFileIntegrity);
-			resync();
-			CacheManager.processCache(); // reprocess cache after full sync
+			resync(fileSet);
+			CacheManager.processCache();	// garante que o cache esteja atualizado
 		} catch (InterruptedException e) {
 			Utils.handleException(e);
 		}
 	}
 
-	private static void resync() {
-		if(flagsCtx.getIsDirStructureAlreadyGenerated() && flagsCtx.getIsExistsPJavaSource() && flagsCtx.getIsExistsCompiledPJavaClass()) {
+	private static void resync(Set<Path> fileSet) {
+		LOGGER.info("Checking data integrity...");
+		fileSet.forEach(CacheManager::testFileIntegrity);
+
+		if(flagsCtx.hasSourceStructureGenerated(false)) {
 			LOGGER.warn("There is already a generated structure.");
 			LOGGER.log(LogLevels.NOTICE.getLevel(), "Looking for changes...");
 
@@ -72,7 +76,7 @@ public final class ChunkLoader extends SupportProvider {
 			if(!outdatedCache.isEmpty()) {
 				LOGGER.warn("Changes detected. Synchronizing entities...");
 				new SyncSource().eraseClassSection(outdatedCache);
-				new SyncBin().eraseClassSection(outdatedCache);
+				Compiler.recompile(() -> new SyncBin().eraseClassSection(outdatedCache));
 			}
 
 			if(CacheManager.hasCacheToWrite()) {
@@ -84,20 +88,18 @@ public final class ChunkLoader extends SupportProvider {
 	}
 
 	private static Set<CacheModel> filterDeletedFiles() {
-		Set<String> innerClassesModelKeySet = OutterClassModel.getMapModel().keySet();
-		Set<String> cacheModelKeySet = CacheManager.getCacheModelMapEntries()
+		return CacheManager.getCacheModelMapEntries()
 				.stream()
 				.map(entry -> entry.getValue().filePath)
-				.collect(Collectors.toSet());
-
-		if(cacheModelKeySet.removeAll(innerClassesModelKeySet) && cacheModelKeySet.isEmpty()) {
-			return Collections.emptySet();
-		}
-
-		return cacheModelKeySet.stream()
-				.map(CacheManager::removeElementFromCacheModelMap)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toSet());
+				.collect(Collectors.collectingAndThen(Collectors.toSet(), cacheModelKeySet -> {
+					if (cacheModelKeySet.removeAll(OutterClassModel.getMapModel().keySet()) && cacheModelKeySet.isEmpty()) {
+						return Collections.emptySet();
+					}
+					return cacheModelKeySet.stream()
+							.map(CacheManager::removeElementFromCacheModelMap)
+							.filter(Objects::nonNull)
+							.collect(Collectors.toSet());
+				}));
 	}
 
 	private static void writeNewCacheIfExists() {

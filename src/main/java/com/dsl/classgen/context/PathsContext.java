@@ -14,17 +14,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.dsl.classgen.service.WatchServiceImpl;
 import com.dsl.classgen.utils.Utils;
 
 public class PathsContext {
 
 	private static final Logger LOGGER = LogManager.getLogger(PathsContext.class);
-	private static final Level SUCCESS = Level.getLevel("SUCCESS");
 	private static final Lock LOCKER = new ReentrantLock();
 
 	private final ConcurrentMap<Kind<Path>, Set<Path>> changedFiles;	// armazena eventos de alteracoes em arquivos emitidos pela implementacao do servico de monitoramento de diretorios
@@ -77,14 +74,12 @@ public class PathsContext {
 
 	public void queueFile(Path filePath) {
     	fileList.add(filePath);
-    	LOGGER.log(SUCCESS,"File added to file list: {}", filePath);
+    	LOGGER.debug("File added to file list: {}", filePath);
     }
 
     public void queueDir(Path dirPath) {
-    	if(!WatchServiceImpl.verifyValue(dirPath)) {
-    		dirList.add(dirPath);
-    		LOGGER.log(SUCCESS, "Directory added to dir list: {}", dirPath);
-    	}
+		dirList.add(dirPath);
+		LOGGER.debug("Directory added to dir list: {}", dirPath);
     }
 
     // changedFiles
@@ -155,13 +150,7 @@ public class PathsContext {
 	 * @param outputSourceDirPath the outputSourceDirPath to set
 	 */
 	public void setOutputSourceDirPath(Path outputSourceDirPath) {
-		var flagsCtx = GeneralContext.getInstance().getFlagsContextInstance();
-		if(!flagsCtx.getIsDirStructureAlreadyGenerated()) {
-	        this.outputSourceDirPath = outputSourceDirPath.resolve(Utils.normalizePath(this.packageClass, ".", "/"));
-	        this.outputSourceFilePath = this.outputSourceDirPath.resolve(outterClassName + ".java");
-		} else {
-			this.outputSourceDirPath = outputSourceDirPath;
-		}
+		this.outputSourceDirPath = outputSourceDirPath;
 	}
 
 	/**
@@ -169,6 +158,10 @@ public class PathsContext {
 	 */
 	public Path getOutputSourceFilePath() {
 		return outputSourceFilePath;
+	}
+
+	public void setOutputSourceFilePath(Path outputSourceFilePath) {
+		this.outputSourceFilePath = outputSourceFilePath;
 	}
 
 	/**

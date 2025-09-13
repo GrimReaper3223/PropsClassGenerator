@@ -1,6 +1,5 @@
 package com.dsl.classgen.io;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,9 +14,9 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.dsl.classgen.io.file_manager.Writer;
 import com.dsl.classgen.models.CacheModel;
+import com.dsl.classgen.models.model_mapper.OutterClassModel;
 import com.dsl.classgen.utils.LogLevels;
 import com.dsl.classgen.utils.Utils;
-import com.google.gson.Gson;
 
 /**
  * The Class CacheManager.
@@ -148,18 +147,11 @@ public final class CacheManager extends SupportProvider {
 	 * @param propsPath the properties file path
 	 */
 	public static <T> void testFileIntegrity(T propsPath) {
-		if(flagsCtx.getIsDirStructureAlreadyGenerated() && flagsCtx.getIsExistsPJavaSource()) {
-			Path jsonFilePath = Utils.toJsonFilePath(propsPath);
-
-			if (Files.exists(jsonFilePath)) {
-				try (BufferedReader br = Files.newBufferedReader(jsonFilePath)) {
-					CacheModel cm = CacheManager.getCacheModelFromMap(jsonFilePath);
-					if(!cm.equals(new Gson().fromJson(br, CacheModel.class))) {
-						queueNewFileToCreateCache(propsPath);
-					}
+		if(flagsCtx.hasSourceStructureGenerated(false)) {
+			if (Files.exists(Utils.toJsonFilePath(propsPath))) {
+				CacheModel cm = new CacheModel(OutterClassModel.getModel(propsPath));
+				if(cm.equals(CacheManager.getCacheModelFromMap(propsPath))) {
 					return;
-				} catch (IOException e) {
-					Utils.handleException(e);
 				}
 			}
 			queueNewFileToCreateCache(propsPath);
@@ -172,9 +164,9 @@ public final class CacheManager extends SupportProvider {
 	public static void processCache() {
 		try {
 			Path cacheDir = pathsCtx.getCacheDir();
-			boolean isCacheDirValid = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
+			boolean isValidCache = Files.exists(cacheDir) && Files.size(cacheDir) > 0L;
 
-			if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && hasCacheToWrite()) {
+			if (isValidCache && hasCacheToWrite() && flagsCtx.hasDirStructureAlreadyGenerated()) {
 				LOGGER.log(LogLevels.CACHE.getLevel(), "Updating cache...");
 				updateCache();
 
@@ -183,16 +175,16 @@ public final class CacheManager extends SupportProvider {
 					loadCache();
 				}
 
-			} else if (isCacheDirValid && flagsCtx.getIsDirStructureAlreadyGenerated() && cacheModelMap.isEmpty()) {
+			} else if (isValidCache && cacheModelMap.isEmpty() && flagsCtx.hasDirStructureAlreadyGenerated()) {
 				LOGGER.log(LogLevels.CACHE.getLevel(), "Loading cache...");
 				loadCache();
 
-			} else if (isCacheDirValid && !flagsCtx.getIsDirStructureAlreadyGenerated()) {
+			} else if (isValidCache && !flagsCtx.hasDirStructureAlreadyGenerated()) {
 				LOGGER.log(LogLevels.CACHE.getLevel(), "Invalid cache detected. Revalidating cache...");
 				eraseCache();
 				createCache();
 
-			} else if (!isCacheDirValid) {
+			} else if(!isValidCache) {
 				LOGGER.log(LogLevels.CACHE.getLevel(), "Cache does not exist. Generating new cache...");
 				createCache();
 			}
@@ -207,7 +199,7 @@ public final class CacheManager extends SupportProvider {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public static void loadCache() throws IOException {
-		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheLoaderFileVisitor());
+		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheManagerFV(false));
 	}
 
 	/**
@@ -216,7 +208,7 @@ public final class CacheManager extends SupportProvider {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private static void eraseCache() throws IOException {
-		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheEraserVisitor());
+		Files.walkFileTree(pathsCtx.getCacheDir(), new FileVisitorImpls.CacheManagerFV(true));
 	}
 
 	/**

@@ -2,6 +2,7 @@ package com.dsl.classgen.models.model_mapper;
 
 import java.io.IOException;
 import java.lang.classfile.ClassFile;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -13,6 +14,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import com.dsl.classgen.annotation.GeneratedInnerField;
 import com.dsl.classgen.io.CacheManager;
 import com.dsl.classgen.io.file_manager.Reader;
 import com.dsl.classgen.models.Parsers;
@@ -26,9 +28,13 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 		int byteCodeModifiers) implements Parsers {
 
 	public static <T> InnerStaticClassModel initInstance(T filePath) {
+		Path path = Path.of(filePath.toString());
 		InnerStaticClassModel model = null;
 
-		Path path = Path.of(filePath.toString());
+//		if (OutterClassModel.isModelValid(filePath)) {
+//			return OutterClassModel.getModel(filePath);
+//		}
+
 		String formattedClassName = new Parsers() {}.parseClassName(filePath);
 		Keyword[] sourceFlags = new Keyword[] { Keyword.PUBLIC, Keyword.STATIC, Keyword.FINAL };
 		int byteCodeFlags = ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC | ClassFile.ACC_FINAL | ClassFile.ACC_SUPER ;
@@ -46,7 +52,7 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 		return model;
 	}
 
-	public InnerFieldModel insertNewModel(String propertiesKey, Object propertiesValue, Class<?> fieldType) {
+	public InnerFieldModel insertNewFieldModel(String propertiesKey, Object propertiesValue, Class<?> fieldType) {
 		FieldAnnotationModel annotation = new FieldAnnotationModel(propertiesKey, Objects.hash(propertiesKey, propertiesValue));
 		String formattedFieldName = parseFieldName(propertiesKey);
 		InnerFieldModel model = new InnerFieldModel(annotation, fieldType, formattedFieldName, propertiesValue);
@@ -56,8 +62,8 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 		return model;
 	}
 
-	public void deleteModel(InnerFieldModel model) {
-		this.fieldModelList.remove(model);
+	public void deleteFieldModel(Field model) {
+		this.fieldModelList.removeIf(field -> field.annotationMetadata().hash() == model.getDeclaredAnnotation(GeneratedInnerField.class).hash());
 	}
 
 	private static ClassAnnotationModel initAnnotation(Path filePath) throws InterruptedException, ExecutionException {
@@ -120,6 +126,10 @@ public record InnerStaticClassModel (ClassAnnotationModel annotationMetadata,
 			return iscm.annotationMetadata.hash() == annotationMetadata.hash() && hashList1.containsAll(hashList2);
 		}
 		throw new NullPointerException("** BUG **: The object instance is null.");
+	}
+
+	public <T> boolean equalsFileHashCode(T filePath) {
+		return hashCode() == staticHashCode(Path.of(filePath.toString()));
 	}
 
 	@Override

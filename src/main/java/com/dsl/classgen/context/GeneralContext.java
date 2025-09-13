@@ -7,7 +7,7 @@ public class GeneralContext {
 	private static final GeneralContext INSTANCE = new GeneralContext();
 
 	private final FlagsContext flagsContextInstance = new FlagsContext();
-	private final PathsContext pathsContextInstance = new PathsContext(flagsContextInstance.getIsDebugMode());
+	private final PathsContext pathsContextInstance = new PathsContext(flagsContextInstance.isDebugMode());
 
 	private Class<?> generatedOutterClass;
 

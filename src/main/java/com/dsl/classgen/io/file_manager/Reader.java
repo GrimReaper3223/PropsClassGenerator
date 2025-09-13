@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Stream;
 
 import com.dsl.classgen.context.GeneralContext;
 import com.dsl.classgen.core.CustomClassLoader;
@@ -23,28 +22,13 @@ public final class Reader extends SupportProvider {
     public static <T> void read(T path) {
     	Path inputPath = Path.of(path.toString());
 
-        if (Files.isRegularFile(inputPath) && Utils.isPropertiesFile(inputPath)) {
-        	flagsCtx.setIsSingleFile(true);
+        if (Utils.fileFilter.test(inputPath)) {
         	pathsCtx.queueFile(inputPath);
         	pathsCtx.queueDir(inputPath.getParent());
 
         } else if (Files.isDirectory(inputPath)) {
-        	flagsCtx.setIsSingleFile(false);
             processDirectoryFileList(inputPath);
         }
-    }
-
-    public static <T> String readSource(T sourceFile) {
-    	StringBuilder sourceBuffer = new StringBuilder();
-
-    	try(Stream<String> lines = Files.lines(Path.of(sourceFile.toString()))) {
-    		lines.forEach(line -> sourceBuffer.append(line + '\n'));
-    	}
-    	catch (IOException e) {
-    		Utils.handleException(e);
-		}
-
-    	return sourceBuffer.toString();
     }
 
     public static <T> Properties loadProp(T path) {
@@ -87,14 +71,7 @@ public final class Reader extends SupportProvider {
 
     private static void processDirectoryFileList(Path inputDirPath) {
         try {
-            if (flagsCtx.getRecursiveOption()) {
-                Files.walkFileTree(inputDirPath, new FileVisitorImpls.ReaderFileVisitor());
-            } else {
-                try (Stream<Path> pathStream = Files.list(inputDirPath)){
-                    pathStream.filter(Utils.fileFilter::test).forEach(pathsCtx::queueFile);
-                }
-                pathsCtx.queueDir(inputDirPath);
-            }
+            Files.walkFileTree(inputDirPath, new FileVisitorImpls.FileSystemReaderFV(inputDirPath));
         }
         catch (IOException e) {
         	Utils.handleException(e);
